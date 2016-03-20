@@ -123,10 +123,11 @@ public class Main {
             this.meshEntity.setMesh(mesh);
             this.meshEntity.setShaderProgram(this.meshProgram);
             this.meshEntity.buildMesh();
+            this.meshEntity.rotate(0.0f, (float) Math.toRadians(180.0f), 0.0f);
 
             //  Setup the camera.
             this.camera = new CameraEntity();
-            this.camera.translate(0.0f, 0.2f, -0.75f);
+            this.camera.translate(0.0f, 0.2f, -0.55f);
             this.camera.getCameraProjection().setViewport(WINDOW_WIDTH, WINDOW_HEIGHT);
             this.camera.updateProjectionMatrix();
         } catch (Exception e) {

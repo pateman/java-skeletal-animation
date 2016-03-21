@@ -17,9 +17,13 @@ public final class Utils {
     public static final String POSITION_ATTRIBUTE = "Position";
     public static final String NORMAL_ATTRIBUTE = "Normal";
     public static final String TEXCOORD_ATTRIBUTE = "TexCoord";
+    public static final String INDICES_ATTRIBUTE = "BoneIndices";
+    public static final String WEIGHTS_ATTRIBUTE = "BoneWeights";
     public static final String MODELVIEW_UNIFORM = "modelView";
     public static final String PROJECTION_UNIFORM = "projection";
     public static final String TEXTURE_UNIFORM = "texture";
+    public static final String BONES_UNIFORM = "bones";
+    public static final String USESKINNING_UNIFORM = "useSkinning";
 
     private Utils() {
     }
@@ -74,6 +78,22 @@ public final class Utils {
             throw new IllegalArgumentException();
         }
 
-        return matrix.get(BufferUtils.createFloatBuffer(16));
+        final FloatBuffer buffer = matrix.get(BufferUtils.createFloatBuffer(16));
+        return buffer;
+    }
+
+    public static FloatBuffer matrices4fToBuffer(final List<Matrix4f> matrices) {
+        if (matrices == null) {
+            throw new IllegalArgumentException();
+        }
+
+        final FloatBuffer buffer = BufferUtils.createFloatBuffer(16 * matrices.size());
+        for (Matrix4f matrix4f : matrices) {
+            matrix4f.get(buffer);
+            buffer.position(buffer.position() + 16);
+        }
+        buffer.flip();
+
+        return buffer;
     }
 }

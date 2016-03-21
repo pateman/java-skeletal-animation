@@ -9,6 +9,7 @@ import org.joml.Vector3f;
 import pl.pateman.skeletal.Utils;
 import pl.pateman.skeletal.mesh.Bone;
 import pl.pateman.skeletal.mesh.Mesh;
+import pl.pateman.skeletal.mesh.MeshSkinningInfo;
 
 import java.io.IOException;
 
@@ -71,7 +72,7 @@ public final class OgreXMLImporter {
                 }
                 if (bone.rotation != null) {
                     skeletonBone.getBindRotation().set(new AxisAngle4f(bone.rotation.angle, bone.rotation.axis.x,
-                            bone.rotation.axis.y, bone.rotation.axis.z));
+                            bone.rotation.axis.y, bone.rotation.axis.z).normalize());
                 }
                 if (bone.scale != null) {
                     skeletonBone.getBindScale().set(bone.scale.x, bone.scale.y, bone.scale.z);
@@ -95,6 +96,11 @@ public final class OgreXMLImporter {
                 throw new IOException("Multiple roots not supported");
             }
 
+            //  Check if the number of bones is acceptable.
+            if (skeleton.boneList.size() > MeshSkinningInfo.MAX_BONES) {
+                throw new IOException("Too many bones in the skeleton");
+            }
+
             for (OgreXMLSkeleton.BoneHierarchyInfo boneHierarchyInfo : skeleton.hierarchyInfo) {
                 final Bone bone = mesh.getSkeleton().getBoneByName(boneHierarchyInfo.boneName);
                 final Bone parent = mesh.getSkeleton().getBoneByName(boneHierarchyInfo.parentBoneName);
@@ -112,6 +118,10 @@ public final class OgreXMLImporter {
                 bone.setParent(parent);
                 parent.getChildren().add(bone);
             }
+
+            //  Now that the skeleton is fully processed, calculate the bind matrices and arrange the bones.
+            mesh.getSkeleton().calculateBindMatrices();
+            mesh.getSkeleton().arrangeBones();
         }
 
         return mesh;

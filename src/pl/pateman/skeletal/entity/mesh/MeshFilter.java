@@ -1,9 +1,12 @@
 package pl.pateman.skeletal.entity.mesh;
 
+import org.joml.Matrix4f;
 import org.lwjgl.BufferUtils;
 import pl.pateman.skeletal.Clearable;
 import pl.pateman.skeletal.Utils;
+import pl.pateman.skeletal.mesh.Bone;
 import pl.pateman.skeletal.mesh.Mesh;
+import pl.pateman.skeletal.mesh.MeshSkinningInfo;
 import pl.pateman.skeletal.shader.Program;
 
 import java.nio.FloatBuffer;
@@ -30,19 +33,19 @@ public final class MeshFilter implements Clearable {
         this.vao = glGenVertexArrays();
     }
 
-    public void bind() {
+    void bind() {
         glBindVertexArray(this.vao);
     }
 
-    public void unbind() {
+    void unbind() {
         glBindVertexArray(0);
     }
 
-    public void addBuffer(final String attributeName, int attributeLocation) {
+    void addBuffer(final String attributeName, int attributeLocation) {
         this.addBuffer(attributeName, attributeLocation, VertexBufferObject.DEFAULT_COMPONENT_SIZE);
     }
 
-    public void addBuffer(final String attributeName, int attributeLocation, int componentSize) {
+    void addBuffer(final String attributeName, int attributeLocation, int componentSize) {
         if (attributeName == null) {
             throw new IllegalArgumentException();
         }
@@ -55,11 +58,11 @@ public final class MeshFilter implements Clearable {
         this.vbos.put(attributeName, newVBO);
     }
 
-    public void removeBuffer(final String attributeName) {
+    void removeBuffer(final String attributeName) {
         this.vbos.remove(attributeName).clearAndDestroy();
     }
 
-    public void removeBuffers() {
+    void removeBuffers() {
         Iterator<Map.Entry<String, VertexBufferObject>> it = this.vbos.entrySet().iterator();
         while (it.hasNext()) {
             Map.Entry<String, VertexBufferObject> buffer = it.next();
@@ -68,7 +71,7 @@ public final class MeshFilter implements Clearable {
         }
     }
 
-    public void updateBufferData(final String attributeName, final FloatBuffer data) {
+    void updateBufferData(final String attributeName, final FloatBuffer data) {
         if (attributeName == null) {
             throw new IllegalArgumentException();
         }
@@ -80,7 +83,7 @@ public final class MeshFilter implements Clearable {
         vbo.update(data);
     }
 
-    public void updateBufferData(final String attributeName, final IntBuffer data) {
+    void updateBufferData(final String attributeName, final IntBuffer data) {
         if (attributeName == null) {
             throw new IllegalArgumentException();
         }
@@ -92,10 +95,23 @@ public final class MeshFilter implements Clearable {
         vbo.update(data);
     }
 
-    public void updateFacesData() {
+    void updateFacesData() {
         for (MeshFace face : this.faces) {
             face.rebuild();
         }
+    }
+
+    List<Matrix4f> getBoneMatrices() {
+        if (this.meshData == null) {
+            throw new IllegalStateException("Mesh is missing");
+        }
+
+        final List<Matrix4f> matrices = new ArrayList<>(this.meshData.getSkeleton().getBones().size());
+        for (Bone bone : this.meshData.getSkeleton().getBones()) {
+            matrices.add(bone.getWorldMatrix().mul(bone.getInverseBindposeMatrix(), new Matrix4f()));
+        }
+
+        return matrices;
     }
 
     public Mesh getMeshData() {
@@ -147,6 +163,16 @@ public final class MeshFilter implements Clearable {
         }
         if (!this.meshData.getTexcoords().isEmpty()) {
             this.updateBufferData(Utils.TEXCOORD_ATTRIBUTE, Utils.vertices2fToBuffer(this.meshData.getTexcoords()));
+        }
+
+        //  Check if skinning info is available.
+        final MeshSkinningInfo skinningInfo = this.meshData.getSkinningInfo();
+        if (skinningInfo.hasSkinningInfo()) {
+            this.addBuffer(Utils.INDICES_ATTRIBUTE, this.shaderProgram.getAttributeLocation(Utils.INDICES_ATTRIBUTE));
+            this.addBuffer(Utils.WEIGHTS_ATTRIBUTE, this.shaderProgram.getAttributeLocation(Utils.WEIGHTS_ATTRIBUTE));
+
+            this.updateBufferData(Utils.INDICES_ATTRIBUTE, Utils.vertices3fToBuffer(skinningInfo.getBoneIndices()));
+            this.updateBufferData(Utils.WEIGHTS_ATTRIBUTE, Utils.vertices3fToBuffer(skinningInfo.getBoneWeights()));
         }
 
         //  Update mesh faces.

@@ -30,6 +30,41 @@ public class Skeleton {
         return null;
     }
 
+    public Bone getRootBone() {
+        for (Bone bone : this.bones) {
+            if (bone.getParent() == null) {
+                return bone;
+            }
+        }
+        return null;
+    }
+
+    private void calculateBindMatrices(final Bone bone) {
+        bone.calculateBoneMatrices();
+
+        for (Bone child : bone.getChildren()) {
+            this.calculateBindMatrices(child);
+        }
+    }
+
+    public void calculateBindMatrices() {
+        //  Start from the root.
+        final Bone rootBone = this.getRootBone();
+
+        if (rootBone != null) {
+            this.calculateBindMatrices(rootBone);
+        }
+    }
+
+    public void arrangeBones() {
+        Collections.sort(this.bones, new Comparator<Bone>() {
+            @Override
+            public int compare(Bone o1, Bone o2) {
+                return o1.getIndex() - o2.getIndex();
+            }
+        });
+    }
+
     public List<Bone> getBones() {
         return bones;
     }

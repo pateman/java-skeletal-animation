@@ -17,6 +17,8 @@ import pl.pateman.skeletal.shader.Shader;
 import pl.pateman.skeletal.texture.Texture;
 import pl.pateman.skeletal.texture.TextureLoader;
 
+import java.util.List;
+
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.system.MemoryUtil.NULL;
@@ -150,6 +152,10 @@ public class Main {
         this.meshProgram.setUniformMatrix4(Utils.PROJECTION_UNIFORM, Utils.matrix4fToBuffer(this.camera.
                 getProjectionMatrix()));
         this.meshProgram.setUniform1(Utils.TEXTURE_UNIFORM, 0);
+        this.meshProgram.setUniform1(Utils.USESKINNING_UNIFORM, 1);
+        final List<Matrix4f> boneMatrices = renderer.getBoneMatrices();
+        this.meshProgram.setUniformMatrix4Array(Utils.BONES_UNIFORM, boneMatrices.size(),
+                Utils.matrices4fToBuffer(boneMatrices));
 
         //  Draw the entity.
         renderer.renderMesh();

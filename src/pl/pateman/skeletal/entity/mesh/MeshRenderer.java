@@ -1,12 +1,13 @@
 package pl.pateman.skeletal.entity.mesh;
 
+import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL15;
 import pl.pateman.skeletal.shader.Program;
 
-import static org.lwjgl.opengl.GL11.GL_TRIANGLES;
-import static org.lwjgl.opengl.GL11.GL_UNSIGNED_INT;
+import java.util.List;
+
 import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL15.*;
+import static org.lwjgl.opengl.GL15.glBindBuffer;
 
 /**
  * Created by pateman.
@@ -44,5 +45,9 @@ public final class MeshRenderer {
 
         this.meshFilter.unbind();
         this.shaderProgram.unbind();
+    }
+
+    public List<Matrix4f> getBoneMatrices() {
+        return this.meshFilter.getBoneMatrices();
     }
 }

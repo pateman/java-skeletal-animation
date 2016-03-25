@@ -1,10 +1,8 @@
 package pl.pateman.skeletal.entity.mesh;
 
-import org.joml.Matrix4f;
 import org.lwjgl.BufferUtils;
 import pl.pateman.skeletal.Clearable;
 import pl.pateman.skeletal.Utils;
-import pl.pateman.skeletal.mesh.Bone;
 import pl.pateman.skeletal.mesh.Mesh;
 import pl.pateman.skeletal.mesh.MeshSkinningInfo;
 import pl.pateman.skeletal.shader.Program;
@@ -101,18 +99,18 @@ public final class MeshFilter implements Clearable {
         }
     }
 
-    List<Matrix4f> getBoneMatrices() {
-        if (this.meshData == null) {
-            throw new IllegalStateException("Mesh is missing");
-        }
-
-        final List<Matrix4f> matrices = new ArrayList<>(this.meshData.getSkeleton().getBones().size());
-        for (Bone bone : this.meshData.getSkeleton().getBones()) {
-            matrices.add(bone.getWorldMatrix().mul(bone.getInverseBindposeMatrix(), new Matrix4f()));
-        }
-
-        return matrices;
-    }
+//    List<Matrix4f> getBoneMatrices() {
+//        if (this.meshData == null) {
+//            throw new IllegalStateException("Mesh is missing");
+//        }
+//
+//        final List<Matrix4f> matrices = new ArrayList<>(this.meshData.getSkeleton().getBones().size());
+//        for (Bone bone : this.meshData.getSkeleton().getBones()) {
+//            matrices.add(bone.getWorldBindMatrix().mul(bone.getInverseBindMatrix(), new Matrix4f()));
+//        }
+//
+//        return matrices;
+//    }
 
     public Mesh getMeshData() {
         return meshData;

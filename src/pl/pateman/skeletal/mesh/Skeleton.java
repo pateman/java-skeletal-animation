@@ -13,12 +13,7 @@ public class Skeleton {
     }
 
     public Bone getBoneByIndex(int index) {
-        for (Bone bone : bones) {
-            if (bone.getIndex() == index) {
-                return bone;
-            }
-        }
-        return null;
+        return this.bones.get(index);
     }
 
     public Bone getBoneByName(final String boneName) {
@@ -40,7 +35,7 @@ public class Skeleton {
     }
 
     private void calculateBindMatrices(final Bone bone) {
-        bone.calculateBoneMatrices();
+        bone.calculateBindMatrices();
 
         for (Bone child : bone.getChildren()) {
             this.calculateBindMatrices(child);

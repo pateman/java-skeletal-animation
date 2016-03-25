@@ -1,5 +1,6 @@
 package pl.pateman.skeletal.entity;
 
+import pl.pateman.skeletal.entity.mesh.AnimationController;
 import pl.pateman.skeletal.entity.mesh.MeshFilter;
 import pl.pateman.skeletal.entity.mesh.MeshRenderer;
 import pl.pateman.skeletal.mesh.Mesh;
@@ -13,6 +14,7 @@ public class MeshEntity extends AbstractEntity {
     private Program shaderProgram;
     private final MeshFilter meshFilter;
     private MeshRenderer meshRenderer;
+    private AnimationController animationController;
 
     public MeshEntity() {
         this.meshFilter = new MeshFilter();
@@ -39,11 +41,16 @@ public class MeshEntity extends AbstractEntity {
         this.meshFilter.setShaderProgram(this.shaderProgram);
         this.meshFilter.buildMeshFilter();
 
-        this.meshRenderer = new MeshRenderer(this.meshFilter, this.shaderProgram);
+        this.animationController = new AnimationController(this.mesh);
+        this.meshRenderer = new MeshRenderer(this.meshFilter, this.shaderProgram, this.animationController);
     }
 
     public MeshRenderer getMeshRenderer() {
         return meshRenderer;
+    }
+
+    public AnimationController getAnimationController() {
+        return animationController;
     }
 
     @Override

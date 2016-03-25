@@ -15,10 +15,12 @@ import static org.lwjgl.opengl.GL15.glBindBuffer;
 public final class MeshRenderer {
     private final MeshFilter meshFilter;
     private final Program shaderProgram;
+    private final AnimationController animationController;
 
-    public MeshRenderer(MeshFilter meshFilter, Program shaderProgram) {
+    public MeshRenderer(MeshFilter meshFilter, Program shaderProgram, AnimationController animationController) {
         this.meshFilter = meshFilter;
         this.shaderProgram = shaderProgram;
+        this.animationController = animationController;
     }
 
     public void initializeRendering() {
@@ -48,6 +50,6 @@ public final class MeshRenderer {
     }
 
     public List<Matrix4f> getBoneMatrices() {
-        return this.meshFilter.getBoneMatrices();
+        return this.animationController.getAnimationMatrices();
     }
 }

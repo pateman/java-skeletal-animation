@@ -8,36 +8,42 @@ in vec3 BoneWeights;
 
 out vec2 textureCoord;
 out vec3 fragmentNormal;
-out vec3 lightDir;
 
 uniform mat4 projection;
 uniform mat4 modelView;
-uniform mat4 bones[100];
+uniform mat4 bones[60];
 uniform int useSkinning;
 
-mat4 boneTransform() {
-    mat4 ret = BoneWeights.z * bones[int(BoneIndices.z)]
-        + BoneWeights.y * bones[int(BoneIndices.y)]
-        + BoneWeights.x * bones[int(BoneIndices.x)];
+void boneTransform(inout vec4 position) {
+    mat4 ret;
 
-    return ret;
+    if (BoneWeights.x != 0.0f && useSkinning > 0) {
+        ret = mat4(0.0f);
+
+        ret += bones[int(BoneIndices.x)] * BoneWeights.x;
+        ret += bones[int(BoneIndices.y)] * BoneWeights.y;
+        ret += bones[int(BoneIndices.z)] * BoneWeights.z;
+    } else {
+        ret = mat4(
+              1., 0., 0., 0.,
+              0., 1., 0., 0.,
+              0., 0., 1., 0.,
+              0., 0., 0., 1.
+        );
+    }
+
+    position = ret * position;
 }
 
 void main()
 {
-    mat4 boneMatrix = (useSkinning > 0) ?
-        boneTransform() :
-        mat4(
-            1., 0., 0., 0.,
-            0., 1., 0., 0.,
-            0., 0., 1., 0.,
-            0., 0., 0., 1.
-        );
+    vec4 modelSpacePos = vec4(Position, 1.0);
 
     fragmentNormal = (modelView * vec4(Normal, 0.0)).xyz;
     fragmentNormal = normalize(fragmentNormal);
 
     textureCoord = TexCoord;
 
-    gl_Position = projection * modelView * boneMatrix * vec4(Position, 1.0);
+    boneTransform(modelSpacePos);
+    gl_Position = projection * modelView * modelSpacePos;
 }

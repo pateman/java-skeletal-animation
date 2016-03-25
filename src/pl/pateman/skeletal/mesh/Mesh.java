@@ -14,6 +14,7 @@ public class Mesh {
     private final List<Vector2f> texcoords;
     private final List<Integer> triangles;
     private final Skeleton skeleton;
+    private final List<Animation> animations;
 
     public Mesh() {
         this.vertices = new ArrayList<>();
@@ -21,6 +22,7 @@ public class Mesh {
         this.texcoords = new ArrayList<>();
         this.triangles = new ArrayList<>();
         this.skeleton = new Skeleton();
+        this.animations = new ArrayList<>();
     }
 
     public MeshSkinningInfo getSkinningInfo() {
@@ -88,6 +90,10 @@ public class Mesh {
 
     public Skeleton getSkeleton() {
         return skeleton;
+    }
+
+    public List<Animation> getAnimations() {
+        return animations;
     }
 
     private class VertexInfo {

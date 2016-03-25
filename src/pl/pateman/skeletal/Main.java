@@ -9,7 +9,9 @@ import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL20;
 import pl.pateman.skeletal.entity.CameraEntity;
 import pl.pateman.skeletal.entity.MeshEntity;
+import pl.pateman.skeletal.entity.SkeletonMeshEntity;
 import pl.pateman.skeletal.entity.mesh.MeshRenderer;
+import pl.pateman.skeletal.mesh.Bone;
 import pl.pateman.skeletal.mesh.Mesh;
 import pl.pateman.skeletal.ogrexml.OgreXMLImporter;
 import pl.pateman.skeletal.shader.Program;
@@ -17,6 +19,7 @@ import pl.pateman.skeletal.shader.Shader;
 import pl.pateman.skeletal.texture.Texture;
 import pl.pateman.skeletal.texture.TextureLoader;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.lwjgl.glfw.GLFW.*;
@@ -33,10 +36,12 @@ public class Main {
     private GLFWErrorCallback errorCallback;
     private GLFWKeyCallback keyCallback;
     private long window;
+    private double lastTime;
 
     private CameraEntity camera;
     private Program meshProgram;
     private MeshEntity meshEntity;
+    private SkeletonMeshEntity skeletonMeshEntity;
     private Texture meshTexture;
 
     public void run() {
@@ -125,7 +130,13 @@ public class Main {
             this.meshEntity.setMesh(mesh);
             this.meshEntity.setShaderProgram(this.meshProgram);
             this.meshEntity.buildMesh();
+            this.meshEntity.translate(0.25f, 0.0f, 0.0f);
             this.meshEntity.rotate(0.0f, (float) Math.toRadians(180.0f), 0.0f);
+
+            //  Create the skeleton mesh.
+            this.skeletonMeshEntity = new SkeletonMeshEntity(mesh.getSkeleton());
+            this.skeletonMeshEntity.translate(-0.25f, 0.0f, 0.0f);
+            this.skeletonMeshEntity.rotate(0.0f, (float) Math.toRadians(180.0f), 0.0f);
 
             //  Setup the camera.
             this.camera = new CameraEntity();
@@ -137,7 +148,20 @@ public class Main {
         }
     }
 
+    private void updateScene() {
+        final double currentTime = glfwGetTime();
+
+        final float delta = (float) (currentTime - this.lastTime);
+        this.lastTime = currentTime;
+
+        this.meshEntity.getAnimationController().stepAnimation(delta);
+        this.skeletonMeshEntity.applyAnimation(this.meshEntity.getMeshRenderer().getBoneMatrices());
+    }
+
     private void drawScene() {
+        //  Draw the skeleton mesh first.
+        this.skeletonMeshEntity.drawSkeletonMesh(this.camera.getViewMatrix(), this.camera.getProjectionMatrix());
+
         //  Prepare the model-view matrix.
         final Matrix4f modelViewMatrix = this.camera.getViewMatrix().mul(this.meshEntity.getTransformation(),
                 new Matrix4f());
@@ -153,7 +177,16 @@ public class Main {
                 getProjectionMatrix()));
         this.meshProgram.setUniform1(Utils.TEXTURE_UNIFORM, 0);
         this.meshProgram.setUniform1(Utils.USESKINNING_UNIFORM, 1);
-        final List<Matrix4f> boneMatrices = renderer.getBoneMatrices();
+        this.meshProgram.setUniform1(Utils.USETEXTURING_UNIFORM, 1);
+
+        //  Apply the inverse bind transform to bone matrices.
+        final List<Matrix4f> boneMatrices = new ArrayList<>(renderer.getBoneMatrices());
+        for (int i = 0; i < this.meshEntity.getMesh().getSkeleton().getBones().size(); i++) {
+            final Bone bone = this.meshEntity.getMesh().getSkeleton().getBoneByIndex(i);
+            final Matrix4f boneMatrix = boneMatrices.get(i);
+
+            boneMatrix.mul(bone.getInverseBindMatrix(), boneMatrix);
+        }
         this.meshProgram.setUniformMatrix4Array(Utils.BONES_UNIFORM, boneMatrices.size(),
                 Utils.matrices4fToBuffer(boneMatrices));
 
@@ -172,9 +205,14 @@ public class Main {
         glEnable(GL_TEXTURE_2D);
 
         this.initScene();
+        this.meshEntity.getAnimationController().switchToAnimation("run");
+        this.lastTime = glfwGetTime();
 
         while (glfwWindowShouldClose(this.window) == GLFW_FALSE) {
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+            //  Update the scene.
+            this.updateScene();
 
             //  Draw the scene.
             this.drawScene();

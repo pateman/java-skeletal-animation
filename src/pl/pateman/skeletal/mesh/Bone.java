@@ -3,6 +3,7 @@ package pl.pateman.skeletal.mesh;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
+import pl.pateman.skeletal.Utils;
 
 import java.util.*;
 
@@ -17,9 +18,10 @@ public class Bone {
     private final Quaternionf bindRotation;
     private final Vector3f bindScale;
 
-    private final Matrix4f localMatrix;
-    private final Matrix4f worldMatrix;
-    private final Matrix4f inverseBindposeMatrix;
+    private final Matrix4f localBindMatrix;
+    private final Matrix4f worldBindMatrix;
+    private final Matrix4f inverseBindMatrix;
+    private final Matrix4f offsetMatrix;
 
     private Bone parent;
     private final List<Bone> children;
@@ -37,25 +39,27 @@ public class Bone {
 
         this.bindPosition = new Vector3f();
         this.bindRotation = new Quaternionf();
-        this.bindScale = new Vector3f();
+        this.bindScale = new Vector3f(1.0f, 1.0f, 1.0f);
 
-        this.localMatrix = new Matrix4f();
-        this.worldMatrix = new Matrix4f();
-        this.inverseBindposeMatrix = new Matrix4f();
+        this.localBindMatrix = new Matrix4f();
+        this.worldBindMatrix = new Matrix4f();
+        this.inverseBindMatrix = new Matrix4f();
+        this.offsetMatrix = new Matrix4f();
     }
 
     public void addVertexWeight(int vertexId, float weight) {
         this.vertexWeights.put(vertexId, weight);
     }
 
-    void calculateBoneMatrices() {
-        this.localMatrix.rotation(this.bindRotation).setTranslation(this.bindPosition);
+    void calculateBindMatrices() {
+        this.localBindMatrix.set(Utils.fromRotationTranslationScale(this.bindRotation, this.bindPosition,
+                this.bindScale));
         if (this.parent == null) {
-            this.worldMatrix.set(this.localMatrix);
+            this.worldBindMatrix.set(this.localBindMatrix);
         } else {
-            this.parent.getWorldMatrix().mul(this.localMatrix, this.worldMatrix);
+            this.parent.getWorldBindMatrix().mul(this.localBindMatrix, this.worldBindMatrix);
         }
-        this.worldMatrix.invert(this.inverseBindposeMatrix);
+        this.worldBindMatrix.invert(this.inverseBindMatrix);
     }
 
     Map<Integer, Float> getVertexWeights() {
@@ -99,15 +103,27 @@ public class Bone {
         return bindScale;
     }
 
-    public Matrix4f getLocalMatrix() {
-        return new Matrix4f(localMatrix);
+    public Matrix4f getLocalBindMatrix() {
+        return localBindMatrix;
     }
 
-    public Matrix4f getWorldMatrix() {
-        return new Matrix4f(worldMatrix);
+    public Matrix4f getWorldBindMatrix() {
+        return worldBindMatrix;
     }
 
-    public Matrix4f getInverseBindposeMatrix() {
-        return new Matrix4f(inverseBindposeMatrix);
+    public Matrix4f getInverseBindMatrix() {
+        return inverseBindMatrix;
+    }
+
+    public Matrix4f getOffsetMatrix() {
+        return offsetMatrix;
+    }
+
+    @Override
+    public String toString() {
+        return "Bone{" +
+                "name='" + name + '\'' +
+                ", index=" + index +
+                '}';
     }
 }

@@ -5,6 +5,7 @@ import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 import pl.pateman.skeletal.Clearable;
+import pl.pateman.skeletal.Utils;
 
 /**
  * Created by pateman.
@@ -12,18 +13,20 @@ import pl.pateman.skeletal.Clearable;
 public class AbstractEntity implements Clearable {
     private final Vector3f translation;
     private final Quaternionf rotation;
+    private final Vector3f scale;
 
     private final Matrix4f transformation;
 
     public AbstractEntity() {
         this.translation = new Vector3f();
         this.rotation = new Quaternionf();
+        this.scale = new Vector3f().set(1.0f, 1.0f, 1.0f);
 
-        this.transformation = new Matrix4f().identity();
+        this.transformation = new Matrix4f();
     }
 
     protected void updateTransformationMatrix() {
-        this.transformation.set(this.rotation).translate(this.translation);
+        this.transformation.set(Utils.fromRotationTranslationScale(this.rotation, this.translation, this.scale));
     }
 
     public final void translate(final Vector3f offset) {
@@ -46,8 +49,24 @@ public class AbstractEntity implements Clearable {
         this.updateTransformationMatrix();
     }
 
+    public final void scale(final Vector3f offset) {
+        this.scale.add(offset);
+        this.updateTransformationMatrix();
+    }
+
+    public final void scale(float x, float y, float z) {
+        this.scale.add(x, y, z);
+        this.updateTransformationMatrix();
+    }
+
+    public final void transform(final Quaternionf rotation, final Vector3f translation, final Vector3f scale) {
+        this.rotation.mul(rotation);
+        this.translation.add(translation);
+        this.scale(scale);
+    }
+
     public Vector3f getTranslation() {
-        return new Vector3f(translation);
+        return translation;
     }
 
     public void setTranslation(final Vector3f translation) {
@@ -56,7 +75,7 @@ public class AbstractEntity implements Clearable {
     }
 
     public Quaternionf getRotation() {
-        return new Quaternionf(rotation);
+        return rotation;
     }
 
     public void setRotation(final Quaternionf rotation) {
@@ -64,8 +83,23 @@ public class AbstractEntity implements Clearable {
         this.updateTransformationMatrix();
     }
 
+    public Vector3f getScale() {
+        return scale;
+    }
+
+    public void setScale(final Vector3f scale) {
+        this.scale.set(scale);
+        this.updateTransformationMatrix();
+    }
+
     public Matrix4f getTransformation() {
-        return new Matrix4f(transformation);
+        return transformation;
+    }
+
+    public void setTransformation(final Quaternionf rotation, final Vector3f translation, final Vector3f scale) {
+        this.rotation.set(rotation);
+        this.translation.set(translation);
+        this.setScale(scale);
     }
 
     public Vector3f getDirection() {

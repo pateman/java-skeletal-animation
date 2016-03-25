@@ -4,12 +4,11 @@ import com.thoughtworks.xstream.XStream;
 import com.thoughtworks.xstream.io.naming.NoNameCoder;
 import com.thoughtworks.xstream.io.xml.XppDriver;
 import org.joml.AxisAngle4f;
+import org.joml.Quaternionf;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 import pl.pateman.skeletal.Utils;
-import pl.pateman.skeletal.mesh.Bone;
-import pl.pateman.skeletal.mesh.Mesh;
-import pl.pateman.skeletal.mesh.MeshSkinningInfo;
+import pl.pateman.skeletal.mesh.*;
 
 import java.io.IOException;
 
@@ -24,6 +23,11 @@ public final class OgreXMLImporter {
         this.xStream.ignoreUnknownElements();
         this.xStream.processAnnotations(OgreXMLMesh.class);
         this.xStream.processAnnotations(OgreXMLSkeleton.class);
+    }
+
+    private Quaternionf quaternionFromRotation(final OgreXMLSkeleton.Rotation rotation) {
+        return new Quaternionf().set(new AxisAngle4f(rotation.angle, rotation.axis.x, rotation.axis.y, rotation.axis.z).
+                normalize());
     }
 
     public Mesh load(final String meshFileResource) throws IOException {
@@ -71,8 +75,7 @@ public final class OgreXMLImporter {
                     skeletonBone.getBindPosition().set(bone.position.x, bone.position.y, bone.position.z);
                 }
                 if (bone.rotation != null) {
-                    skeletonBone.getBindRotation().set(new AxisAngle4f(bone.rotation.angle, bone.rotation.axis.x,
-                            bone.rotation.axis.y, bone.rotation.axis.z).normalize());
+                    skeletonBone.getBindRotation().set(this.quaternionFromRotation(bone.rotation));
                 }
                 if (bone.scale != null) {
                     skeletonBone.getBindScale().set(bone.scale.x, bone.scale.y, bone.scale.z);
@@ -117,6 +120,33 @@ public final class OgreXMLImporter {
                 }
                 bone.setParent(parent);
                 parent.getChildren().add(bone);
+            }
+
+            //  Process animations.
+            for (OgreXMLSkeleton.Animation animation : skeleton.animations) {
+                final Animation anim = new Animation(animation.name, animation.length);
+
+                //  Create animation tracks.
+                for (OgreXMLSkeleton.Track track : animation.tracks) {
+                    final Bone trackBone = mesh.getSkeleton().getBoneByName(track.boneName);
+                    if (trackBone == null) {
+                        throw new IOException("Missing animation bone " + track.boneName);
+                    }
+
+                    //  Load keyframes for the animation track.
+                    final AnimationTrack animationTrack = new AnimationTrack(trackBone);
+                    for (OgreXMLSkeleton.Keyframe keyframe : track.keyframes) {
+                        final AnimationKeyframe animationKeyframe = new AnimationKeyframe(keyframe.time,
+                                new Vector3f(keyframe.translation.x, keyframe.translation.y, keyframe.translation.z),
+                                this.quaternionFromRotation(keyframe.rotation));
+                        animationTrack.getKeyframes().add(animationKeyframe);
+                    }
+
+                    anim.setFrameCount(Math.max(anim.getFrameCount(), animationTrack.getKeyframes().size()));
+                    anim.getTracks().add(animationTrack);
+                }
+
+                mesh.getAnimations().add(anim);
             }
 
             //  Now that the skeleton is fully processed, calculate the bind matrices and arrange the bones.

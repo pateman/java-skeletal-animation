@@ -3,6 +3,7 @@ package pl.pateman.skeletal.entity.mesh;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
+import pl.pateman.skeletal.TempVars;
 import pl.pateman.skeletal.Utils;
 import pl.pateman.skeletal.mesh.*;
 
@@ -41,27 +42,30 @@ public final class AnimationController {
     }
 
     private void animateBone(final Bone bone) {
+        final TempVars tempVars = TempVars.get();
+
         bone.getOffsetMatrix().identity();
         final AnimationTrack track = this.currentAnimation.getTracks().get(bone.getIndex());
 
-        final Vector3f pos = new Vector3f(bone.getBindPosition());
+        final Vector3f pos = tempVars.vect3d1.set(bone.getBindPosition());
 
         final AnimationKeyframe keyframe = track.getKeyframes().get(this.currentFrame % track.getKeyframes().size());
         final AnimationKeyframe keyframe1 = track.getKeyframes().get((this.currentFrame + 1) % track.getKeyframes().size());
 
         final Quaternionf frameRot = keyframe.getRotation().slerp(keyframe1.getRotation(), this.currentLerp,
-                new Quaternionf());
+                tempVars.quat1);
         final Vector3f framePos = keyframe.getTranslation().lerp(keyframe1.getTranslation(), this.currentLerp,
-                new Vector3f());
+                tempVars.vect3d2);
 
         pos.add(framePos);
-        final Quaternionf rot = bone.getBindRotation().mul(frameRot, new Quaternionf());
+        final Quaternionf rot = bone.getBindRotation().mul(frameRot, tempVars.quat2);
 
-        bone.getOffsetMatrix().set(Utils.fromRotationTranslationScale(rot, pos, bone.getBindScale()));
+        Utils.fromRotationTranslationScale(bone.getOffsetMatrix(), rot, pos, bone.getBindScale());
         if (bone.getParent() != null) {
             bone.getParent().getOffsetMatrix().mul(bone.getOffsetMatrix(), bone.getOffsetMatrix());
         }
 
+        tempVars.release();
         for (Bone child : bone.getChildren()) {
             this.animateBone(child);
         }

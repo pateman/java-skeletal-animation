@@ -10,7 +10,7 @@ import java.util.List;
  */
 public final class MeshSkinningInfo {
     public static final int MAX_BONES_PER_VERTEX = 3;
-    public static final int MAX_BONES = 100;
+    public static final int MAX_BONES = 60;
 
     private final List<Vector3f> boneIndices;
     private final List<Vector3f> boneWeights;

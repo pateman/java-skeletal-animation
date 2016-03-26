@@ -19,7 +19,6 @@ import pl.pateman.skeletal.shader.Shader;
 import pl.pateman.skeletal.texture.Texture;
 import pl.pateman.skeletal.texture.TextureLoader;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import static org.lwjgl.glfw.GLFW.*;
@@ -37,6 +36,7 @@ public class Main {
     private GLFWKeyCallback keyCallback;
     private long window;
     private double lastTime;
+    private float deltaTime;
 
     private CameraEntity camera;
     private Program meshProgram;
@@ -54,6 +54,16 @@ public class Main {
             glfwDestroyWindow(window);
             this.keyCallback.release();
         } finally {
+            if (this.meshEntity != null) {
+                this.meshEntity.clearAndDestroy();
+            }
+            if (this.meshTexture != null) {
+                this.meshTexture.clearAndDestroy();
+            }
+            if (this.meshProgram != null) {
+                this.meshProgram.clearAndDestroy();
+            }
+
             glfwTerminate();
             this.errorCallback.release();
         }
@@ -61,8 +71,9 @@ public class Main {
 
     private void initWindow() {
         glfwSetErrorCallback(this.errorCallback = GLFWErrorCallback.createPrint(System.err));
-        if (glfwInit() != GLFW_TRUE)
+        if (glfwInit() != GLFW_TRUE) {
             throw new IllegalStateException("Unable to initialize GLFW");
+        }
 
         glfwDefaultWindowHints();
         glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
@@ -151,20 +162,22 @@ public class Main {
     private void updateScene() {
         final double currentTime = glfwGetTime();
 
-        final float delta = (float) (currentTime - this.lastTime);
+        this.deltaTime = (float) (currentTime - this.lastTime);
         this.lastTime = currentTime;
 
-        this.meshEntity.getAnimationController().stepAnimation(delta);
+        this.meshEntity.getAnimationController().stepAnimation(this.deltaTime);
         this.skeletonMeshEntity.applyAnimation(this.meshEntity.getMeshRenderer().getBoneMatrices());
     }
 
     private void drawScene() {
+        final TempVars tempVars = TempVars.get();
+
         //  Draw the skeleton mesh first.
         this.skeletonMeshEntity.drawSkeletonMesh(this.camera.getViewMatrix(), this.camera.getProjectionMatrix());
 
         //  Prepare the model-view matrix.
         final Matrix4f modelViewMatrix = this.camera.getViewMatrix().mul(this.meshEntity.getTransformation(),
-                new Matrix4f());
+                tempVars.tempMat4x41);
 
         //  Start rendering.
         final MeshRenderer renderer = this.meshEntity.getMeshRenderer();
@@ -180,15 +193,15 @@ public class Main {
         this.meshProgram.setUniform1(Utils.USETEXTURING_UNIFORM, 1);
 
         //  Apply the inverse bind transform to bone matrices.
-        final List<Matrix4f> boneMatrices = new ArrayList<>(renderer.getBoneMatrices());
+        final List<Matrix4f> boneMatrices = renderer.getBoneMatrices();
         for (int i = 0; i < this.meshEntity.getMesh().getSkeleton().getBones().size(); i++) {
             final Bone bone = this.meshEntity.getMesh().getSkeleton().getBoneByIndex(i);
-            final Matrix4f boneMatrix = boneMatrices.get(i);
+            final Matrix4f boneMatrix = tempVars.boneMatricesList.get(i).set(boneMatrices.get(i));
 
             boneMatrix.mul(bone.getInverseBindMatrix(), boneMatrix);
         }
-        this.meshProgram.setUniformMatrix4Array(Utils.BONES_UNIFORM, boneMatrices.size(),
-                Utils.matrices4fToBuffer(boneMatrices));
+        this.meshProgram.setUniformMatrix4Array(Utils.BONES_UNIFORM, tempVars.boneMatricesList.size(),
+                Utils.matrices4fToBuffer(tempVars.boneMatricesList));
 
         //  Draw the entity.
         renderer.renderMesh();
@@ -196,6 +209,8 @@ public class Main {
         //  Finalize rendering.
         renderer.finalizeRendering();
         this.meshTexture.unbind();
+
+        tempVars.release();
     }
 
     private void loop() {
@@ -220,10 +235,6 @@ public class Main {
             glfwSwapBuffers(this.window);
             glfwPollEvents();
         }
-
-        this.meshEntity.clearAndDestroy();
-        this.meshTexture.clearAndDestroy();
-        this.meshProgram.clearAndDestroy();
     }
 
     public static void main(String[] args) {

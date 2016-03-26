@@ -7,6 +7,7 @@ import org.joml.AxisAngle4f;
 import org.joml.Quaternionf;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
+import pl.pateman.skeletal.TempVars;
 import pl.pateman.skeletal.Utils;
 import pl.pateman.skeletal.mesh.*;
 
@@ -152,6 +153,9 @@ public final class OgreXMLImporter {
             //  Now that the skeleton is fully processed, calculate the bind matrices and arrange the bones.
             mesh.getSkeleton().calculateBindMatrices();
             mesh.getSkeleton().arrangeBones();
+
+            //  Create the pallete skinning buffer for passing animation matrices to the shader.
+            TempVars.initializeStorageForSkinning(mesh.getSkeleton().getBones().size());
         }
 
         return mesh;

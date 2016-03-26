@@ -52,8 +52,7 @@ public class Bone {
     }
 
     void calculateBindMatrices() {
-        this.localBindMatrix.set(Utils.fromRotationTranslationScale(this.bindRotation, this.bindPosition,
-                this.bindScale));
+        Utils.fromRotationTranslationScale(this.localBindMatrix, this.bindRotation, this.bindPosition, this.bindScale);
         if (this.parent == null) {
             this.worldBindMatrix.set(this.localBindMatrix);
         } else {
@@ -64,11 +63,6 @@ public class Bone {
 
     Map<Integer, Float> getVertexWeights() {
         return vertexWeights;
-    }
-
-    public float getWeight(int vertexId) {
-        final Float weight = this.vertexWeights.get(vertexId);
-        return weight == null ? Float.NaN : weight;
     }
 
     public String getName() {

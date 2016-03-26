@@ -4,6 +4,7 @@ import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 import org.lwjgl.opengl.GL20;
+import pl.pateman.skeletal.TempVars;
 import pl.pateman.skeletal.Utils;
 import pl.pateman.skeletal.entity.mesh.MeshRenderer;
 import pl.pateman.skeletal.mesh.Bone;
@@ -98,8 +99,10 @@ public class SkeletonMeshEntity extends AbstractEntity {
     }
 
     public void drawSkeletonMesh(final Matrix4f viewMatrix, final Matrix4f projectionMatrix) {
-        final Matrix4f worldTrans = new Matrix4f();
-        final Matrix4f modelViewMatrix = new Matrix4f();
+        final TempVars tempVars = TempVars.get();
+
+        final Matrix4f worldTrans = tempVars.tempMat4x41;
+        final Matrix4f modelViewMatrix = tempVars.tempMat4x42;
 
         for (CubeMeshEntity joint : this.joints) {
             final MeshRenderer meshRenderer = joint.getMeshRenderer();
@@ -118,6 +121,8 @@ public class SkeletonMeshEntity extends AbstractEntity {
             meshRenderer.renderMesh();
             meshRenderer.finalizeRendering();
         }
+
+        tempVars.release();
     }
 
     private class CubeMeshEntity extends MeshEntity {

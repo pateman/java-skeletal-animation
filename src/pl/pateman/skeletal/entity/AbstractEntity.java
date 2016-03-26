@@ -26,7 +26,7 @@ public class AbstractEntity implements Clearable {
     }
 
     protected void updateTransformationMatrix() {
-        this.transformation.set(Utils.fromRotationTranslationScale(this.rotation, this.translation, this.scale));
+        Utils.fromRotationTranslationScale(this.transformation, this.rotation, this.translation, this.scale);
     }
 
     public final void translate(final Vector3f offset) {

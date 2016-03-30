@@ -221,6 +221,7 @@ public class Main {
 
         this.initScene();
         this.meshEntity.getAnimationController().switchToAnimation("run");
+        this.meshEntity.getAnimationController().setSpeed(1.5f);
         this.lastTime = glfwGetTime();
 
         while (glfwWindowShouldClose(this.window) == GLFW_FALSE) {

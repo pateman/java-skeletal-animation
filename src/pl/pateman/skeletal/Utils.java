@@ -1,7 +1,11 @@
 package pl.pateman.skeletal;
 
-import org.joml.*;
+import org.joml.Matrix4f;
+import org.joml.Quaternionf;
+import org.joml.Vector2f;
+import org.joml.Vector3f;
 import org.lwjgl.BufferUtils;
+import pl.pateman.skeletal.entity.mesh.AnimationPlaybackMode;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -128,5 +132,28 @@ public final class Utils {
         }
 
         return vertexList;
+    }
+
+    public static float clampAnimationTime(final float animationTime, final float animationDuration,
+                                           final AnimationPlaybackMode playbackMode) {
+        if (animationTime == 0.0f) {
+            return 0.0f;
+        }
+
+        float animTime = animationTime;
+        switch (playbackMode) {
+            case LOOP:
+                animTime = animationTime % animationDuration;
+                break;
+            case ONCE:
+                animTime = animationTime > animationDuration ? animationDuration : animationTime;
+                break;
+        }
+
+        if (animTime < 0.0f) {
+            animTime = -animTime;
+        }
+
+        return animTime;
     }
 }

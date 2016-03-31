@@ -1,13 +1,14 @@
 package pl.pateman.skeletal.entity.mesh;
 
 import org.joml.Matrix4f;
-import org.joml.Quaternionf;
-import org.joml.Vector3f;
-import pl.pateman.skeletal.TempVars;
-import pl.pateman.skeletal.Utils;
-import pl.pateman.skeletal.mesh.*;
+import pl.pateman.skeletal.mesh.Animation;
+import pl.pateman.skeletal.mesh.Bone;
+import pl.pateman.skeletal.mesh.Mesh;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created by pateman.
@@ -19,21 +20,23 @@ public final class AnimationController {
 
     private final Mesh mesh;
     private final Map<String, Animation> animationMap;
+    private final Map<Animation, BoneAnimator> boneAnimatorMap;
 
-    private float lerpFactor;
-    private float speed;
-    private AnimationPlaybackMode playbackMode;
-
-    private Animation currentAnimation;
-    private float animTime;
+    private BoneAnimator currentAnimation;
     private final List<Matrix4f> animationMatrices;
 
     public AnimationController(Mesh mesh) {
         this.mesh = mesh;
 
+        //  Initialize the animation map and for each animation, create an animator.
         this.animationMap = new HashMap<>(this.mesh.getAnimations().size());
+        this.boneAnimatorMap = new HashMap<>(this.mesh.getAnimations().size());
         for (Animation animation : this.mesh.getAnimations()) {
             this.animationMap.put(animation.getName(), animation);
+
+            final BoneAnimator boneAnimator = new BoneAnimator(animation, DEFAULT_ANIMATION_PLAYBACK_MODE,
+                    DEFAULT_ANIMATION_SPEED, DEFAULT_LERP_FACTOR);
+            this.boneAnimatorMap.put(animation, boneAnimator);
         }
 
         //  Initialize animation matrices.
@@ -41,59 +44,11 @@ public final class AnimationController {
         for (Bone bone : this.mesh.getSkeleton().getBones()) {
             this.animationMatrices.add(bone.getOffsetMatrix());
         }
-
-        //  Set defaults.
-        this.lerpFactor = DEFAULT_LERP_FACTOR;
-        this.speed = DEFAULT_ANIMATION_SPEED;
-        this.playbackMode = DEFAULT_ANIMATION_PLAYBACK_MODE;
     }
 
-    private void animateBone(final Bone bone) {
-        final TempVars tempVars = TempVars.get();
-
-        //  Basing on the animation's current time, calculate the frames for interpolation.
-        final AnimationTrack track = this.currentAnimation.getTracks().get(bone.getIndex());
-        final int lastFrame = track.getKeyframes().size() - 1;
-        int startFrame = 0;
-        int endFrame = 1;
-        if (this.animTime >= 0.0f && lastFrame != 0) {
-            //  We're on the last frame.
-            if (this.animTime >= track.getKeyframes().get(lastFrame).getTime()) {
-                startFrame = endFrame = lastFrame;
-            } else {
-                //  Any frame between the start and the end.
-                for (int i = 0; i < lastFrame && track.getKeyframes().get(i).getTime() < this.animTime; i++) {
-                    startFrame = i;
-                    endFrame = i + 1;
-                }
-            }
-        } else {
-            //  Just in case.
-            startFrame = endFrame = 0;
-        }
-
-        bone.getOffsetMatrix().identity();
-        final Vector3f pos = tempVars.vect3d1.set(bone.getBindPosition());
-
-        final AnimationKeyframe keyframe = track.getKeyframes().get(startFrame);
-        final AnimationKeyframe keyframe1 = track.getKeyframes().get(endFrame);
-
-        final Quaternionf frameRot = keyframe.getRotation().slerp(keyframe1.getRotation(), this.lerpFactor,
-                tempVars.quat1);
-        final Vector3f framePos = keyframe.getTranslation().lerp(keyframe1.getTranslation(), this.lerpFactor,
-                tempVars.vect3d2);
-
-        pos.add(framePos);
-        final Quaternionf rot = bone.getBindRotation().mul(frameRot, tempVars.quat2);
-
-        Utils.fromRotationTranslationScale(bone.getOffsetMatrix(), rot, pos, bone.getBindScale());
-        if (bone.getParent() != null) {
-            bone.getParent().getOffsetMatrix().mul(bone.getOffsetMatrix(), bone.getOffsetMatrix());
-        }
-
-        tempVars.release();
-        for (Bone child : bone.getChildren()) {
-            this.animateBone(child);
+    private void checkIfAnimationIsSet() throws IllegalStateException {
+        if (this.currentAnimation == null) {
+            throw new IllegalStateException("No animation is currently set.");
         }
     }
 
@@ -103,8 +58,8 @@ public final class AnimationController {
             throw new IllegalArgumentException("Unknown animation " + animation);
         }
 
-        this.currentAnimation = destAnim;
-        this.animTime = 0.0f;
+        this.currentAnimation = this.boneAnimatorMap.get(destAnim);
+        this.currentAnimation.resetAnimator();
     }
 
     public void stepAnimation(float deltaTime) {
@@ -112,10 +67,7 @@ public final class AnimationController {
             return;
         }
 
-        this.animateBone(this.mesh.getSkeleton().getRootBone());
-
-        this.animTime += deltaTime * this.speed;
-        this.animTime = Utils.clampAnimationTime(this.animTime, this.currentAnimation.getLength(), this.playbackMode);
+        this.currentAnimation.animate(this.mesh.getSkeleton().getRootBone(), deltaTime);
     }
 
     public List<Matrix4f> getAnimationMatrices() {
@@ -123,33 +75,38 @@ public final class AnimationController {
     }
 
     public Animation getCurrentAnimation() {
-        return currentAnimation;
+        this.checkIfAnimationIsSet();
+        return this.currentAnimation.getAnimation();
     }
 
     public float getLerpFactor() {
-        return lerpFactor;
+        this.checkIfAnimationIsSet();
+        return this.currentAnimation.getLerpFactor();
     }
 
     public void setLerpFactor(float lerpFactor) {
-        this.lerpFactor = lerpFactor;
-        this.animTime = 0.0f;
+        this.checkIfAnimationIsSet();
+
+        this.currentAnimation.setLerpFactor(lerpFactor);
     }
 
     public float getSpeed() {
-        return speed;
+        this.checkIfAnimationIsSet();
+        return this.currentAnimation.getSpeed();
     }
 
     public void setSpeed(float speed) {
-        this.speed = speed;
-        this.animTime = 0.0f;
+        this.checkIfAnimationIsSet();
+        this.currentAnimation.setSpeed(speed);
     }
 
     public AnimationPlaybackMode getPlaybackMode() {
-        return playbackMode;
+        this.checkIfAnimationIsSet();
+        return this.currentAnimation.getPlaybackMode();
     }
 
     public void setPlaybackMode(AnimationPlaybackMode playbackMode) {
-        this.playbackMode = playbackMode;
-        this.animTime = 0.0f;
+        this.checkIfAnimationIsSet();
+        this.currentAnimation.setPlaybackMode(playbackMode);
     }
 }

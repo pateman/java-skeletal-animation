@@ -5,88 +5,53 @@ import org.joml.Vector3f;
 import pl.pateman.skeletal.TempVars;
 import pl.pateman.skeletal.Utils;
 import pl.pateman.skeletal.mesh.Animation;
-import pl.pateman.skeletal.mesh.AnimationKeyframe;
-import pl.pateman.skeletal.mesh.AnimationTrack;
 import pl.pateman.skeletal.mesh.Bone;
 
 /**
  * Created by pateman.
  */
 final class BoneAnimator {
-    private float lerpFactor;
     private float speed;
     private AnimationPlaybackMode playbackMode;
     private final Animation animation;
     private float animTime;
 
-    public BoneAnimator(final Animation animation, AnimationPlaybackMode playbackMode, float speed, float lerpFactor) {
+    public BoneAnimator(final Animation animation, AnimationPlaybackMode playbackMode, float speed) {
         this.animation = animation;
         this.playbackMode = playbackMode;
         this.speed = speed;
-        this.lerpFactor = lerpFactor;
     }
 
-    private static float clampAnimationTime(final float animationTime, final float animationDuration,
-                                           final AnimationPlaybackMode playbackMode) {
-        if (animationTime == 0.0f) {
-            return 0.0f;
-        }
-
-        float animTime = animationTime;
-        switch (playbackMode) {
-            case LOOP:
-                animTime = animationTime % animationDuration;
-                break;
-            case ONCE:
-                animTime = animationTime > animationDuration ? animationDuration : animationTime;
-                break;
-        }
-
-        if (animTime < 0.0f) {
-            animTime = -animTime;
-        }
-
-        return animTime;
-    }
-
-    private void animateBone(final Bone bone) {
+    private void animateBone(final Bone bone, final float lerpFactor, final BoneAnimator blendFrom) {
         final TempVars tempVars = TempVars.get();
-
-        //  Basing on the animation's current time, calculate the frames for interpolation.
-        final AnimationTrack track = this.animation.getTracks().get(bone.getIndex());
-        final int lastFrame = track.getKeyframes().size() - 1;
-        int startFrame = 0;
-        int endFrame = 1;
-        if (this.animTime >= 0.0f && lastFrame != 0) {
-            //  We're on the last frame.
-            if (this.animTime >= track.getKeyframes().get(lastFrame).getTime()) {
-                startFrame = endFrame = lastFrame;
-            } else {
-                //  Any frame between the start and the end.
-                for (int i = 0; i < lastFrame && track.getKeyframes().get(i).getTime() < this.animTime; i++) {
-                    startFrame = i;
-                    endFrame = i + 1;
-                }
-            }
-        } else {
-            //  Just in case.
-            startFrame = endFrame = 0;
-        }
 
         bone.getOffsetMatrix().identity();
         final Vector3f pos = tempVars.vect3d1.set(bone.getBindPosition());
+        final Quaternionf rot = tempVars.quat2.set(bone.getBindRotation());
 
-        final AnimationKeyframe keyframe = track.getKeyframes().get(startFrame);
-        final AnimationKeyframe keyframe1 = track.getKeyframes().get(endFrame);
+        //  Get the frame of the current animation.
+        final Quaternionf frameRot = tempVars.quat1;
+        final Vector3f framePos = tempVars.vect3d2;
+        BoneAnimatorUtils.getFrame(this, bone, lerpFactor, frameRot, framePos);
 
-        final Quaternionf frameRot = keyframe.getRotation().slerp(keyframe1.getRotation(), this.lerpFactor,
-                tempVars.quat1);
-        final Vector3f framePos = keyframe.getTranslation().lerp(keyframe1.getTranslation(), this.lerpFactor,
-                tempVars.vect3d2);
+        //  If there's an animation that we need to blend from...
+        if (blendFrom != null) {
+            final Quaternionf blendFrameRot = tempVars.quat3;
+            final Vector3f blendFramePos = tempVars.vect3d3;
 
-        pos.add(framePos);
-        final Quaternionf rot = bone.getBindRotation().mul(frameRot, tempVars.quat2);
+            //  ...get its frame...
+            BoneAnimatorUtils.getFrame(blendFrom, bone, lerpFactor, blendFrameRot, blendFramePos);
 
+            //  ...and interpolate between the current animation and the one we're blending from.
+            frameRot.slerp(blendFrameRot, 1.0f - lerpFactor, frameRot);
+            framePos.lerp(blendFramePos, 1.0f - lerpFactor, framePos);
+        }
+
+        //  Apply frame transformation to the bind pose.
+        pos.add(framePos, pos);
+        rot.mul(frameRot, rot);
+
+        //  Calculate the offset matrix.
         Utils.fromRotationTranslationScale(bone.getOffsetMatrix(), rot, pos, bone.getBindScale());
         if (bone.getParent() != null) {
             bone.getParent().getOffsetMatrix().mul(bone.getOffsetMatrix(), bone.getOffsetMatrix());
@@ -94,32 +59,27 @@ final class BoneAnimator {
 
         tempVars.release();
         for (Bone child : bone.getChildren()) {
-            this.animateBone(child);
+            this.animateBone(child, lerpFactor, blendFrom);
         }
+    }
+
+    public void stepAnimationTime(float deltaTime) {
+        this.animTime = BoneAnimatorUtils.clampAnimationTime(this.animTime + (deltaTime * this.speed),
+                this.animation.getLength(), this.playbackMode);
     }
 
     public void resetAnimator() {
         this.animTime = 0.0f;
     }
 
-    public void animate(final Bone rootBone, final float deltaTime) {
-        this.animateBone(rootBone);
-
-        this.animTime += deltaTime * this.speed;
-        this.animTime = BoneAnimator.clampAnimationTime(this.animTime, this.animation.getLength(), this.playbackMode);
+    public void animate(final Bone rootBone, final float deltaTime, final float lerpFactor,
+                        final BoneAnimator blendFrom) {
+        this.animateBone(rootBone, lerpFactor, blendFrom);
+        this.stepAnimationTime(deltaTime);
     }
 
     public Animation getAnimation() {
         return animation;
-    }
-
-    public float getLerpFactor() {
-        return lerpFactor;
-    }
-
-    public void setLerpFactor(float lerpFactor) {
-        this.lerpFactor = lerpFactor;
-        this.resetAnimator();
     }
 
     public float getSpeed() {
@@ -129,6 +89,10 @@ final class BoneAnimator {
     public void setSpeed(float speed) {
         this.speed = speed;
         this.resetAnimator();
+    }
+
+    public float getAnimTime() {
+        return animTime;
     }
 
     public AnimationPlaybackMode getPlaybackMode() {

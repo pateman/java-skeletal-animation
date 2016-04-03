@@ -188,6 +188,7 @@ public final class TempVars {
      */
     public final Vector3f vect3d1 = new Vector3f();
     public final Vector3f vect3d2 = new Vector3f();
+    public final Vector3f vect3d3 = new Vector3f();
 
     /**
      * General matrices.
@@ -201,4 +202,5 @@ public final class TempVars {
      */
     public final Quaternionf quat1 = new Quaternionf();
     public final Quaternionf quat2 = new Quaternionf();
+    public final Quaternionf quat3 = new Quaternionf();
 }

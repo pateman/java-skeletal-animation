@@ -91,6 +91,10 @@ public class Main {
                 if (key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE) {
                     glfwSetWindowShouldClose(window, GLFW_TRUE);
                 }
+                if (key == GLFW_KEY_0 && action == GLFW_RELEASE) {
+                    final String anim = Main.this.meshEntity.getAnimationController().getCurrentAnimation().getName();
+                    Main.this.meshEntity.getAnimationController().switchToAnimation(anim.equals("run") ? "Idle" : "run");
+                }
             }
         });
         GLFWVidMode vidmode = glfwGetVideoMode(glfwGetPrimaryMonitor());

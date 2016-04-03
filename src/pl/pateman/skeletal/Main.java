@@ -10,8 +10,10 @@ import org.lwjgl.opengl.GL20;
 import pl.pateman.skeletal.entity.CameraEntity;
 import pl.pateman.skeletal.entity.MeshEntity;
 import pl.pateman.skeletal.entity.SkeletonMeshEntity;
+import pl.pateman.skeletal.entity.mesh.animation.AnimationPlaybackMode;
 import pl.pateman.skeletal.entity.mesh.animation.BoneAnimationChannel;
 import pl.pateman.skeletal.entity.mesh.MeshRenderer;
+import pl.pateman.skeletal.mesh.Animation;
 import pl.pateman.skeletal.mesh.Bone;
 import pl.pateman.skeletal.mesh.Mesh;
 import pl.pateman.skeletal.ogrexml.OgreXMLImporter;
@@ -42,9 +44,12 @@ public class Main {
     private CameraEntity camera;
     private Program meshProgram;
     private MeshEntity meshEntity;
-    private BoneAnimationChannel animationChannel;
     private SkeletonMeshEntity skeletonMeshEntity;
     private Texture meshTexture;
+
+    private BoneAnimationChannel upperBodyChannel;
+    private BoneAnimationChannel lowerBodyChannel;
+    private String wholeBodyCurrentAnimation;
 
     public void run() {
         System.out.println("LWJGL " + Version.getVersion() + "!");
@@ -90,12 +95,26 @@ public class Main {
         glfwSetKeyCallback(this.window, this.keyCallback = new GLFWKeyCallback() {
             @Override
             public void invoke(long window, int key, int scancode, int action, int mods) {
-                if (key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE) {
-                    glfwSetWindowShouldClose(window, GLFW_TRUE);
-                }
-                if (key == GLFW_KEY_0 && action == GLFW_RELEASE) {
-                    final String anim = Main.this.animationChannel.getCurrentAnimation().getName();
-                    Main.this.animationChannel.switchToAnimation(anim.equals("run") ? "Idle" : "run");
+                if (action == GLFW_RELEASE) {
+                    switch (key) {
+                        //  Escape key.
+                        case GLFW_KEY_ESCAPE:
+                            glfwSetWindowShouldClose(window, GLFW_TRUE);
+                            break;
+                        //  '0' key.
+                        case GLFW_KEY_0:
+                            Main.this.upperBodyChannel.setPlaybackMode(AnimationPlaybackMode.LOOP);
+                            Main.this.wholeBodyCurrentAnimation = Main.this.wholeBodyCurrentAnimation.equals("run") ? "Idle" :
+                                    "run";
+                            Main.this.meshEntity.getAnimationController().switchToAnimation(Main.this.wholeBodyCurrentAnimation);
+                            break;
+                        //  '1' key
+                        case GLFW_KEY_1:
+                            Main.this.upperBodyChannel.setPlaybackMode(AnimationPlaybackMode.ONCE);
+                            Main.this.upperBodyChannel.switchToAnimation("alert");
+                            Main.this.lowerBodyChannel.switchToAnimation("run");
+                            break;
+                    }
                 }
             }
         });
@@ -150,9 +169,27 @@ public class Main {
             this.meshEntity.translate(0.25f, 0.0f, 0.0f);
             this.meshEntity.rotate(0.0f, (float) Math.toRadians(180.0f), 0.0f);
 
-            //  Create an animation channel.
-            this.animationChannel = this.meshEntity.getAnimationController().addAnimationChannel("Main");
-            this.animationChannel.addAllBones();
+            //  Print information about the mesh.
+            System.out.println("*** ANIMATIONS ***");
+            for (Animation animation : this.meshEntity.getMesh().getAnimations()) {
+                System.out.printf("%s (%d frames, %.4f length)\n", animation.getName(), animation.getFrameCount(),
+                        animation.getLength());
+            }
+            System.out.println("*** SKELETON ***");
+            System.out.println(this.meshEntity.getMesh().getSkeleton());
+
+            //  Create animation channels.
+            this.upperBodyChannel = this.meshEntity.getAnimationController().addAnimationChannel("Upper Body");
+            this.lowerBodyChannel = this.meshEntity.getAnimationController().addAnimationChannel("Lower Body");
+
+            this.lowerBodyChannel.addBone("Bip01");
+            this.lowerBodyChannel.addBone("Bip01 Footsteps");
+            this.lowerBodyChannel.addBone("Bip01 Pelvis");
+            this.lowerBodyChannel.addBone("Bip01 Spine");
+            this.lowerBodyChannel.addBonesTree("Bip01 L Thigh");
+            this.lowerBodyChannel.addBonesTree("Bip01 R Thigh");
+
+            this.upperBodyChannel.addBonesTree("Bip01 Spine1");
 
             //  Create the skeleton mesh.
             this.skeletonMeshEntity = new SkeletonMeshEntity(mesh.getSkeleton());
@@ -230,8 +267,12 @@ public class Main {
         glEnable(GL_TEXTURE_2D);
 
         this.initScene();
-        this.animationChannel.switchToAnimation("run");
-        this.animationChannel.setSpeed(1.5f);
+
+        this.wholeBodyCurrentAnimation = "run";
+        this.meshEntity.getAnimationController().switchToAnimation(this.wholeBodyCurrentAnimation);
+        this.upperBodyChannel.setSpeed(1.5f);
+        this.lowerBodyChannel.setSpeed(1.5f);
+
         this.lastTime = glfwGetTime();
 
         while (glfwWindowShouldClose(this.window) == GLFW_FALSE) {

@@ -63,4 +63,9 @@ public class Skeleton {
     public List<Bone> getBones() {
         return bones;
     }
+
+    @Override
+    public String toString() {
+        return this.getRootBone().toString();
+    }
 }

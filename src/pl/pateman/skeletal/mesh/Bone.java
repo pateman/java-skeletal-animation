@@ -113,11 +113,22 @@ public class Bone {
         return offsetMatrix;
     }
 
+    private String boneToString(final int depth) {
+        final StringBuilder stringBuilder = new StringBuilder();
+        for (int i = 0; i < depth; i++) {
+            stringBuilder.append(" ");
+        }
+
+        stringBuilder.append(this.name).append(" (ID: ").append(this.index).append(")\n");
+        for (Bone child : this.children) {
+            stringBuilder.append(child.boneToString(depth + 1));
+        }
+
+        return stringBuilder.toString();
+    }
+
     @Override
     public String toString() {
-        return "Bone{" +
-                "name='" + name + '\'' +
-                ", index=" + index +
-                '}';
+        return this.boneToString(0);
     }
 }

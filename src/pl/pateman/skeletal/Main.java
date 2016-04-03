@@ -10,6 +10,7 @@ import org.lwjgl.opengl.GL20;
 import pl.pateman.skeletal.entity.CameraEntity;
 import pl.pateman.skeletal.entity.MeshEntity;
 import pl.pateman.skeletal.entity.SkeletonMeshEntity;
+import pl.pateman.skeletal.entity.mesh.animation.BoneAnimationChannel;
 import pl.pateman.skeletal.entity.mesh.MeshRenderer;
 import pl.pateman.skeletal.mesh.Bone;
 import pl.pateman.skeletal.mesh.Mesh;
@@ -41,6 +42,7 @@ public class Main {
     private CameraEntity camera;
     private Program meshProgram;
     private MeshEntity meshEntity;
+    private BoneAnimationChannel animationChannel;
     private SkeletonMeshEntity skeletonMeshEntity;
     private Texture meshTexture;
 
@@ -92,8 +94,8 @@ public class Main {
                     glfwSetWindowShouldClose(window, GLFW_TRUE);
                 }
                 if (key == GLFW_KEY_0 && action == GLFW_RELEASE) {
-                    final String anim = Main.this.meshEntity.getAnimationController().getCurrentAnimation().getName();
-                    Main.this.meshEntity.getAnimationController().switchToAnimation(anim.equals("run") ? "Idle" : "run");
+                    final String anim = Main.this.animationChannel.getCurrentAnimation().getName();
+                    Main.this.animationChannel.switchToAnimation(anim.equals("run") ? "Idle" : "run");
                 }
             }
         });
@@ -147,6 +149,10 @@ public class Main {
             this.meshEntity.buildMesh();
             this.meshEntity.translate(0.25f, 0.0f, 0.0f);
             this.meshEntity.rotate(0.0f, (float) Math.toRadians(180.0f), 0.0f);
+
+            //  Create an animation channel.
+            this.animationChannel = this.meshEntity.getAnimationController().addAnimationChannel("Main");
+            this.animationChannel.addAllBones();
 
             //  Create the skeleton mesh.
             this.skeletonMeshEntity = new SkeletonMeshEntity(mesh.getSkeleton());
@@ -224,8 +230,8 @@ public class Main {
         glEnable(GL_TEXTURE_2D);
 
         this.initScene();
-        this.meshEntity.getAnimationController().switchToAnimation("run");
-        this.meshEntity.getAnimationController().setSpeed(1.5f);
+        this.animationChannel.switchToAnimation("run");
+        this.animationChannel.setSpeed(1.5f);
         this.lastTime = glfwGetTime();
 
         while (glfwWindowShouldClose(this.window) == GLFW_FALSE) {

@@ -1,4 +1,4 @@
-package pl.pateman.skeletal.entity.mesh;
+package pl.pateman.skeletal.entity.mesh.animation;
 
 /**
  * Created by pateman.

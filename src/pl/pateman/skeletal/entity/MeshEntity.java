@@ -1,6 +1,6 @@
 package pl.pateman.skeletal.entity;
 
-import pl.pateman.skeletal.entity.mesh.AnimationController;
+import pl.pateman.skeletal.entity.mesh.animation.AnimationController;
 import pl.pateman.skeletal.entity.mesh.MeshFilter;
 import pl.pateman.skeletal.entity.mesh.MeshRenderer;
 import pl.pateman.skeletal.mesh.Mesh;

@@ -2,6 +2,7 @@ package pl.pateman.skeletal.entity.mesh;
 
 import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL15;
+import pl.pateman.skeletal.entity.mesh.animation.AnimationController;
 import pl.pateman.skeletal.shader.Program;
 
 import java.util.List;

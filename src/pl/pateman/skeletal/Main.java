@@ -106,12 +106,14 @@ public class Main {
                             Main.this.upperBodyChannel.setPlaybackMode(AnimationPlaybackMode.LOOP);
                             Main.this.wholeBodyCurrentAnimation = Main.this.wholeBodyCurrentAnimation.equals("run") ? "Idle" :
                                     "run";
-                            Main.this.meshEntity.getAnimationController().switchToAnimation(Main.this.wholeBodyCurrentAnimation);
+
+                            Main.this.meshEntity.getAnimationController().switchToAnimation(
+                                    Main.this.wholeBodyCurrentAnimation);
                             break;
                         //  '1' key
                         case GLFW_KEY_1:
-                            Main.this.upperBodyChannel.setPlaybackMode(AnimationPlaybackMode.ONCE);
                             Main.this.upperBodyChannel.switchToAnimation("alert");
+                            Main.this.upperBodyChannel.setPlaybackMode(AnimationPlaybackMode.ONCE);
                             Main.this.lowerBodyChannel.switchToAnimation("run");
                             break;
                     }

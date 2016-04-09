@@ -80,6 +80,11 @@ public final class BoneAnimationChannel {
         //  If an animation is currently set, we need to blend from it.
         this.blendingAnimation = null;
         if (this.currentAnimation != null) {
+            //  If the animation that is being played right now is the same as the destination animation, bail out.
+            if (this.currentAnimation.getAnimation().equals(destAnim)) {
+                return;
+            }
+
             blendingTime = Math.min(blendingTime, this.currentAnimation.getAnimation().getLength() /
                     this.currentAnimation.getSpeed());
 

@@ -37,4 +37,25 @@ public final class Animation {
     public void setFrameCount(int frameCount) {
         this.frameCount = frameCount;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Animation animation = (Animation) o;
+
+        if (Float.compare(animation.length, length) != 0) return false;
+        if (frameCount != animation.frameCount) return false;
+        return name != null ? name.equals(animation.name) : animation.name == null;
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = name != null ? name.hashCode() : 0;
+        result = 31 * result + (length != +0.0f ? Float.floatToIntBits(length) : 0);
+        result = 31 * result + frameCount;
+        return result;
+    }
 }

@@ -19,6 +19,10 @@
 #include "3dsmaxport.h"
 
 #define WIN32_LEAN_AND_MEAN
+
 #include <windows.h>
+#include <string>
+#include <exception>
+#include <memory>
 
 extern HINSTANCE hInstance;

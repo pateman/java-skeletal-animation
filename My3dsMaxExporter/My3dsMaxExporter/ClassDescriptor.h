@@ -1,3 +1,5 @@
+#pragma once
+
 #include "stdafx.h"
 #include "My3dsMaxExporter.h"
 

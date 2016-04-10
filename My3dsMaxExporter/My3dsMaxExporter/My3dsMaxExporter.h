@@ -1,5 +1,6 @@
 #pragma once
 #include "stdafx.h"
+#include "NamedPipe.h"
 
 class JSONExporter : public SceneExport {
 	int	ExtCount();
@@ -15,4 +16,8 @@ class JSONExporter : public SceneExport {
 
 	BOOL SupportsOptions(int ext, DWORD options);
 	int	DoExport(const TCHAR *name, ExpInterface *ei, Interface *i, BOOL suppressPrompts = FALSE, DWORD options = 0);
+private:
+	IGameScene* scene;
+	void processNode(IGameNode* node, Interface* coreInterface, NamedPipe* pipe);
+	void writeMatrix(const Matrix3 matrix, NamedPipe* pipe);
 };

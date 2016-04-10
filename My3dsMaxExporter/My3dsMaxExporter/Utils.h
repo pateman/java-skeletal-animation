@@ -11,6 +11,8 @@ std::string string_format(const std::string fmt_str, ...);
 //	http://stackoverflow.com/a/27296/759049
 std::wstring s2ws(const std::string& s);
 
+std::string tchar2s(const TCHAR* str);
+
 //	http://stackoverflow.com/a/24315631/759049
 void replaceAll(std::string &str, const std::string& from, const std::string& to);
 

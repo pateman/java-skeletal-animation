@@ -31,6 +31,13 @@ std::wstring s2ws(const std::string& s) {
 	return r;
 }
 
+std::string tchar2s(const TCHAR* str) {
+	std::wstring asWideString(str);
+	std::string result(asWideString.begin(), asWideString.end());
+
+	return result;
+}
+
 void replaceAll(std::string &str, const std::string& from, const std::string& to) {
 	size_t start_pos = 0;
 	while ((start_pos = str.find(from, start_pos)) != std::string::npos) {

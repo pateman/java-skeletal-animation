@@ -9,6 +9,8 @@ import pl.pateman.my3dsmaxexporterclient.command.NodeGeometryDataCommand;
 import java.io.PrintWriter;
 import java.io.RandomAccessFile;
 
+import static pl.pateman.my3dsmaxexporterclient.Constants.*;
+
 /**
  * Created by pateman.
  */
@@ -16,10 +18,10 @@ public class My3dsMaxExporterClient {
     private static final CommandManager commandManager = new CommandManager();
 
     static {
-        commandManager.registerCommandHandler("BEGIN_NODE", new BeginNodeCommand());
-        commandManager.registerCommandHandler(new NodeDataCommand(), "NAME", "INDEX", "PARENT", "TYPE");
-        commandManager.registerCommandHandler(new NodeGeometryDataCommand(), "VERTEX", "NORMAL", "FACE", "TEXCOORD");
-        commandManager.registerCommandHandler("FINISH_NODE", new FinishNodeCommand());
+        commandManager.registerCommandHandler(BEGIN_NODE, new BeginNodeCommand());
+        commandManager.registerCommandHandler(new NodeDataCommand(), INDEX, NAME, PARENT, TYPE);
+        commandManager.registerCommandHandler(new NodeGeometryDataCommand(), VERTEX, NORMAL, FACE, TEXCOORD);
+        commandManager.registerCommandHandler(FINISH_NODE, new FinishNodeCommand());
     }
 
     public static void main(String[] args) {
@@ -36,7 +38,7 @@ public class My3dsMaxExporterClient {
                 //  the command though, check if the 3dsmax plugin hasn't issued the "END" command.
                 final String[] split = commandLine.split(" ");
 
-                if (split[0].equals("END")) {
+                if (split[0].equals(END)) {
                     //  If we're ending, serialize the context's node information to JSON and bail out.
                     final Gson gson = new Gson();
                     final String json = gson.toJson(commandContext.nodes);

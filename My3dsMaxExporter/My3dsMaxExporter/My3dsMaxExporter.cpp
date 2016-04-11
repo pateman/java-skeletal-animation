@@ -132,6 +132,56 @@ void JSONExporter::writeMatrix(const Matrix3 matrix, NamedPipe* pipe) {
 	pipe->writeToPipe(string_format("SCALE %.6f %.6f %.6f", scale.x, scale.y, scale.z));
 }
 
+void JSONExporter::processMesh(IGameNode* node, NamedPipe* pipe) {
+	IGameMesh* mesh = (IGameMesh*)node->GetIGameObject();
+
+	mesh->SetCreateOptimizedNormalList();
+	if (!mesh->InitializeData()) {
+		DebugPrint(TSTR(_T("Unable to initialize mesh data for object ")).Append(node->GetName()));
+		return;
+	}
+
+	//	Dump vertices.
+	int i;
+	int counter = mesh->GetNumberOfVerts();
+	pipe->writeToPipe(string_format("VERTEX_COUNT %d", counter));
+	for (i = 0; i < counter; i++) {
+		Point3 vertex;
+		mesh->GetVertex(i, vertex, true);
+
+		pipe->writeToPipe(string_format("VERTEX %.6f %.6f %.6f", vertex.x, vertex.y, vertex.z));
+	}
+
+	//	Dump normals.
+	counter = mesh->GetNumberOfNormals();
+	pipe->writeToPipe(string_format("NORMAL_COUNT %d", counter));
+	for (i = 0; i < counter; i++) {
+		Point3 normal;
+		mesh->GetNormal(i, normal, true);
+
+		pipe->writeToPipe(string_format("NORMAL %.6f %.6f %.6f", normal.x, normal.y, normal.z));
+	}
+
+	//	Dump triangles (faces, indices, you name it.)
+	counter = mesh->GetNumberOfFaces();
+	pipe->writeToPipe(string_format("FACE_COUNT %d", counter));
+	for (i = 0; i < counter; i++) {
+		FaceEx* face = mesh->GetFace(i);
+		
+		pipe->writeToPipe(string_format("FACE %d %d %d", face->vert[0], face->vert[1], face->vert[2]));
+	}
+
+	//	Dump texture coordinates.
+	counter = mesh->GetNumberOfTexVerts();
+	pipe->writeToPipe(string_format("TEXCOORD_COUNT %d", counter));
+	for (i = 0; i < counter; i++) {
+		Point2 texCoord;
+		mesh->GetTexVertex(i, texCoord);
+
+		pipe->writeToPipe(string_format("TEXCOORD %.6f %.6f", texCoord.x, texCoord.y));
+	}
+}
+
 void JSONExporter::processNode(IGameNode* node, Interface* coreInterface, NamedPipe* pipe) {
 	IGameObject* gameObject = node->GetIGameObject();
 	IGameObject::ObjectTypes gameObjectType = gameObject->GetIGameType();
@@ -151,9 +201,14 @@ void JSONExporter::processNode(IGameNode* node, Interface* coreInterface, NamedP
 
 		pipe->writeToPipe(string_format("TYPE %s", gameObjectType != IGameObject::ObjectTypes::IGAME_MESH ? "Bone" : "Mesh"));
 		
-		//	Transformation matrix (in world space.)
-		Matrix3 transformMatrix = node->GetWorldTM().ExtractMatrix3();
+		//	Transformation matrix (in local space.)
+		Matrix3 transformMatrix = node->GetLocalTM().ExtractMatrix3();
 		this->writeMatrix(transformMatrix, pipe);
+
+		//	Process the node according to its type.
+		if (gameObjectType == IGameObject::ObjectTypes::IGAME_MESH) {
+			this->processMesh(node, pipe);
+		}
 
 		pipe->writeToPipe("FINISH_NODE");
 	}

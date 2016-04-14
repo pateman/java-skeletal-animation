@@ -1,5 +1,7 @@
 package pl.pateman.my3dsmaxexporterclient;
 
+import org.joml.Quaternionf;
+import org.joml.Vector3f;
 import pl.pateman.skeletal.mesh.Mesh;
 
 import java.util.HashMap;
@@ -25,5 +27,8 @@ public final class CommandContext {
         public String nodeType;
         public Integer index;
         public Integer parentIndex;
+        public Vector3f translation;
+        public Quaternionf rotation;
+        public Vector3f scale;
     }
 }

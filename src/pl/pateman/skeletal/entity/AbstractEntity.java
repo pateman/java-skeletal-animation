@@ -65,6 +65,10 @@ public class AbstractEntity implements Clearable {
         this.scale(scale);
     }
 
+    public final void forceTransformationUpdate() {
+        this.updateTransformationMatrix();
+    }
+
     public Vector3f getTranslation() {
         return translation;
     }

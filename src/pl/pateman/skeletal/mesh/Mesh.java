@@ -72,6 +72,10 @@ public class Mesh {
         return skinningInfo;
     }
 
+    public boolean hasSkeleton() {
+        return !this.skeleton.getBones().isEmpty();
+    }
+
     public List<Vector3f> getVertices() {
         return vertices;
     }

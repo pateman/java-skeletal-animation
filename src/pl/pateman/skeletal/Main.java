@@ -1,6 +1,7 @@
 package pl.pateman.skeletal;
 
 import org.joml.Matrix4f;
+import org.joml.Vector3f;
 import org.lwjgl.Version;
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.glfw.GLFWKeyCallback;
@@ -10,13 +11,12 @@ import org.lwjgl.opengl.GL20;
 import pl.pateman.skeletal.entity.CameraEntity;
 import pl.pateman.skeletal.entity.MeshEntity;
 import pl.pateman.skeletal.entity.SkeletonMeshEntity;
+import pl.pateman.skeletal.entity.mesh.MeshRenderer;
 import pl.pateman.skeletal.entity.mesh.animation.AnimationPlaybackMode;
 import pl.pateman.skeletal.entity.mesh.animation.BoneAnimationChannel;
-import pl.pateman.skeletal.entity.mesh.MeshRenderer;
+import pl.pateman.skeletal.json.JSONImporter;
 import pl.pateman.skeletal.mesh.Animation;
 import pl.pateman.skeletal.mesh.Bone;
-import pl.pateman.skeletal.mesh.Mesh;
-import pl.pateman.skeletal.ogrexml.OgreXMLImporter;
 import pl.pateman.skeletal.shader.Program;
 import pl.pateman.skeletal.shader.Shader;
 import pl.pateman.skeletal.texture.Texture;
@@ -162,14 +162,13 @@ public class Main {
             this.meshTexture = textureLoader.load("test_m.jpg");
 
             //  Load the mesh.
-            final OgreXMLImporter importer = new OgreXMLImporter();
-            final Mesh mesh = importer.load("test.mesh.xml");
-            this.meshEntity = new MeshEntity();
-            this.meshEntity.setMesh(mesh);
+            final MeshImporter importer = new JSONImporter();
+            this.meshEntity = importer.load("teapot.json");
             this.meshEntity.setShaderProgram(this.meshProgram);
             this.meshEntity.buildMesh();
             this.meshEntity.translate(0.25f, 0.0f, 0.0f);
             this.meshEntity.rotate(0.0f, (float) Math.toRadians(180.0f), 0.0f);
+            this.meshEntity.setScale(new Vector3f(0.25f, 0.25f, 0.25f));
 
             //  Print information about the mesh.
             System.out.println("*** ANIMATIONS ***");
@@ -184,23 +183,25 @@ public class Main {
             this.upperBodyChannel = this.meshEntity.getAnimationController().addAnimationChannel("Upper Body");
             this.lowerBodyChannel = this.meshEntity.getAnimationController().addAnimationChannel("Lower Body");
 
-            this.lowerBodyChannel.addBone("Bip01");
-            this.lowerBodyChannel.addBone("Bip01 Footsteps");
-            this.lowerBodyChannel.addBone("Bip01 Pelvis");
-            this.lowerBodyChannel.addBone("Bip01 Spine");
-            this.lowerBodyChannel.addBonesTree("Bip01 L Thigh");
-            this.lowerBodyChannel.addBonesTree("Bip01 R Thigh");
+            if (this.meshEntity.getMesh().hasSkeleton()) {
+                this.lowerBodyChannel.addBone("Bip01");
+                this.lowerBodyChannel.addBone("Bip01 Footsteps");
+                this.lowerBodyChannel.addBone("Bip01 Pelvis");
+                this.lowerBodyChannel.addBone("Bip01 Spine");
+                this.lowerBodyChannel.addBonesTree("Bip01 L Thigh");
+                this.lowerBodyChannel.addBonesTree("Bip01 R Thigh");
 
-            this.upperBodyChannel.addBonesTree("Bip01 Spine1");
+                this.upperBodyChannel.addBonesTree("Bip01 Spine1");
+            }
 
             //  Create the skeleton mesh.
-            this.skeletonMeshEntity = new SkeletonMeshEntity(mesh.getSkeleton());
+            this.skeletonMeshEntity = new SkeletonMeshEntity(this.meshEntity.getMesh().getSkeleton());
             this.skeletonMeshEntity.translate(-0.25f, 0.0f, 0.0f);
             this.skeletonMeshEntity.rotate(0.0f, (float) Math.toRadians(180.0f), 0.0f);
 
             //  Setup the camera.
             this.camera = new CameraEntity();
-            this.camera.translate(0.0f, 0.2f, -0.55f);
+            this.camera.translate(0.0f, 0.2f, -30f);
             this.camera.getCameraProjection().setViewport(WINDOW_WIDTH, WINDOW_HEIGHT);
             this.camera.updateProjectionMatrix();
         } catch (Exception e) {
@@ -238,19 +239,23 @@ public class Main {
         this.meshProgram.setUniformMatrix4(Utils.PROJECTION_UNIFORM, Utils.matrix4fToBuffer(this.camera.
                 getProjectionMatrix()));
         this.meshProgram.setUniform1(Utils.TEXTURE_UNIFORM, 0);
-        this.meshProgram.setUniform1(Utils.USESKINNING_UNIFORM, 1);
-        this.meshProgram.setUniform1(Utils.USETEXTURING_UNIFORM, 1);
+        this.meshProgram.setUniform1(Utils.USETEXTURING_UNIFORM, 0);
+        if (this.meshEntity.getMesh().hasSkeleton()) {
+            this.meshProgram.setUniform1(Utils.USESKINNING_UNIFORM, 1);
 
-        //  Apply the inverse bind transform to bone matrices.
-        final List<Matrix4f> boneMatrices = renderer.getBoneMatrices();
-        for (int i = 0; i < this.meshEntity.getMesh().getSkeleton().getBones().size(); i++) {
-            final Bone bone = this.meshEntity.getMesh().getSkeleton().getBoneByIndex(i);
-            final Matrix4f boneMatrix = tempVars.boneMatricesList.get(i).set(boneMatrices.get(i));
+            //  Apply the inverse bind transform to bone matrices.
+            final List<Matrix4f> boneMatrices = renderer.getBoneMatrices();
+            for (int i = 0; i < this.meshEntity.getMesh().getSkeleton().getBones().size(); i++) {
+                final Bone bone = this.meshEntity.getMesh().getSkeleton().getBoneByIndex(i);
+                final Matrix4f boneMatrix = tempVars.boneMatricesList.get(i).set(boneMatrices.get(i));
 
-            boneMatrix.mul(bone.getInverseBindMatrix(), boneMatrix);
+                boneMatrix.mul(bone.getInverseBindMatrix(), boneMatrix);
+            }
+            this.meshProgram.setUniformMatrix4Array(Utils.BONES_UNIFORM, tempVars.boneMatricesList.size(),
+                    Utils.matrices4fToBuffer(tempVars.boneMatricesList));
+        } else {
+            this.meshProgram.setUniform1(Utils.USESKINNING_UNIFORM, 0);
         }
-        this.meshProgram.setUniformMatrix4Array(Utils.BONES_UNIFORM, tempVars.boneMatricesList.size(),
-                Utils.matrices4fToBuffer(tempVars.boneMatricesList));
 
         //  Draw the entity.
         renderer.renderMesh();
@@ -272,8 +277,10 @@ public class Main {
 
         this.wholeBodyCurrentAnimation = "run";
         this.meshEntity.getAnimationController().switchToAnimation(this.wholeBodyCurrentAnimation);
-        this.upperBodyChannel.setSpeed(1.5f);
-        this.lowerBodyChannel.setSpeed(1.5f);
+        if (this.meshEntity.getMesh().hasSkeleton()) {
+            this.upperBodyChannel.setSpeed(1.5f);
+            this.lowerBodyChannel.setSpeed(1.5f);
+        }
 
         this.lastTime = glfwGetTime();
 

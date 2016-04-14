@@ -72,6 +72,10 @@ public final class BoneAnimationChannel {
     }
 
     public void switchToAnimation(final String animation, float blendingTime) {
+        //  This mesh doesn't have any animations, so just bail out.
+        if (this.animationMap.isEmpty()) {
+            return;
+        }
         final Animation destAnim = this.animationMap.get(animation);
         if (destAnim == null) {
             throw new IllegalArgumentException("Unknown animation " + animation);

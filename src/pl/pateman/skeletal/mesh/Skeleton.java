@@ -66,6 +66,6 @@ public class Skeleton {
 
     @Override
     public String toString() {
-        return this.getRootBone().toString();
+        return this.bones.isEmpty() ? "" : this.getRootBone().toString();
     }
 }

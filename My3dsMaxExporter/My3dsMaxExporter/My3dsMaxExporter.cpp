@@ -119,6 +119,13 @@ int	JSONExporter::DoExport(const TCHAR *name, ExpInterface *ei, Interface *i, BO
 	return 1;
 }
 
+void JSONExporter::writeNodeTransform(IGameNode* node, NamedPipe* pipe) {
+	pipe->writeToPipe(string_format("BEGIN_TRANSFORM %d", node->GetNodeID()));
+
+	Matrix3 transformMatrix = node->GetLocalTM().ExtractMatrix3();
+	this->writeMatrix(transformMatrix, pipe);
+}
+
 void JSONExporter::writeMatrix(const Matrix3 matrix, NamedPipe* pipe) {
 	Point3 translation, scale;
 	Quat rotation;
@@ -202,8 +209,7 @@ void JSONExporter::processNode(IGameNode* node, Interface* coreInterface, NamedP
 		pipe->writeToPipe(string_format("TYPE %s", gameObjectType != IGameObject::ObjectTypes::IGAME_MESH ? "Bone" : "Mesh"));
 		
 		//	Transformation matrix (in local space.)
-		Matrix3 transformMatrix = node->GetLocalTM().ExtractMatrix3();
-		this->writeMatrix(transformMatrix, pipe);
+		this->writeNodeTransform(node, pipe);
 
 		//	Process the node according to its type.
 		if (gameObjectType == IGameObject::ObjectTypes::IGAME_MESH) {

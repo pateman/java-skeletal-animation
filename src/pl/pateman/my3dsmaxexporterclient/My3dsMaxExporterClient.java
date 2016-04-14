@@ -1,10 +1,7 @@
 package pl.pateman.my3dsmaxexporterclient;
 
 import com.google.gson.Gson;
-import pl.pateman.my3dsmaxexporterclient.command.BeginNodeCommand;
-import pl.pateman.my3dsmaxexporterclient.command.FinishNodeCommand;
-import pl.pateman.my3dsmaxexporterclient.command.NodeDataCommand;
-import pl.pateman.my3dsmaxexporterclient.command.NodeGeometryDataCommand;
+import pl.pateman.my3dsmaxexporterclient.command.*;
 
 import java.io.PrintWriter;
 import java.io.RandomAccessFile;
@@ -21,6 +18,7 @@ public class My3dsMaxExporterClient {
         commandManager.registerCommandHandler(BEGIN_NODE, new BeginNodeCommand());
         commandManager.registerCommandHandler(new NodeDataCommand(), INDEX, NAME, PARENT, TYPE);
         commandManager.registerCommandHandler(new NodeGeometryDataCommand(), VERTEX, NORMAL, FACE, TEXCOORD);
+        commandManager.registerCommandHandler(new NodeMatrixCommand(), BEGIN_TRANSFORM, TRANSLATION, ROTATION, SCALE);
         commandManager.registerCommandHandler(FINISH_NODE, new FinishNodeCommand());
     }
 

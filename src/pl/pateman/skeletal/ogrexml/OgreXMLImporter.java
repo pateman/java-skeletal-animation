@@ -7,8 +7,10 @@ import org.joml.AxisAngle4f;
 import org.joml.Quaternionf;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
+import pl.pateman.skeletal.MeshImporter;
 import pl.pateman.skeletal.TempVars;
 import pl.pateman.skeletal.Utils;
+import pl.pateman.skeletal.entity.MeshEntity;
 import pl.pateman.skeletal.mesh.*;
 
 import java.io.IOException;
@@ -16,7 +18,7 @@ import java.io.IOException;
 /**
  * Created by pateman on 2016-03-17.
  */
-public final class OgreXMLImporter {
+public final class OgreXMLImporter implements MeshImporter {
     private XStream xStream;
 
     public OgreXMLImporter() {
@@ -31,7 +33,8 @@ public final class OgreXMLImporter {
                 normalize());
     }
 
-    public Mesh load(final String meshFileResource) throws IOException {
+    @Override
+    public MeshEntity load(final String meshFileResource) throws IOException {
         final Mesh mesh = new Mesh();
 
         //  Load the mesh first.
@@ -158,6 +161,8 @@ public final class OgreXMLImporter {
             TempVars.initializeStorageForSkinning(mesh.getSkeleton().getBones().size());
         }
 
-        return mesh;
+        final MeshEntity meshEntity = new MeshEntity();
+        meshEntity.setMesh(mesh);
+        return meshEntity;
     }
 }

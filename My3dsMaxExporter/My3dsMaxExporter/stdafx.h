@@ -24,5 +24,7 @@
 #include <string>
 #include <exception>
 #include <memory>
+#include <vector>
+#include <algorithm>
 
 extern HINSTANCE hInstance;

@@ -29,6 +29,7 @@ public interface Constants {
     String NORMAL = "NORMAL";
     String FACE = "FACE";
     String TEXCOORD = "TEXCOORD";
+    String BONE = "BONE";
 
     String FINISH_NODE = "FINISH_NODE";
 

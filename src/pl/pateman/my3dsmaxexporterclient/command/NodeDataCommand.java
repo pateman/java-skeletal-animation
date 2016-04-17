@@ -2,6 +2,7 @@ package pl.pateman.my3dsmaxexporterclient.command;
 
 import pl.pateman.my3dsmaxexporterclient.ClientCommand;
 import pl.pateman.my3dsmaxexporterclient.CommandContext;
+import pl.pateman.my3dsmaxexporterclient.ExporterUtils;
 
 import static pl.pateman.my3dsmaxexporterclient.Constants.*;
 
@@ -17,7 +18,7 @@ public final class NodeDataCommand implements ClientCommand {
 
         switch (cmd) {
             case NAME:
-                context.stateVariables.put(CURRENT_NODE_NAME, context.commandParameters[1]);
+                context.stateVariables.put(CURRENT_NODE_NAME, ExporterUtils.decodeString(context.commandParameters[1]));
                 break;
             case INDEX:
                 context.stateVariables.put(CURRENT_NODE_INDEX, context.commandParameters[1]);

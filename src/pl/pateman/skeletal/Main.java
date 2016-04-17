@@ -239,14 +239,14 @@ public class Main {
         this.meshProgram.setUniformMatrix4(Utils.PROJECTION_UNIFORM, Utils.matrix4fToBuffer(this.camera.
                 getProjectionMatrix()));
         this.meshProgram.setUniform1(Utils.TEXTURE_UNIFORM, 0);
-        this.meshProgram.setUniform1(Utils.USETEXTURING_UNIFORM, 0);
+        this.meshProgram.setUniform1(Utils.USETEXTURING_UNIFORM, 1);
         if (this.meshEntity.getMesh().hasSkeleton()) {
             this.meshProgram.setUniform1(Utils.USESKINNING_UNIFORM, 1);
 
             //  Apply the inverse bind transform to bone matrices.
             final List<Matrix4f> boneMatrices = renderer.getBoneMatrices();
             for (int i = 0; i < this.meshEntity.getMesh().getSkeleton().getBones().size(); i++) {
-                final Bone bone = this.meshEntity.getMesh().getSkeleton().getBoneByIndex(i);
+                final Bone bone = this.meshEntity.getMesh().getSkeleton().getBone(i);
                 final Matrix4f boneMatrix = tempVars.boneMatricesList.get(i).set(boneMatrices.get(i));
 
                 boneMatrix.mul(bone.getInverseBindMatrix(), boneMatrix);

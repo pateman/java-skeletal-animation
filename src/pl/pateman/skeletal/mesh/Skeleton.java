@@ -13,6 +13,15 @@ public class Skeleton {
     }
 
     public Bone getBoneByIndex(int index) {
+        for (Bone bone : this.bones) {
+            if (bone.getIndex() == index) {
+                return bone;
+            }
+        }
+        return null;
+    }
+
+    public Bone getBone(int index) {
         return this.bones.get(index);
     }
 

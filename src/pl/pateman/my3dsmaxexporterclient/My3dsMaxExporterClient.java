@@ -1,7 +1,9 @@
 package pl.pateman.my3dsmaxexporterclient;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import pl.pateman.my3dsmaxexporterclient.command.*;
+import pl.pateman.skeletal.mesh.Bone;
 
 import java.io.PrintWriter;
 import java.io.RandomAccessFile;
@@ -17,7 +19,7 @@ public class My3dsMaxExporterClient {
     static {
         commandManager.registerCommandHandler(BEGIN_NODE, new BeginNodeCommand());
         commandManager.registerCommandHandler(new NodeDataCommand(), INDEX, NAME, PARENT, TYPE);
-        commandManager.registerCommandHandler(new NodeGeometryDataCommand(), VERTEX, NORMAL, FACE, TEXCOORD);
+        commandManager.registerCommandHandler(new NodeGeometryDataCommand(), VERTEX, NORMAL, FACE, TEXCOORD, BONE);
         commandManager.registerCommandHandler(new NodeMatrixCommand(), BEGIN_TRANSFORM, TRANSLATION, ROTATION, SCALE);
         commandManager.registerCommandHandler(FINISH_NODE, new FinishNodeCommand());
     }
@@ -38,7 +40,7 @@ public class My3dsMaxExporterClient {
 
                 if (split[0].equals(END)) {
                     //  If we're ending, serialize the context's node information to JSON and bail out.
-                    final Gson gson = new Gson();
+                    final Gson gson = new GsonBuilder().registerTypeAdapter(Bone.class, new BoneSerializer()).create();
                     final String json = gson.toJson(commandContext.nodes);
 
                     try (PrintWriter writer = new PrintWriter(commandContext.outputFile)) {
@@ -49,7 +51,7 @@ public class My3dsMaxExporterClient {
 
                 final ClientCommand clientCommand = commandManager.getCommandHandler(split[0]);
                 if (clientCommand == null) {
-                    System.out.printf("Unrecognized command name '%s'\n", split[0]);
+                    System.out.printf("Unrecognized command line '%s'\n", commandLine);
                     continue;
                 }
 

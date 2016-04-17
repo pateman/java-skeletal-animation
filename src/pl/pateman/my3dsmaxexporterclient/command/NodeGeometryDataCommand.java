@@ -4,6 +4,8 @@ import org.joml.Vector2f;
 import org.joml.Vector3f;
 import pl.pateman.my3dsmaxexporterclient.ClientCommand;
 import pl.pateman.my3dsmaxexporterclient.CommandContext;
+import pl.pateman.my3dsmaxexporterclient.ExporterUtils;
+import pl.pateman.skeletal.mesh.Bone;
 
 import static pl.pateman.my3dsmaxexporterclient.Constants.*;
 
@@ -11,6 +13,7 @@ import static pl.pateman.my3dsmaxexporterclient.Constants.*;
  * Created by pateman.
  */
 public final class NodeGeometryDataCommand implements ClientCommand {
+
     @Override
     public void execute(final CommandContext context) throws Exception {
         final String cmd = context.commandParameters[0];
@@ -43,6 +46,17 @@ public final class NodeGeometryDataCommand implements ClientCommand {
                 texcoord.y = Float.parseFloat(context.commandParameters[2]);
 
                 context.mesh.getTexcoords().add(texcoord);
+                break;
+            case BONE:
+                final Bone bone = new Bone(ExporterUtils.decodeString(context.commandParameters[1]),
+                        Integer.parseInt(context.commandParameters[2]));
+                final int parentIndex = Integer.parseInt(context.commandParameters[3]);
+
+                if (parentIndex != -1) {
+                    bone.setParent(context.mesh.getSkeleton().getBoneByIndex(parentIndex));
+                }
+
+                context.mesh.getSkeleton().getBones().add(bone);
                 break;
         }
     }

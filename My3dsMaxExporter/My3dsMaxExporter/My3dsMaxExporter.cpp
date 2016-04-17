@@ -84,9 +84,15 @@ int	JSONExporter::DoExport(const TCHAR *name, ExpInterface *ei, Interface *i, BO
 		IGameConversionManager* conversionManager = GetConversionManager();
 		conversionManager->SetCoordSystem(IGameConversionManager::CoordSystem::IGAME_OGL);
 
-		int topLevelNodes = this->scene->GetTopLevelNodeCount();
-		for (int i = 0; i < topLevelNodes; i++) {
-			IGameNode* node = this->scene->GetTopLevelNode(i);
+		//	Find all meshes in the scene.
+		Tab<IGameNode*> meshes = this->scene->GetIGameNodeByType(IGameObject::ObjectTypes::IGAME_MESH);
+		int meshCount = meshes.Count();
+
+		//	Find all bones in the scene.
+		this->bones = this->scene->GetIGameNodeByType(IGameObject::ObjectTypes::IGAME_BONE);
+
+		for (int i = 0; i < meshCount; i++) {
+			IGameNode* node = meshes[i];
 
 			//	If the node is a target of another node, skip it.
 			if (node->IsTarget()) {
@@ -96,7 +102,7 @@ int	JSONExporter::DoExport(const TCHAR *name, ExpInterface *ei, Interface *i, BO
 			//	Update the progress bar.
 			TSTR progress = _T("Processing ");
 			progress += node->GetName();
-			coreInterface->ProgressUpdate((int)((float)i / topLevelNodes * 100.0f), FALSE, progress.data());
+			coreInterface->ProgressUpdate((int)((float)i / meshCount * 100.0f), FALSE, progress.data());
 
 			//	Process the node.
 			this->processNode(node, coreInterface, pipe);
@@ -117,6 +123,13 @@ int	JSONExporter::DoExport(const TCHAR *name, ExpInterface *ei, Interface *i, BO
 	DebugPrint(_T("Finishing export"));
 
 	return 1;
+}
+
+std::string JSONExporter::prepareNodeNameForExport(const wchar_t* nodeName) {
+	WStr newName = TSTR(nodeName);
+	newName.Replace(_T(" "), _T("%20"));
+
+	return tchar2s(newName);
 }
 
 void JSONExporter::writeNodeTransform(IGameNode* node, NamedPipe* pipe) {
@@ -141,21 +154,32 @@ void JSONExporter::writeMatrix(const Matrix3 matrix, NamedPipe* pipe) {
 
 void JSONExporter::processMesh(IGameNode* node, NamedPipe* pipe) {
 	IGameMesh* mesh = (IGameMesh*)node->GetIGameObject();
+	IGameSkin* skin = mesh->GetIGameSkin();
+	int counter, i, j;
 
-	//mesh->SetCreateOptimizedNormalList();
 	if (!mesh->InitializeData()) {
 		DebugPrint(TSTR(_T("Unable to initialize mesh data for object ")).Append(node->GetName()));
 		return;
 	}
 
+	//	If the mesh has skinning information, export the bone structure first.
+	if (skin != NULL) {
+		counter = this->bones.Count();
+		for (i = 0; i < counter; i++) {
+			IGameNode* bone = this->bones[i];
+			IGameNode* parent = bone->GetNodeParent();
+
+			Matrix3 bindMatrix = bone->GetObjectTM(0).ExtractMatrix3();
+			pipe->writeToPipe(string_format("BONE %s %d %d", this->prepareNodeNameForExport(bone->GetName()).c_str(), bone->GetNodeID(), parent == NULL ? -1 : parent->GetNodeID()));
+		}
+	}
 
 	//	Iterate over the available faces, and for each face, extract its geometry data.
-	int counter = mesh->GetNumberOfFaces();
+	counter = mesh->GetNumberOfFaces();
 	int vertexCount = 0;
-	int j;
 	DWORD* mapIndices = new DWORD[3];
 
-	for (int i = 0; i < counter; i++) {
+	for (i = 0; i < counter; i++) {
 		FaceEx* face = mesh->GetFace(i);
 
 		mesh->GetMapFaceIndex(1, face->meshFaceIndex, mapIndices);
@@ -180,33 +204,26 @@ void JSONExporter::processNode(IGameNode* node, Interface* coreInterface, NamedP
 	IGameObject::ObjectTypes gameObjectType = gameObject->GetIGameType();
 
 	//	Check whether the object type is supported.
-	if (gameObjectType != IGameObject::ObjectTypes::IGAME_BONE && gameObjectType != IGameObject::ObjectTypes::IGAME_MESH) {
+	if (gameObjectType != IGameObject::ObjectTypes::IGAME_MESH) {
 		DebugPrint(TSTR(_T("Ignoring ")).Append(node->GetName()).Append(_T(" because of unsupported object type")));
 	} else {
 		pipe->writeToPipe("BEGIN_NODE");
 
 		//	Basic node data.
-		pipe->writeToPipe(string_format("NAME %s", tchar2s(node->GetName()).c_str()));
+		pipe->writeToPipe(string_format("NAME %s", this->prepareNodeNameForExport(node->GetName()).c_str()));
 		pipe->writeToPipe(string_format("INDEX %d", node->GetNodeID()));
 
 		IGameNode* parent = node->GetNodeParent();
 		pipe->writeToPipe(string_format("PARENT %d", parent ? parent->GetNodeID() : -1));
 
-		pipe->writeToPipe(string_format("TYPE %s", gameObjectType != IGameObject::ObjectTypes::IGAME_MESH ? "Bone" : "Mesh"));
+		pipe->writeToPipe(string_format("TYPE %s", "Mesh"));
 		
 		//	Transformation matrix (in local space.)
 		this->writeNodeTransform(node, pipe);
 
 		//	Process the node according to its type.
-		if (gameObjectType == IGameObject::ObjectTypes::IGAME_MESH) {
-			this->processMesh(node, pipe);
-		}
+		this->processMesh(node, pipe);
 
 		pipe->writeToPipe("FINISH_NODE");
-	}
-
-	//	Process children.
-	for (int kid = 0; kid < node->GetChildCount(); kid++) {
-		this->processNode(node->GetNodeChild(kid), coreInterface, pipe);
 	}
 }

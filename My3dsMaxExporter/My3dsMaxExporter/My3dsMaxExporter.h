@@ -18,6 +18,10 @@ class JSONExporter : public SceneExport {
 	int	DoExport(const TCHAR *name, ExpInterface *ei, Interface *i, BOOL suppressPrompts = FALSE, DWORD options = 0);
 private:
 	IGameScene* scene;
+	Tab<IGameNode*> bones;
+
+	std::string prepareNodeNameForExport(const wchar_t* nodeName);
+
 	void processMesh(IGameNode* node, NamedPipe* pipe);
 	void processNode(IGameNode* node, Interface* coreInterface, NamedPipe* pipe);
 	void writeNodeTransform(IGameNode* node, NamedPipe* pipe);

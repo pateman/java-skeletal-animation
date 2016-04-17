@@ -142,50 +142,36 @@ void JSONExporter::writeMatrix(const Matrix3 matrix, NamedPipe* pipe) {
 void JSONExporter::processMesh(IGameNode* node, NamedPipe* pipe) {
 	IGameMesh* mesh = (IGameMesh*)node->GetIGameObject();
 
-	mesh->SetCreateOptimizedNormalList();
+	//mesh->SetCreateOptimizedNormalList();
 	if (!mesh->InitializeData()) {
 		DebugPrint(TSTR(_T("Unable to initialize mesh data for object ")).Append(node->GetName()));
 		return;
 	}
 
-	//	Dump vertices.
-	int i;
-	int counter = mesh->GetNumberOfVerts();
-	pipe->writeToPipe(string_format("VERTEX_COUNT %d", counter));
-	for (i = 0; i < counter; i++) {
-		Point3 vertex;
-		mesh->GetVertex(i, vertex, true);
 
-		pipe->writeToPipe(string_format("VERTEX %.6f %.6f %.6f", vertex.x, vertex.y, vertex.z));
-	}
+	//	Iterate over the available faces, and for each face, extract its geometry data.
+	int counter = mesh->GetNumberOfFaces();
+	int vertexCount = 0;
+	int j;
+	DWORD* mapIndices = new DWORD[3];
 
-	//	Dump normals.
-	counter = mesh->GetNumberOfNormals();
-	pipe->writeToPipe(string_format("NORMAL_COUNT %d", counter));
-	for (i = 0; i < counter; i++) {
-		Point3 normal;
-		mesh->GetNormal(i, normal, true);
-
-		pipe->writeToPipe(string_format("NORMAL %.6f %.6f %.6f", normal.x, normal.y, normal.z));
-	}
-
-	//	Dump triangles (faces, indices, you name it.)
-	counter = mesh->GetNumberOfFaces();
-	pipe->writeToPipe(string_format("FACE_COUNT %d", counter));
-	for (i = 0; i < counter; i++) {
+	for (int i = 0; i < counter; i++) {
 		FaceEx* face = mesh->GetFace(i);
+
+		mesh->GetMapFaceIndex(1, face->meshFaceIndex, mapIndices);
+		for (j = 0; j < 3; j++) {
+			Point3 vertex, normal, uv;
+			mesh->GetVertex(face->vert[j], vertex, true);
+			mesh->GetNormal(face->norm[j], normal, true);
+			mesh->GetMapVertex(1, mapIndices[j], uv);
+
+			pipe->writeToPipe(string_format("VERTEX %.6f %.6f %.6f", vertex.x, vertex.y, vertex.z));
+			pipe->writeToPipe(string_format("NORMAL %.6f %.6f %.6f", normal.x, normal.y, normal.z));
+			pipe->writeToPipe(string_format("TEXCOORD %.6f %.6f", uv.x, -uv.y));
+		}
 		
-		pipe->writeToPipe(string_format("FACE %d %d %d", face->vert[0], face->vert[1], face->vert[2]));
-	}
-
-	//	Dump texture coordinates.
-	counter = mesh->GetNumberOfTexVerts();
-	pipe->writeToPipe(string_format("TEXCOORD_COUNT %d", counter));
-	for (i = 0; i < counter; i++) {
-		Point2 texCoord;
-		mesh->GetTexVertex(i, texCoord);
-
-		pipe->writeToPipe(string_format("TEXCOORD %.6f %.6f", texCoord.x, texCoord.y));
+		pipe->writeToPipe(string_format("FACE %d %d %d", vertexCount, vertexCount + 1, vertexCount + 2));
+		vertexCount += 3;
 	}
 }
 

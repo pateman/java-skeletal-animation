@@ -35,6 +35,6 @@ public final class FinishNodeCommand implements ClientCommand {
         context.mesh = null;
 
         //  Cleanup the context after storing the node in the map.
-        NodeDataCommand.cleanupContext(context);
+        BeginNodeCommand.cleanupContext(context);
     }
 }

@@ -9,6 +9,6 @@ public final class ExporterUtils {
     }
 
     public static String decodeString(final String string) {
-        return string.replaceAll("%20", " ");
+        return string.replaceAll("%%20", " ");
     }
 }

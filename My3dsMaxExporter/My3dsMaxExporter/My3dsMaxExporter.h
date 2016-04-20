@@ -24,6 +24,5 @@ private:
 
 	void processMesh(IGameNode* node, NamedPipe* pipe);
 	void processNode(IGameNode* node, Interface* coreInterface, NamedPipe* pipe);
-	void writeNodeTransform(IGameNode* node, NamedPipe* pipe);
-	void writeMatrix(const Matrix3 matrix, NamedPipe* pipe);
+	std::string matrixToString(const Matrix3 matrix);
 };

@@ -127,29 +127,23 @@ int	JSONExporter::DoExport(const TCHAR *name, ExpInterface *ei, Interface *i, BO
 
 std::string JSONExporter::prepareNodeNameForExport(const wchar_t* nodeName) {
 	WStr newName = TSTR(nodeName);
-	newName.Replace(_T(" "), _T("%20"));
+	newName.Replace(_T(" "), _T("%%20"));
 
 	return tchar2s(newName);
 }
 
-void JSONExporter::writeNodeTransform(IGameNode* node, NamedPipe* pipe) {
-	pipe->writeToPipe(string_format("BEGIN_TRANSFORM %d", node->GetNodeID()));
-
-	Matrix3 transformMatrix = node->GetLocalTM().ExtractMatrix3();
-	this->writeMatrix(transformMatrix, pipe);
-}
-
-void JSONExporter::writeMatrix(const Matrix3 matrix, NamedPipe* pipe) {
+std::string JSONExporter::matrixToString(const Matrix3 matrix) {
 	Point3 translation, scale;
 	Quat rotation;
 
 	//	Get translation, rotation, and scale from the transformation matrix.
 	DecomposeMatrix(matrix, translation, rotation, scale);
 
-	//	Write the decomposed parts of the matrix to the pipe.
-	pipe->writeToPipe(string_format("TRANSLATION %.6f %.6f %.6f", translation.x, translation.y, translation.z));
-	pipe->writeToPipe(string_format("ROTATION %.6f %.6f %.6f %.6f", rotation.x, rotation.y, rotation.z, rotation.w));
-	pipe->writeToPipe(string_format("SCALE %.6f %.6f %.6f", scale.x, scale.y, scale.z));
+	//	Write the decomposed parts of the matrix to the string.
+	return string_format("%.6f %.6f %.6f %.6f %.6f %.6f %.6f %.6f %.6f %.6f", 
+		translation.x, translation.y, translation.z, 
+		rotation.x, rotation.y, rotation.z, rotation.w, 
+		scale.x, scale.y, scale.z);
 }
 
 void JSONExporter::processMesh(IGameNode* node, NamedPipe* pipe) {
@@ -169,8 +163,13 @@ void JSONExporter::processMesh(IGameNode* node, NamedPipe* pipe) {
 			IGameNode* bone = this->bones[i];
 			IGameNode* parent = bone->GetNodeParent();
 
-			Matrix3 bindMatrix = bone->GetObjectTM(0).ExtractMatrix3();
-			pipe->writeToPipe(string_format("BONE %s %d %d", this->prepareNodeNameForExport(bone->GetName()).c_str(), bone->GetNodeID(), parent == NULL ? -1 : parent->GetNodeID()));
+			Matrix3 bindMatrix = bone->GetLocalTM(0).ExtractMatrix3();
+			pipe->writeToPipe(string_format("BONE %s %d %d %s", 
+				this->prepareNodeNameForExport(bone->GetName()).c_str(), 
+				bone->GetNodeID(), 
+				parent == NULL ? -1 : parent->GetNodeID(),
+				this->matrixToString(bindMatrix).c_str()
+			));
 		}
 	}
 
@@ -207,19 +206,16 @@ void JSONExporter::processNode(IGameNode* node, Interface* coreInterface, NamedP
 	if (gameObjectType != IGameObject::ObjectTypes::IGAME_MESH) {
 		DebugPrint(TSTR(_T("Ignoring ")).Append(node->GetName()).Append(_T(" because of unsupported object type")));
 	} else {
-		pipe->writeToPipe("BEGIN_NODE");
-
-		//	Basic node data.
-		pipe->writeToPipe(string_format("NAME %s", this->prepareNodeNameForExport(node->GetName()).c_str()));
-		pipe->writeToPipe(string_format("INDEX %d", node->GetNodeID()));
-
 		IGameNode* parent = node->GetNodeParent();
-		pipe->writeToPipe(string_format("PARENT %d", parent ? parent->GetNodeID() : -1));
-
-		pipe->writeToPipe(string_format("TYPE %s", "Mesh"));
+		Matrix3 transformMatrix = node->GetLocalTM().ExtractMatrix3();
 		
-		//	Transformation matrix (in local space.)
-		this->writeNodeTransform(node, pipe);
+		//	Write node information to the pipe.
+		pipe->writeToPipe(string_format("BEGIN_NODE %s %d %d %s", 
+			this->prepareNodeNameForExport(node->GetName()).c_str(),
+			node->GetNodeID(),
+			parent ? parent->GetNodeID() : -1,
+			this->matrixToString(transformMatrix).c_str()
+		));
 
 		//	Process the node according to its type.
 		this->processMesh(node, pipe);

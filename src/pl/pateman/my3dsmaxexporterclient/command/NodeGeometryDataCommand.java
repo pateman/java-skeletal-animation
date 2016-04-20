@@ -56,6 +56,17 @@ public final class NodeGeometryDataCommand implements ClientCommand {
                     bone.setParent(context.mesh.getSkeleton().getBoneByIndex(parentIndex));
                 }
 
+                bone.getBindPosition().x = Float.parseFloat(context.commandParameters[4]);
+                bone.getBindPosition().y = Float.parseFloat(context.commandParameters[5]);
+                bone.getBindPosition().z = Float.parseFloat(context.commandParameters[6]);
+                bone.getBindRotation().x = Float.parseFloat(context.commandParameters[7]);
+                bone.getBindRotation().y = Float.parseFloat(context.commandParameters[8]);
+                bone.getBindRotation().z = Float.parseFloat(context.commandParameters[9]);
+                bone.getBindRotation().w = Float.parseFloat(context.commandParameters[10]);
+                bone.getBindScale().x = Float.parseFloat(context.commandParameters[11]);
+                bone.getBindScale().y = Float.parseFloat(context.commandParameters[12]);
+                bone.getBindScale().z = Float.parseFloat(context.commandParameters[13]);
+
                 context.mesh.getSkeleton().getBones().add(bone);
                 break;
         }

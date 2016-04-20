@@ -18,9 +18,7 @@ public class My3dsMaxExporterClient {
 
     static {
         commandManager.registerCommandHandler(BEGIN_NODE, new BeginNodeCommand());
-        commandManager.registerCommandHandler(new NodeDataCommand(), INDEX, NAME, PARENT, TYPE);
         commandManager.registerCommandHandler(new NodeGeometryDataCommand(), VERTEX, NORMAL, FACE, TEXCOORD, BONE);
-        commandManager.registerCommandHandler(new NodeMatrixCommand(), BEGIN_TRANSFORM, TRANSLATION, ROTATION, SCALE);
         commandManager.registerCommandHandler(FINISH_NODE, new FinishNodeCommand());
     }
 
@@ -65,5 +63,7 @@ public class My3dsMaxExporterClient {
             ex.printStackTrace();
             new java.util.Scanner(System.in).nextLine();
         }
+
+        new java.util.Scanner(System.in).nextLine();
     }
 }

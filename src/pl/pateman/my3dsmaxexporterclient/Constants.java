@@ -15,16 +15,6 @@ public interface Constants {
 
     String BEGIN_NODE = "BEGIN_NODE";
 
-    String NAME = "NAME";
-    String INDEX = "INDEX";
-    String PARENT = "PARENT";
-    String TYPE = "TYPE";
-
-    String BEGIN_TRANSFORM = "BEGIN_TRANSFORM";
-    String TRANSLATION = "TRANSLATION";
-    String ROTATION = "ROTATION";
-    String SCALE = "SCALE";
-
     String VERTEX = "VERTEX";
     String NORMAL = "NORMAL";
     String FACE = "FACE";

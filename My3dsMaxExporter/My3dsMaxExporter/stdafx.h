@@ -13,6 +13,7 @@
 #include "IGameControl.h"
 #include "IGameModifier.h"
 #include "IConversionManager.h"
+#include "IFrameTagManager.h"
 #include "IGameError.h"
 #include "IGameFX.h"
 

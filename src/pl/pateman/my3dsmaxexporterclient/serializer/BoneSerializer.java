@@ -1,4 +1,4 @@
-package pl.pateman.my3dsmaxexporterclient;
+package pl.pateman.my3dsmaxexporterclient.serializer;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;

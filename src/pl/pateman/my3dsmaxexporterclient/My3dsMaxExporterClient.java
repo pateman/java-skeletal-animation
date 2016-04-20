@@ -3,6 +3,9 @@ package pl.pateman.my3dsmaxexporterclient;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import pl.pateman.my3dsmaxexporterclient.command.*;
+import pl.pateman.my3dsmaxexporterclient.serializer.AnimationTrackSerializer;
+import pl.pateman.my3dsmaxexporterclient.serializer.BoneSerializer;
+import pl.pateman.skeletal.mesh.AnimationTrack;
 import pl.pateman.skeletal.mesh.Bone;
 
 import java.io.PrintWriter;
@@ -20,6 +23,10 @@ public class My3dsMaxExporterClient {
         commandManager.registerCommandHandler(BEGIN_NODE, new BeginNodeCommand());
         commandManager.registerCommandHandler(new NodeGeometryDataCommand(), VERTEX, NORMAL, FACE, TEXCOORD, BONE);
         commandManager.registerCommandHandler(FINISH_NODE, new FinishNodeCommand());
+
+        commandManager.registerCommandHandler(BEGIN_ANIMATION, new BeginAnimationCommand());
+        commandManager.registerCommandHandler(new AnimationDataCommand(), BEGIN_TRACK, FINISH_TRACK, KEYFRAME);
+        commandManager.registerCommandHandler(FINISH_ANIMATION, new FinishAnimationCommand());
     }
 
     public static void main(String[] args) {
@@ -38,7 +45,10 @@ public class My3dsMaxExporterClient {
 
                 if (split[0].equals(END)) {
                     //  If we're ending, serialize the context's node information to JSON and bail out.
-                    final Gson gson = new GsonBuilder().registerTypeAdapter(Bone.class, new BoneSerializer()).create();
+                    final Gson gson = new GsonBuilder().
+                            registerTypeAdapter(Bone.class, new BoneSerializer()).
+                            registerTypeAdapter(AnimationTrack.class, new AnimationTrackSerializer()).
+                            create();
                     final String json = gson.toJson(commandContext.nodes);
 
                     try (PrintWriter writer = new PrintWriter(commandContext.outputFile)) {
@@ -63,7 +73,5 @@ public class My3dsMaxExporterClient {
             ex.printStackTrace();
             new java.util.Scanner(System.in).nextLine();
         }
-
-        new java.util.Scanner(System.in).nextLine();
     }
 }

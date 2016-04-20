@@ -18,10 +18,13 @@ class JSONExporter : public SceneExport {
 	int	DoExport(const TCHAR *name, ExpInterface *ei, Interface *i, BOOL suppressPrompts = FALSE, DWORD options = 0);
 private:
 	IGameScene* scene;
+	IFrameTagManager* frameTagManager;
+	Interval animationRange;
 	Tab<IGameNode*> bones;
 
 	std::string prepareNodeNameForExport(const wchar_t* nodeName);
 
+	void processAnimation(const std::vector<int> animationTimes, int ticksPerSecond, NamedPipe* pipe);
 	void processMesh(IGameNode* node, NamedPipe* pipe);
 	void processNode(IGameNode* node, Interface* coreInterface, NamedPipe* pipe);
 	std::string matrixToString(const Matrix3 matrix);

@@ -80,6 +80,10 @@ int	JSONExporter::DoExport(const TCHAR *name, ExpInterface *ei, Interface *i, BO
 		this->scene->InitialiseIGame(false);
 		this->scene->SetStaticFrame(0);
 
+		//	Retrieve the tag manager.
+		this->frameTagManager = (IFrameTagManager*)GetCOREInterface(FRAMETAGMANAGER_INTERFACE);
+		this->animationRange = coreInterface->GetAnimRange();
+
 		//	Get the conversion manager and set the coordinate system to OpenGL.
 		IGameConversionManager* conversionManager = GetConversionManager();
 		conversionManager->SetCoordSystem(IGameConversionManager::CoordSystem::IGAME_OGL);
@@ -104,10 +108,10 @@ int	JSONExporter::DoExport(const TCHAR *name, ExpInterface *ei, Interface *i, BO
 			progress += node->GetName();
 			coreInterface->ProgressUpdate((int)((float)i / meshCount * 100.0f), FALSE, progress.data());
 
-			//	Process the node.
-			this->processNode(node, coreInterface, pipe);
+//	Process the node.
+this->processNode(node, coreInterface, pipe);
 		}
-		
+
 		//	Tell the Java client to close connection and release resources.
 		pipe->writeToPipe("END");
 		this->scene->ReleaseIGame();
@@ -140,10 +144,31 @@ std::string JSONExporter::matrixToString(const Matrix3 matrix) {
 	DecomposeMatrix(matrix, translation, rotation, scale);
 
 	//	Write the decomposed parts of the matrix to the string.
-	return string_format("%.6f %.6f %.6f %.6f %.6f %.6f %.6f %.6f %.6f %.6f", 
-		translation.x, translation.y, translation.z, 
-		rotation.x, rotation.y, rotation.z, rotation.w, 
+	return string_format("%.6f %.6f %.6f %.6f %.6f %.6f %.6f %.6f %.6f %.6f",
+		translation.x, translation.y, translation.z,
+		rotation.x, rotation.y, rotation.z, rotation.w,
 		scale.x, scale.y, scale.z);
+}
+
+void JSONExporter::processAnimation(const std::vector<int> animationTimes, int ticksPerSecond, NamedPipe* pipe) {
+	int j;
+	for (int i = 0; i < this->bones.Count(); i++) {
+		IGameNode* bone = this->bones[i];
+
+		pipe->writeToPipe(string_format("BEGIN_TRACK %d", bone->GetNodeID()));
+
+		for (j = 0; j < animationTimes.size(); j++) {
+			float keyframeTime = (float(animationTimes[j] - animationTimes[0]) / float(ticksPerSecond)) / GetFrameRate();
+
+			Matrix3 keyframeMatrix = bone->GetLocalTM(animationTimes[j]).ExtractMatrix3();
+			pipe->writeToPipe(string_format("KEYFRAME %.6f %s",
+				keyframeTime,
+				this->matrixToString(keyframeMatrix).c_str()
+			));
+		}
+
+		pipe->writeToPipe("FINISH_TRACK");
+	}
 }
 
 void JSONExporter::processMesh(IGameNode* node, NamedPipe* pipe) {
@@ -154,23 +179,6 @@ void JSONExporter::processMesh(IGameNode* node, NamedPipe* pipe) {
 	if (!mesh->InitializeData()) {
 		DebugPrint(TSTR(_T("Unable to initialize mesh data for object ")).Append(node->GetName()));
 		return;
-	}
-
-	//	If the mesh has skinning information, export the bone structure first.
-	if (skin != NULL) {
-		counter = this->bones.Count();
-		for (i = 0; i < counter; i++) {
-			IGameNode* bone = this->bones[i];
-			IGameNode* parent = bone->GetNodeParent();
-
-			Matrix3 bindMatrix = bone->GetLocalTM(0).ExtractMatrix3();
-			pipe->writeToPipe(string_format("BONE %s %d %d %s", 
-				this->prepareNodeNameForExport(bone->GetName()).c_str(), 
-				bone->GetNodeID(), 
-				parent == NULL ? -1 : parent->GetNodeID(),
-				this->matrixToString(bindMatrix).c_str()
-			));
-		}
 	}
 
 	//	Iterate over the available faces, and for each face, extract its geometry data.
@@ -192,9 +200,85 @@ void JSONExporter::processMesh(IGameNode* node, NamedPipe* pipe) {
 			pipe->writeToPipe(string_format("NORMAL %.6f %.6f %.6f", normal.x, normal.y, normal.z));
 			pipe->writeToPipe(string_format("TEXCOORD %.6f %.6f", uv.x, -uv.y));
 		}
-		
+
 		pipe->writeToPipe(string_format("FACE %d %d %d", vertexCount, vertexCount + 1, vertexCount + 2));
 		vertexCount += 3;
+	}
+
+	//	If the mesh has skinning information...
+	if (skin != NULL) {
+		//	... export the bone structure first.
+		counter = this->bones.Count();
+		for (i = 0; i < counter; i++) {
+			IGameNode* bone = this->bones[i];
+			IGameNode* parent = bone->GetNodeParent();
+
+			Matrix3 bindMatrix = bone->GetLocalTM(0).ExtractMatrix3();
+			pipe->writeToPipe(string_format("BONE %s %d %d %s",
+				this->prepareNodeNameForExport(bone->GetName()).c_str(),
+				bone->GetNodeID(),
+				parent == NULL ? -1 : parent->GetNodeID(),
+				this->matrixToString(bindMatrix).c_str()
+				));
+		}
+
+		//	We are using time tags to specify animations' times and names. In order to define an animation, you need to create
+		//	two time tags - the first marks at which frame the animation starts and the second one (needs to be relative to the
+		//	first one) indicates the end of the animation.
+		counter = this->frameTagManager->GetTagCount();
+		int nextTag;
+		DWORD tagId;
+		TimeValue timeStart, timeEnd;
+
+		int ticksPerFrame = GetTicksPerFrame();
+		std::vector<int> animationTimes;
+		for (i = 0; i < counter; i++) {
+			tagId = this->frameTagManager->GetTagID(i);
+
+			//	This tag is locked to another tag. Ignore it, as it mostly likely indicates an animation's end.
+			if (this->frameTagManager->GetLockIDByID(tagId) != 0) {
+				continue;
+			}
+
+			//	Get the start and end of the animation.
+			timeStart = this->frameTagManager->GetTimeByID(tagId, FALSE);
+			timeEnd = this->animationRange.End();
+			std::string name = tchar2s(this->frameTagManager->GetNameByID(tagId));
+			
+			nextTag = i + 1;
+			if (nextTag < counter) {
+				timeEnd = this->frameTagManager->GetTimeByID(this->frameTagManager->GetTagID(nextTag), FALSE);
+			}
+
+			//	Calculate the animation's times and its length.
+			animationTimes.clear();
+			for (j = timeStart; j < timeEnd; j += ticksPerFrame) {
+				animationTimes.push_back(j);
+			}
+
+			animationTimes.push_back(timeEnd);
+			animationTimes.erase(std::unique(animationTimes.begin(), animationTimes.end()), animationTimes.end());
+
+			if (animationTimes.empty()) {
+				DebugPrint(TSTR(_T("Invalid animation definition ")).Append(s2ws(name).c_str()));
+				continue;
+			}
+			int animationTicks = animationTimes[animationTimes.size() - 1] - animationTimes[0];
+			float animationLength = (float(animationTicks) / float(ticksPerFrame)) / GetFrameRate();
+
+			//	Write the data to the pipe.
+			pipe->writeToPipe(string_format("BEGIN_ANIMATION %s %d %d %.6f", 
+				this->prepareNodeNameForExport(s2ws(name).c_str()).c_str(), 
+				timeStart, 
+				timeEnd,
+				animationLength
+			));
+
+			//	Export the animation.
+			this->processAnimation(animationTimes, ticksPerFrame, pipe);
+
+			pipe->writeToPipe("FINISH_ANIMATION");
+		}
 	}
 }
 

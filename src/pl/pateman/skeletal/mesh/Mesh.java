@@ -72,6 +72,12 @@ public class Mesh {
         return skinningInfo;
     }
 
+    public void createBoneTracks() {
+        for (final Animation animation : this.animations) {
+            animation.createBoneTracks();
+        }
+    }
+
     public boolean hasSkeleton() {
         return !this.skeleton.getBones().isEmpty();
     }

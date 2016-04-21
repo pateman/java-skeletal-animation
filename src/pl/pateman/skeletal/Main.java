@@ -163,7 +163,7 @@ public class Main {
 
             //  Load the mesh.
             final MeshImporter importer = new JSONImporter();
-            this.meshEntity = importer.load("teapot.json");
+            this.meshEntity = importer.load("test.json");
             this.meshEntity.setShaderProgram(this.meshProgram);
             this.meshEntity.buildMesh();
             this.meshEntity.translate(0.25f, 0.0f, 0.0f);
@@ -185,7 +185,7 @@ public class Main {
 
             if (this.meshEntity.getMesh().hasSkeleton()) {
                 this.lowerBodyChannel.addBone("Bip01");
-                this.lowerBodyChannel.addBone("Bip01 Footsteps");
+//                this.lowerBodyChannel.addBone("Bip01 Footsteps");
                 this.lowerBodyChannel.addBone("Bip01 Pelvis");
                 this.lowerBodyChannel.addBone("Bip01 Spine");
                 this.lowerBodyChannel.addBonesTree("Bip01 L Thigh");

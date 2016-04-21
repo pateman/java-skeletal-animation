@@ -40,7 +40,8 @@ final class BoneAnimatorUtils {
     public static void getFrame(final BoneAnimator animator, final Bone bone, final float lerpFactor,
                                  final Quaternionf outRotation, final Vector3f outTranslation) {
         //  Basing on the animation's current time, calculate the frames for interpolation.
-        final AnimationTrack track = animator.getAnimation().getTracks().get(bone.getIndex());
+//        final AnimationTrack track = animator.getAnimation().getTracks().get(bone.getIndex());
+        final AnimationTrack track = animator.getAnimation().getTrackForBone(bone);
         final int lastFrame = track.getKeyframes().size() - 1;
         int startFrame = 0;
         int endFrame;

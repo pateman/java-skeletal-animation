@@ -156,6 +156,7 @@ public final class OgreXMLImporter implements MeshImporter {
             //  Now that the skeleton is fully processed, calculate the bind matrices and arrange the bones.
             mesh.getSkeleton().calculateBindMatrices();
             mesh.getSkeleton().arrangeBones();
+            mesh.createBoneTracks();
 
             //  Create the pallete skinning buffer for passing animation matrices to the shader.
             TempVars.initializeStorageForSkinning(mesh.getSkeleton().getBones().size());

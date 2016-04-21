@@ -1,7 +1,9 @@
 package pl.pateman.skeletal.mesh;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by pateman.
@@ -11,11 +13,27 @@ public final class Animation {
     private final float length;
     private final List<AnimationTrack> tracks;
     private int frameCount;
+    private Map<Bone, AnimationTrack> boneTracks;
 
     public Animation(String name, float length) {
         this.name = name;
         this.length = length;
         this.tracks = new ArrayList<>();
+        this.boneTracks = new HashMap<>();
+    }
+
+    void createBoneTracks() {
+        if (this.boneTracks == null) {
+            this.boneTracks = new HashMap<>();
+        }
+
+        for (final AnimationTrack track : this.tracks) {
+            this.boneTracks.put(track.getBone(), track);
+        }
+    }
+
+    public AnimationTrack getTrackForBone(final Bone bone) {
+        return this.boneTracks.get(bone);
     }
 
     public String getName() {

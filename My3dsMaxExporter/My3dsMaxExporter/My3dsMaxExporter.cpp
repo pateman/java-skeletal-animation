@@ -108,8 +108,8 @@ int	JSONExporter::DoExport(const TCHAR *name, ExpInterface *ei, Interface *i, BO
 			progress += node->GetName();
 			coreInterface->ProgressUpdate((int)((float)i / meshCount * 100.0f), FALSE, progress.data());
 
-//	Process the node.
-this->processNode(node, coreInterface, pipe);
+			//	Process the node.
+			this->processNode(node, coreInterface, pipe);
 		}
 
 		//	Tell the Java client to close connection and release resources.
@@ -181,30 +181,6 @@ void JSONExporter::processMesh(IGameNode* node, NamedPipe* pipe) {
 		return;
 	}
 
-	//	Iterate over the available faces, and for each face, extract its geometry data.
-	counter = mesh->GetNumberOfFaces();
-	int vertexCount = 0;
-	DWORD* mapIndices = new DWORD[3];
-
-	for (i = 0; i < counter; i++) {
-		FaceEx* face = mesh->GetFace(i);
-
-		mesh->GetMapFaceIndex(1, face->meshFaceIndex, mapIndices);
-		for (j = 0; j < 3; j++) {
-			Point3 vertex, normal, uv;
-			mesh->GetVertex(face->vert[j], vertex, true);
-			mesh->GetNormal(face->norm[j], normal, true);
-			mesh->GetMapVertex(1, mapIndices[j], uv);
-
-			pipe->writeToPipe(string_format("VERTEX %.6f %.6f %.6f", vertex.x, vertex.y, vertex.z));
-			pipe->writeToPipe(string_format("NORMAL %.6f %.6f %.6f", normal.x, normal.y, normal.z));
-			pipe->writeToPipe(string_format("TEXCOORD %.6f %.6f", uv.x, -uv.y));
-		}
-
-		pipe->writeToPipe(string_format("FACE %d %d %d", vertexCount, vertexCount + 1, vertexCount + 2));
-		vertexCount += 3;
-	}
-
 	//	If the mesh has skinning information...
 	if (skin != NULL) {
 		//	... export the bone structure first.
@@ -221,7 +197,65 @@ void JSONExporter::processMesh(IGameNode* node, NamedPipe* pipe) {
 				this->matrixToString(bindMatrix).c_str()
 				));
 		}
+	}
 
+	//	Iterate over the available faces, and for each face, extract its geometry data.
+	counter = mesh->GetNumberOfFaces();
+	int vertexCount = 0;
+	DWORD* mapIndices = new DWORD[3];
+	DWORD vertexIndex;
+
+	for (i = 0; i < counter; i++) {
+		FaceEx* face = mesh->GetFace(i);
+
+		mesh->GetMapFaceIndex(1, face->meshFaceIndex, mapIndices);
+		for (j = 0; j < 3; j++) {
+			vertexIndex = face->vert[j];
+
+			Point3 vertex, normal, uv;
+			mesh->GetVertex(vertexIndex, vertex, true);
+			mesh->GetNormal(face->norm[j], normal, true);
+			mesh->GetMapVertex(1, mapIndices[j], uv);
+
+			pipe->writeToPipe(string_format("VERTEX %.6f %.6f %.6f", vertex.x, vertex.y, vertex.z));
+			pipe->writeToPipe(string_format("NORMAL %.6f %.6f %.6f", normal.x, normal.y, normal.z));
+			pipe->writeToPipe(string_format("TEXCOORD %.6f %.6f", uv.x, -uv.y));
+
+			//	If skinning data is available, we need to export it.
+			if (skin != NULL) {
+				int influencingBones = skin->GetNumberOfBones(vertexIndex);
+				if (influencingBones > 0) {
+					IGameNode* bone0 = skin->GetIGameBone(vertexIndex, 0);
+					float weight0 = skin->GetWeight(vertexIndex, 0);
+					IGameNode* bone1 = skin->GetIGameBone(vertexIndex, 1);
+					float weight1 = skin->GetWeight(vertexIndex, 1);
+					IGameNode* bone2 = skin->GetIGameBone(vertexIndex, 2);
+					float weight2 = skin->GetWeight(vertexIndex, 2);
+					IGameNode* bone3 = skin->GetIGameBone(vertexIndex, 3);
+					float weight3 = skin->GetWeight(vertexIndex, 3);
+
+					//	We support up to 4 bones influencing a vertex.
+					pipe->writeToPipe(string_format("SKIN %d %d %.6f %d %.6f %d %.6f %d %.6f",
+						vertexIndex,
+						bone0 == NULL ? -1 : bone0->GetNodeID(),
+						weight0,
+						bone1 == NULL ? -1 : bone1->GetNodeID(),
+						weight1,
+						bone2 == NULL ? -1 : bone2->GetNodeID(),
+						weight2,
+						bone3 == NULL ? -1 : bone3->GetNodeID(),
+						weight3
+					));
+				}
+			}
+		}
+
+		pipe->writeToPipe(string_format("FACE %d %d %d", vertexCount, vertexCount + 1, vertexCount + 2));
+		vertexCount += 3;
+	}
+
+	//	Once again check if we have skin information.
+	if (skin != NULL) {
 		//	We are using time tags to specify animations' times and names. In order to define an animation, you need to create
 		//	two time tags - the first marks at which frame the animation starts and the second one (needs to be relative to the
 		//	first one) indicates the end of the animation.

@@ -61,7 +61,7 @@ public class Bone {
         this.worldBindMatrix.invert(this.inverseBindMatrix);
     }
 
-    Map<Integer, Float> getVertexWeights() {
+    public Map<Integer, Float> getVertexWeights() {
         return vertexWeights;
     }
 

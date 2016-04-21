@@ -21,7 +21,7 @@ public class My3dsMaxExporterClient {
 
     static {
         commandManager.registerCommandHandler(BEGIN_NODE, new BeginNodeCommand());
-        commandManager.registerCommandHandler(new NodeGeometryDataCommand(), VERTEX, NORMAL, FACE, TEXCOORD, BONE);
+        commandManager.registerCommandHandler(new NodeGeometryDataCommand(), VERTEX, NORMAL, FACE, TEXCOORD, BONE, SKIN);
         commandManager.registerCommandHandler(FINISH_NODE, new FinishNodeCommand());
 
         commandManager.registerCommandHandler(BEGIN_ANIMATION, new BeginAnimationCommand());

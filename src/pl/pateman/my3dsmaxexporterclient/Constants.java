@@ -23,6 +23,7 @@ public interface Constants {
     String FACE = "FACE";
     String TEXCOORD = "TEXCOORD";
     String BONE = "BONE";
+    String SKIN = "SKIN";
 
     String BEGIN_ANIMATION = "BEGIN_ANIMATION";
     String FINISH_ANIMATION = "FINISH_ANIMATION";

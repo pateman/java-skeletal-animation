@@ -26,6 +26,8 @@ public class BoneSerializer implements JsonSerializer<Bone> {
         jsonElement.add("bindRotation", context.serialize(src.getBindRotation()));
         jsonElement.add("bindScale", context.serialize(src.getBindScale()));
 
+        jsonElement.add("weights", context.serialize(src.getVertexWeights()));
+
         return jsonElement;
     }
 }

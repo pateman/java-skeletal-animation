@@ -69,6 +69,36 @@ public final class NodeGeometryDataCommand implements ClientCommand {
 
                 context.mesh.getSkeleton().getBones().add(bone);
                 break;
+            case SKIN:
+                final int vertexIndex = Integer.parseInt(context.commandParameters[1]);
+                final int bone0 = Integer.parseInt(context.commandParameters[2]);
+                final float weight0 = Float.parseFloat(context.commandParameters[3]);
+                final int bone1 = Integer.parseInt(context.commandParameters[4]);
+                final float weight1 = Float.parseFloat(context.commandParameters[5]);
+                final int bone2 = Integer.parseInt(context.commandParameters[6]);
+                final float weight2 = Float.parseFloat(context.commandParameters[7]);
+                final int bone3 = Integer.parseInt(context.commandParameters[8]);
+                final float weight3 = Float.parseFloat(context.commandParameters[9]);
+
+                Bone skeletonBone;
+                if (bone0 != -1) {
+                    skeletonBone = context.mesh.getSkeleton().getBoneByIndex(bone0);
+                    skeletonBone.addVertexWeight(vertexIndex, weight0);
+                }
+                if (bone1 != -1) {
+                    skeletonBone = context.mesh.getSkeleton().getBoneByIndex(bone1);
+                    skeletonBone.addVertexWeight(vertexIndex, weight1);
+                }
+                if (bone2 != -1) {
+                    skeletonBone = context.mesh.getSkeleton().getBoneByIndex(bone2);
+                    skeletonBone.addVertexWeight(vertexIndex, weight2);
+                }
+                if (bone3 != -1) {
+                    skeletonBone = context.mesh.getSkeleton().getBoneByIndex(bone3);
+                    skeletonBone.addVertexWeight(vertexIndex, weight3);
+                }
+
+                break;
         }
     }
 }

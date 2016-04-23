@@ -51,3 +51,106 @@ std::string get3dsMaxPath() {
 	replaceAll(path, "\\", "\\\\");
 	return path;
 }
+
+float convertToMeter(int unitType) {
+	float value = 1.0f;
+
+	switch (unitType) {
+	case UNITS_INCHES:
+		value = M2IN;
+		break;
+
+	case UNITS_FEET:
+		value = M2FT;
+		break;
+
+	case UNITS_MILES:
+		value = M2ML;
+		break;
+
+	case UNITS_MILLIMETERS:
+		value = M2MM;
+		break;
+
+	case UNITS_CENTIMETERS:
+		value = M2CM;
+		break;
+
+	case UNITS_METERS:
+		value = M2M;
+		break;
+
+	case UNITS_KILOMETERS:
+		value = M2KM;
+		break;
+	}
+
+	return value;
+}
+
+Matrix3 transformMatrix(Matrix3 originalMatrix) {
+	Matrix3 YtoZ, ZtoY, mat;
+
+	GMatrix gmat;
+	gmat.SetRow(0, Point4(1, 0, 0, 0));
+	gmat.SetRow(1, Point4(0, 0, 1, 0));
+	gmat.SetRow(2, Point4(0, -1, 0, 0));
+	gmat.SetRow(3, Point4(0, 0, 0, 1));
+	YtoZ = gmat.ExtractMatrix3();
+	ZtoY = Inverse(YtoZ);
+
+	mat = YtoZ * originalMatrix * ZtoY;
+	return mat;
+}
+
+Matrix3 getGlobalNodeMatrix(INode *node, int time) {
+	return transformMatrix(node->GetNodeTM(time));
+}
+
+Matrix3 uniformMatrix(Matrix3 originalMatrix) {
+	AffineParts parts;
+	Matrix3 mat, YtoZ, ZtoY;
+
+	GMatrix gmat;
+	gmat.SetRow(0, Point4(1, 0, 0, 0));
+	gmat.SetRow(1, Point4(0, 0, 1, 0));
+	gmat.SetRow(2, Point4(0, -1, 0, 0));
+	gmat.SetRow(3, Point4(0, 0, 0, 1));
+	YtoZ = gmat.ExtractMatrix3();
+	ZtoY = Inverse(YtoZ);
+
+	//	Decompose the original matrix and get decomposition info.
+	decomp_affine(originalMatrix, &parts);
+
+	//	Construct a 3x3 rotation from the quaternion parts.q.
+	parts.q.MakeMatrix(mat);
+
+	//	Construct the position row from the translation parts.t.
+	mat.SetRow(3, parts.t);
+
+	//	We want to export using the Y axis as up.
+	mat = YtoZ * mat * ZtoY;
+	return mat;
+}
+
+Matrix3 getLocalUniformMatrix(INode *node, Matrix3 offsetMatrix, int time) {
+	Matrix3 currentMatrix = uniformMatrix(node->GetNodeTM(time)) * Inverse(offsetMatrix);
+
+	if (node->GetParentNode()->IsRootNode()) {
+		return currentMatrix;
+	}
+
+	Matrix3 parentMatrix = uniformMatrix(node->GetParentNode()->GetNodeTM(time)) * Inverse(offsetMatrix);
+	return currentMatrix * Inverse(parentMatrix);
+}
+
+Matrix3 getLocalUniformMatrix(INode *node, INode *parent, Matrix3 offsetMatrix, int time) {
+	Matrix3 currentMatrix = uniformMatrix(node->GetNodeTM(time)) * Inverse(offsetMatrix);
+
+	Matrix3 parentMatrix = transformMatrix(parent->GetNodeTM(time)) * Inverse(offsetMatrix);
+	return currentMatrix * Inverse(parentMatrix);
+}
+
+Matrix3 getRelativeMatrix(Matrix3 m1, Matrix3 m2) {
+	return m1 * Inverse(m2);
+}

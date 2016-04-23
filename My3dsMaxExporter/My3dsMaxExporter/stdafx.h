@@ -6,6 +6,7 @@
 #include "istdplug.h"
 #include "iparamb2.h"
 #include "iparamm2.h"
+#include "decomp.h"
 
 #include "IGame.h"
 #include "IGameObject.h"
@@ -26,6 +27,7 @@
 #include <exception>
 #include <memory>
 #include <vector>
+#include <map>
 #include <algorithm>
 
 extern HINSTANCE hInstance;

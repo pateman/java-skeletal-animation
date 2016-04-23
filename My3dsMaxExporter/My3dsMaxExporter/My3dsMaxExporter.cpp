@@ -88,6 +88,12 @@ int	JSONExporter::DoExport(const TCHAR *name, ExpInterface *ei, Interface *i, BO
 		IGameConversionManager* conversionManager = GetConversionManager();
 		conversionManager->SetCoordSystem(IGameConversionManager::CoordSystem::IGAME_OGL);
 
+		//	Calculate the length unit multiplier.
+		int unitType = 0;
+		float unitScale = 0;
+		GetMasterUnitInfo(&unitType, &unitScale);
+		this->lengthUnitMultiplier = convertToMeter(unitType) * unitScale;
+
 		//	Find all meshes in the scene.
 		Tab<IGameNode*> meshes = this->scene->GetIGameNodeByType(IGameObject::ObjectTypes::IGAME_MESH);
 		int meshCount = meshes.Count();
@@ -136,6 +142,13 @@ std::string JSONExporter::prepareNodeNameForExport(const wchar_t* nodeName) {
 	return tchar2s(newName);
 }
 
+std::string JSONExporter::transformToString(const Point3 translation, const Quat rotation, const Point3 scale) {
+	return string_format("%.6f %.6f %.6f %.6f %.6f %.6f %.6f %.6f %.6f %.6f",
+		translation.x, translation.y, translation.z,
+		rotation.x, rotation.y, rotation.z, -rotation.w,
+		scale.x, scale.y, scale.z);
+}
+
 std::string JSONExporter::matrixToString(const Matrix3 matrix) {
 	Point3 translation, scale;
 	Quat rotation;
@@ -143,27 +156,48 @@ std::string JSONExporter::matrixToString(const Matrix3 matrix) {
 	//	Get translation, rotation, and scale from the transformation matrix.
 	DecomposeMatrix(matrix, translation, rotation, scale);
 
+	//	Modify the translation part to include the length unit multiplier.
+	translation = translation * this->lengthUnitMultiplier;
+
 	//	Write the decomposed parts of the matrix to the string.
-	return string_format("%.6f %.6f %.6f %.6f %.6f %.6f %.6f %.6f %.6f %.6f",
-		translation.x, translation.y, translation.z,
-		rotation.x, rotation.y, rotation.z, rotation.w,
-		scale.x, scale.y, scale.z);
+	return this->transformToString(translation, rotation, scale);
 }
 
-void JSONExporter::processAnimation(const std::vector<int> animationTimes, int ticksPerSecond, NamedPipe* pipe) {
+void JSONExporter::processAnimation(IGameNode* node, const std::vector<int> animationTimes, int ticksPerSecond, NamedPipe* pipe) {
 	int j;
+	
+	INode* maxNode = node->GetMaxNode();
+	Matrix3 offsetMatrix = this->globalNodeOffsetMatrices[maxNode];
+	
 	for (int i = 0; i < this->bones.Count(); i++) {
 		IGameNode* bone = this->bones[i];
+		IGameNode* parent = bone->GetNodeParent();
+		BoneData boneData = this->boneBindMatrices[bone];
 
 		pipe->writeToPipe(string_format("BEGIN_TRACK %d", bone->GetNodeID()));
 
 		for (j = 0; j < animationTimes.size(); j++) {
 			float keyframeTime = (float(animationTimes[j] - animationTimes[0]) / float(ticksPerSecond)) / GetFrameRate();
 
-			Matrix3 keyframeMatrix = bone->GetLocalTM(animationTimes[j]).ExtractMatrix3();
+			//	Get the keyframe matrix.
+			Matrix3 keyframeMatrix, relativeMatrix;
+			if (parent == NULL) {
+				keyframeMatrix = getLocalUniformMatrix(bone->GetMaxNode(), maxNode, offsetMatrix, animationTimes[j]);
+			} else {
+				keyframeMatrix = getLocalUniformMatrix(bone->GetMaxNode(), offsetMatrix, animationTimes[j]);
+			}
+			relativeMatrix = getRelativeMatrix(keyframeMatrix, boneData.bindMatrix);
+
+			AffineParts tap, ap;
+			decomp_affine(keyframeMatrix, &tap);
+			decomp_affine(relativeMatrix, &ap);
+			Point3 trans = (tap.t * this->lengthUnitMultiplier) - boneData.bindPos;
+			Point3 scale = ap.k;
+			Quat rot = ap.q;
+
 			pipe->writeToPipe(string_format("KEYFRAME %.6f %s",
 				keyframeTime,
-				this->matrixToString(keyframeMatrix).c_str()
+				this->transformToString(trans, rot, scale).c_str()
 			));
 		}
 
@@ -181,20 +215,45 @@ void JSONExporter::processMesh(IGameNode* node, NamedPipe* pipe) {
 		return;
 	}
 
+	//	Clear the bone bind matrices map.
+	this->boneBindMatrices.clear();
+
+	//	When exporting bones, we need to convert bone matrices to mesh space.
+	INode* maxNode = node->GetMaxNode();
+	Matrix3 offsetMatrix = getGlobalNodeMatrix(maxNode, 0);
+	this->globalNodeOffsetMatrices[maxNode] = offsetMatrix;
+
 	//	If the mesh has skinning information...
 	if (skin != NULL) {
 		//	... export the bone structure first.
 		counter = this->bones.Count();
+
 		for (i = 0; i < counter; i++) {
 			IGameNode* bone = this->bones[i];
 			IGameNode* parent = bone->GetNodeParent();
 
-			Matrix3 bindMatrix = bone->GetLocalTM(0).ExtractMatrix3();
+			//	Calculate the bind matrix.
+			Matrix3 bindMatrix;
+			if (parent == NULL) {
+				bindMatrix = getLocalUniformMatrix(bone->GetMaxNode(), maxNode, offsetMatrix, 0);
+			} else {
+				bindMatrix = getLocalUniformMatrix(bone->GetMaxNode(), offsetMatrix, 0);
+			}
+
+			//	Decompose the bind matrix to include the length multiplier in the translation.
+			AffineParts ap;
+			decomp_affine(bindMatrix, &ap);
+			Point3 translation = ap.t * this->lengthUnitMultiplier;
+			Point3 scale = ap.k;
+			Quat rotation = ap.q;
+
+			this->boneBindMatrices[bone] = { bindMatrix, translation };
+
 			pipe->writeToPipe(string_format("BONE %s %d %d %s",
 				this->prepareNodeNameForExport(bone->GetName()).c_str(),
 				bone->GetNodeID(),
 				parent == NULL ? -1 : parent->GetNodeID(),
-				this->matrixToString(bindMatrix).c_str()
+				this->transformToString(translation, rotation, scale).c_str()
 				));
 		}
 	}
@@ -236,7 +295,7 @@ void JSONExporter::processMesh(IGameNode* node, NamedPipe* pipe) {
 
 					//	We support up to 4 bones influencing a vertex.
 					pipe->writeToPipe(string_format("SKIN %d %d %.6f %d %.6f %d %.6f %d %.6f",
-						vertexIndex,
+						vertexCount + j,
 						bone0 == NULL ? -1 : bone0->GetNodeID(),
 						weight0,
 						bone1 == NULL ? -1 : bone1->GetNodeID(),
@@ -309,7 +368,7 @@ void JSONExporter::processMesh(IGameNode* node, NamedPipe* pipe) {
 			));
 
 			//	Export the animation.
-			this->processAnimation(animationTimes, ticksPerFrame, pipe);
+			this->processAnimation(node, animationTimes, ticksPerFrame, pipe);
 
 			pipe->writeToPipe("FINISH_ANIMATION");
 		}
@@ -325,7 +384,7 @@ void JSONExporter::processNode(IGameNode* node, Interface* coreInterface, NamedP
 		DebugPrint(TSTR(_T("Ignoring ")).Append(node->GetName()).Append(_T(" because of unsupported object type")));
 	} else {
 		IGameNode* parent = node->GetNodeParent();
-		Matrix3 transformMatrix = node->GetLocalTM().ExtractMatrix3();
+		Matrix3 transformMatrix = node->GetObjectTM(0).ExtractMatrix3();
 		
 		//	Write node information to the pipe.
 		pipe->writeToPipe(string_format("BEGIN_NODE %s %d %d %s", 

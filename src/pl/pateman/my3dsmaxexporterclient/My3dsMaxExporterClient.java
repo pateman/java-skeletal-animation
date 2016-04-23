@@ -30,6 +30,7 @@ public class My3dsMaxExporterClient {
     }
 
     public static void main(String[] args) {
+        final StringBuilder commandLog = new StringBuilder();
         try (final RandomAccessFile pipe = new RandomAccessFile("\\\\.\\pipe\\" + args[0], "r")) {
             //  Create an instance of the context.
             final CommandContext commandContext = new CommandContext();
@@ -38,6 +39,8 @@ public class My3dsMaxExporterClient {
             while (true) {
                 //  Read a command from the pipe.
                 final String commandLine = pipe.readLine();
+
+                commandLog.append(commandLine).append("\n");
 
                 //  Split the command by whitespace. The first part contains the name of the command. Before we look up
                 //  the command though, check if the 3dsmax plugin hasn't issued the "END" command.
@@ -54,6 +57,11 @@ public class My3dsMaxExporterClient {
                     try (PrintWriter writer = new PrintWriter(commandContext.outputFile)) {
                         writer.print(json);
                     }
+
+                    try (PrintWriter writer = new PrintWriter(commandContext.outputFile + ".log")) {
+                        writer.print(commandLog.toString());
+                    }
+
                     break;
                 }
 

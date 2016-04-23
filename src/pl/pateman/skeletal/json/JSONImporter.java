@@ -51,6 +51,13 @@ public final class JSONImporter implements MeshImporter {
         mesh.getSkeleton().arrangeBones();
         mesh.createBoneTracks();
 
+        //  Calculate the number of frames for each animation.
+        for (final Animation animation : mesh.getAnimations()) {
+            for (final AnimationTrack track : animation.getTracks()) {
+                animation.setFrameCount(Math.max(animation.getFrameCount(), track.getKeyframes().size()));
+            }
+        }
+
         //  Create the pallete skinning buffer for passing animation matrices to the shader.
         TempVars.initializeStorageForSkinning(mesh.getSkeleton().getBones().size());
 
@@ -69,6 +76,8 @@ public final class JSONImporter implements MeshImporter {
         if (sceneData.getScale() != null) {
             scale.set(sceneData.getScale());
         }
+
+        vars.release();
 
         //  Create the entity.
         final MeshEntity meshEntity = new MeshEntity();
@@ -96,9 +105,10 @@ public final class JSONImporter implements MeshImporter {
             final JsonObject jsonObject = jsonElement.getAsJsonObject();
 
             final String boneName = jsonObject.get("name").getAsString();
-            final int boneIndex = jsonObject.get("index").getAsInt();
+            final int origBoneIndex = jsonObject.get("index").getAsInt();
             final int parent = jsonObject.get("parent").getAsInt();
 
+            int boneIndex = JSONImporter.this.boneMap.size();
             final Bone bone = new Bone(boneName, boneIndex);
             if (parent != -1) {
                 final Bone parentBone = JSONImporter.this.boneMap.get(parent);
@@ -115,7 +125,7 @@ public final class JSONImporter implements MeshImporter {
             final Map<Integer, Float> weights = context.deserialize(jsonObject.get("weights"), this.weightsMapType);
             bone.getVertexWeights().putAll(weights);
 
-            JSONImporter.this.boneMap.put(boneIndex, bone);
+            JSONImporter.this.boneMap.put(origBoneIndex, bone);
 
             return bone;
         }

@@ -2,6 +2,11 @@
 #include "stdafx.h"
 #include "NamedPipe.h"
 
+struct BoneData {
+	Matrix3 bindMatrix;
+	Point3 bindPos;
+};
+
 class JSONExporter : public SceneExport {
 	int	ExtCount();
 	const TCHAR* Ext(int n);
@@ -21,11 +26,15 @@ private:
 	IFrameTagManager* frameTagManager;
 	Interval animationRange;
 	Tab<IGameNode*> bones;
+	std::map<IGameNode*, BoneData> boneBindMatrices;
+	std::map<INode*, Matrix3> globalNodeOffsetMatrices;
+	float lengthUnitMultiplier;
 
 	std::string prepareNodeNameForExport(const wchar_t* nodeName);
 
-	void processAnimation(const std::vector<int> animationTimes, int ticksPerSecond, NamedPipe* pipe);
+	void processAnimation(IGameNode* node, const std::vector<int> animationTimes, int ticksPerSecond, NamedPipe* pipe);
 	void processMesh(IGameNode* node, NamedPipe* pipe);
 	void processNode(IGameNode* node, Interface* coreInterface, NamedPipe* pipe);
 	std::string matrixToString(const Matrix3 matrix);
+	std::string transformToString(const Point3 translation, const Quat rotation, const Point3 scale);
 };

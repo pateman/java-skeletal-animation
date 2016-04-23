@@ -35,13 +35,13 @@ public class AnimationDataCommand implements ClientCommand {
                 final AnimationKeyframe animationKeyframe = new AnimationKeyframe(time, new Vector3f(),
                         new Quaternionf());
 
-                animationKeyframe.getTranslation().x = Float.parseFloat(context.commandParameters[4]);
-                animationKeyframe.getTranslation().y = Float.parseFloat(context.commandParameters[5]);
-                animationKeyframe.getTranslation().z = Float.parseFloat(context.commandParameters[6]);
-                animationKeyframe.getRotation().x = Float.parseFloat(context.commandParameters[7]);
-                animationKeyframe.getRotation().y = Float.parseFloat(context.commandParameters[8]);
-                animationKeyframe.getRotation().z = Float.parseFloat(context.commandParameters[9]);
-                animationKeyframe.getRotation().w = Float.parseFloat(context.commandParameters[10]);
+                animationKeyframe.getTranslation().x = Float.parseFloat(context.commandParameters[2]);
+                animationKeyframe.getTranslation().y = Float.parseFloat(context.commandParameters[3]);
+                animationKeyframe.getTranslation().z = Float.parseFloat(context.commandParameters[4]);
+                animationKeyframe.getRotation().x = Float.parseFloat(context.commandParameters[5]);
+                animationKeyframe.getRotation().y = Float.parseFloat(context.commandParameters[6]);
+                animationKeyframe.getRotation().z = Float.parseFloat(context.commandParameters[7]);
+                animationKeyframe.getRotation().w = Float.parseFloat(context.commandParameters[8]);
 
                 final AnimationTrack animTrack = (AnimationTrack) context.stateVariables.get(CURRENT_ANIMATION_TRACK);
                 animTrack.getKeyframes().add(animationKeyframe);

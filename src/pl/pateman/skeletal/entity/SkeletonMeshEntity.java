@@ -87,8 +87,9 @@ public class SkeletonMeshEntity extends AbstractEntity {
     }
 
     public void applyAnimation(final List<Matrix4f> animationMatrices) {
-        final Vector3f translation = new Vector3f();
-        final Quaternionf rotation = new Quaternionf();
+        final TempVars tempVars = TempVars.get();
+        final Vector3f translation = tempVars.vect3d1;
+        final Quaternionf rotation = tempVars.quat1;
 
         for (int i = 0; i < this.joints.size(); i++) {
             final CubeMeshEntity joint = this.joints.get(i);
@@ -96,6 +97,8 @@ public class SkeletonMeshEntity extends AbstractEntity {
             this.getQuaternionAndTranslationFromMatrix(animationMatrices.get(i), rotation, translation);
             joint.setTransformation(rotation, translation, BONE_SCALING);
         }
+
+        tempVars.release();
     }
 
     public void drawSkeletonMesh(final Matrix4f viewMatrix, final Matrix4f projectionMatrix) {

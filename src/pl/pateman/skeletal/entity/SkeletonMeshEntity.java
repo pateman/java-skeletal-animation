@@ -8,14 +8,12 @@ import pl.pateman.skeletal.TempVars;
 import pl.pateman.skeletal.Utils;
 import pl.pateman.skeletal.entity.mesh.MeshRenderer;
 import pl.pateman.skeletal.mesh.Bone;
-import pl.pateman.skeletal.mesh.Mesh;
 import pl.pateman.skeletal.mesh.Skeleton;
 import pl.pateman.skeletal.shader.Program;
 import pl.pateman.skeletal.shader.Shader;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -71,7 +69,7 @@ public class SkeletonMeshEntity extends AbstractEntity {
         final Vector3f translation = new Vector3f();
         final Quaternionf rotation = new Quaternionf();
         for (Bone bone : this.skeleton.getBones()) {
-            final CubeMeshEntity jointMeshEntity = new CubeMeshEntity();
+            final CubeMeshEntity jointMeshEntity = new CubeMeshEntity(0.05f);
             jointMeshEntity.setShaderProgram(this.meshProgram);
             jointMeshEntity.buildMesh();
 
@@ -128,82 +126,4 @@ public class SkeletonMeshEntity extends AbstractEntity {
         tempVars.release();
     }
 
-    private class CubeMeshEntity extends MeshEntity {
-        @Override
-        public void buildMesh() {
-            final Mesh mesh = new Mesh();
-            mesh.getVertices().addAll(Utils.arrayToVector3fList(
-                    -0.05f, -0.05f, -0.05f,
-                    0.05f, -0.05f, -0.05f,
-                    0.05f, 0.05f, -0.05f,
-                    -0.05f, 0.05f, -0.05f,
-
-                    0.05f, -0.05f, -0.05f,
-                    0.05f,   -0.05f,  0.05f,
-                    0.05f,   0.05f,   0.05f,
-                    0.05f,   0.05f,   -0.05f,
-
-                    0.05f,   -0.05f,  0.05f,
-                    -0.05f,  -0.05f,  0.05f,
-                    -0.05f,  0.05f,   0.05f,
-                    0.05f,   0.05f,   0.05f,
-
-                    -0.05f,  -0.05f,  0.05f,
-                    -0.05f,  -0.05f,  -0.05f,
-                    -0.05f,  0.05f,   -0.05f,
-                    -0.05f,  0.05f,   0.05f,
-
-                    0.05f,   0.05f,   -0.05f,
-                    0.05f,   0.05f,   0.05f,
-                    -0.05f,  0.05f,   0.05f,
-                    -0.05f,  0.05f,   -0.05f,
-
-                    -0.05f,  -0.05f,  -0.05f,
-                    -0.05f,  -0.05f,  0.05f,
-                    0.05f,   -0.05f,  0.05f,
-                    0.05f,   -0.05f,  -0.05f
-            ));
-            mesh.getTriangles().addAll(Arrays.asList(2, 1, 0, 3, 2, 0));
-            mesh.getTriangles().addAll(Arrays.asList(6, 5, 4, 7, 6, 4));
-            mesh.getTriangles().addAll(Arrays.asList(10, 9, 8, 11, 10, 8));
-            mesh.getTriangles().addAll(Arrays.asList(14, 13, 12, 15, 14, 12));
-            mesh.getTriangles().addAll(Arrays.asList(18, 17, 16, 19, 18, 16));
-            mesh.getTriangles().addAll(Arrays.asList(22, 21, 20, 23, 22, 20));
-
-            mesh.getNormals().addAll(Utils.arrayToVector3fList(
-                    0.0f, 0.0f, -1.0f,
-                    0.0f, 0.0f, -1.0f,
-                    0.0f, 0.0f, -1.0f,
-                    0.0f, 0.0f, -1.0f,
-
-                    1.0f, 0.0f, 0.0f,
-                    1.0f, 0.0f, 0.0f,
-                    1.0f, 0.0f, 0.0f,
-                    1.0f, 0.0f, 0.0f,
-
-                    0.0f, 0.0f, 1.0f,
-                    0.0f, 0.0f, 1.0f,
-                    0.0f, 0.0f, 1.0f,
-                    0.0f, 0.0f, 1.0f,
-
-                    -1.0f, 0.0f, 0.0f,
-                    -1.0f, 0.0f, 0.0f,
-                    -1.0f, 0.0f, 0.0f,
-                    -1.0f, 0.0f, 0.0f,
-
-                    0.0f, 1.0f, 0.0f,
-                    0.0f, 1.0f, 0.0f,
-                    0.0f, 1.0f, 0.0f,
-                    0.0f, 1.0f, 0.0f,
-
-                    0.0f, -1.0f, 0.0f,
-                    0.0f, -1.0f, 0.0f,
-                    0.0f, -1.0f, 0.0f,
-                    0.0f, -1.0f, 0.0f
-            ));
-
-            this.setMesh(mesh);
-            super.buildMesh();
-        }
-    }
 }

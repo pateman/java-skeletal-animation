@@ -188,6 +188,9 @@ void JSONExporter::processAnimation(IGameNode* node, const std::vector<int> anim
 			}
 			relativeMatrix = getRelativeMatrix(keyframeMatrix, boneData.bindMatrix);
 
+			//	Decompose both the keyframe matrix and the relative matrix. We need to apply the length unit multiplier
+			//	to the translation part, and also we need to subtract the bind position from the keyframe's position
+			//	to make sure that the bone is positioned correctly.
 			AffineParts tap, ap;
 			decomp_affine(keyframeMatrix, &tap);
 			decomp_affine(relativeMatrix, &ap);
@@ -275,6 +278,9 @@ void JSONExporter::processMesh(IGameNode* node, NamedPipe* pipe) {
 			mesh->GetVertex(vertexIndex, vertex, true);
 			mesh->GetNormal(face->norm[j], normal, true);
 			mesh->GetMapVertex(1, mapIndices[j], uv);
+
+			//	Multiply the vertex by the length unit multiplier to scale it appropiately.
+			vertex *= this->lengthUnitMultiplier;
 
 			pipe->writeToPipe(string_format("VERTEX %.6f %.6f %.6f", vertex.x, vertex.y, vertex.z));
 			pipe->writeToPipe(string_format("NORMAL %.6f %.6f %.6f", normal.x, normal.y, normal.z));

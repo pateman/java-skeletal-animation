@@ -27,6 +27,10 @@ public final class Utils {
     public static final String BONES_UNIFORM = "bones";
     public static final String USESKINNING_UNIFORM = "useSkinning";
     public static final String USETEXTURING_UNIFORM = "useTexturing";
+    public static final String USELIGHTING_UNIFORM = "useLighting";
+
+    public static final float HALF_PI = 0.5f * (float) Math.PI;
+    public static final float TWO_PI = 2.0f * (float) Math.PI;
 
     private Utils() {
     }

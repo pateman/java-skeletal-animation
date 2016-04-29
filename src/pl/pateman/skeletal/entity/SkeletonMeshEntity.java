@@ -118,6 +118,7 @@ public class SkeletonMeshEntity extends AbstractEntity {
             this.meshProgram.setUniformMatrix4(Utils.PROJECTION_UNIFORM, Utils.matrix4fToBuffer(projectionMatrix));
             this.meshProgram.setUniform1(Utils.USESKINNING_UNIFORM, 0);
             this.meshProgram.setUniform1(Utils.USETEXTURING_UNIFORM, 0);
+            this.meshProgram.setUniform1(Utils.USELIGHTING_UNIFORM, 1);
 
             meshRenderer.renderMesh();
             meshRenderer.finalizeRendering();

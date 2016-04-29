@@ -240,6 +240,7 @@ public class Main {
                 getProjectionMatrix()));
         this.meshProgram.setUniform1(Utils.TEXTURE_UNIFORM, 0);
         this.meshProgram.setUniform1(Utils.USETEXTURING_UNIFORM, 1);
+        this.meshProgram.setUniform1(Utils.USELIGHTING_UNIFORM, 1);
         if (this.meshEntity.getMesh().hasSkeleton()) {
             this.meshProgram.setUniform1(Utils.USESKINNING_UNIFORM, 1);
 

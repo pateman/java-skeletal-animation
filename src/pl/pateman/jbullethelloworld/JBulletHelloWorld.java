@@ -2,6 +2,7 @@ package pl.pateman.jbullethelloworld;
 
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
+import org.joml.Vector4f;
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.glfw.GLFWKeyCallback;
 import org.lwjgl.glfw.GLFWVidMode;
@@ -31,6 +32,11 @@ import static org.lwjgl.system.MemoryUtil.NULL;
 public class JBulletHelloWorld {
     public static final int WINDOW_WIDTH = 1024;
     public static final int WINDOW_HEIGHT = 768;
+    public static final Vector3f LIGHT_DIR = new Vector3f(-0.1f, 0.75f, 0.05f).normalize();
+    public static final String USE_LIGHTING_PARAM = "useLighting";
+    public static final String DIFFUSE_COLOR_PARAM = "diffuseColor";
+    public static final String SPHERE_ENTITY_NAME = "sphere";
+    public static final String GROUND_ENTITY_NAME = "ground";
 
     private GLFWErrorCallback errorCallback;
     private GLFWKeyCallback keyCallback;
@@ -131,15 +137,21 @@ public class JBulletHelloWorld {
             final MeshRenderer renderer = meshEntity.getMeshRenderer();
             renderer.initializeRendering();
 
-            //  Pass matrices to the shader.
+            //  Pass uniforms to the shader.
+            final String entityName = this.scene.getNameForEntity(meshEntity);
             this.program.setUniformMatrix4(Utils.MODELVIEW_UNIFORM, Utils.matrix4fToBuffer(modelViewMatrix));
             this.program.setUniformMatrix4(Utils.PROJECTION_UNIFORM, Utils.matrix4fToBuffer(this.camera.
                     getProjectionMatrix()));
             this.program.setUniform1(Utils.TEXTURE_UNIFORM, 0);
             this.program.setUniform1(Utils.USETEXTURING_UNIFORM, 0);
             this.program.setUniform1(Utils.USESKINNING_UNIFORM, 0);
-            this.program.setUniform1(Utils.USELIGHTING_UNIFORM, (int) this.scene.getEntityParameter(
-                    this.scene.getNameForEntity(meshEntity), "useLighting"));
+            this.program.setUniform3(Utils.CAMERADIRECTION_UNIFORM, LIGHT_DIR.x, LIGHT_DIR.y, LIGHT_DIR.z);
+            this.program.setUniform1(Utils.USELIGHTING_UNIFORM, (int) this.scene.getEntityParameter(entityName,
+                    USE_LIGHTING_PARAM));
+
+            final Vector4f diffuseColor = this.scene.getEntityParameter(entityName, DIFFUSE_COLOR_PARAM);
+            this.program.setUniform4(Utils.DIFFUSECOLOR_UNIFORM, diffuseColor.x, diffuseColor.y, diffuseColor.z,
+                    diffuseColor.w);
 
             //  Draw the entity.
             renderer.renderMesh();
@@ -184,17 +196,20 @@ public class JBulletHelloWorld {
             //  Create the scene.
             this.scene = new Scene();
 
-            final MeshEntity sphereMeshEntity = this.scene.addEntity("sphere", new SphereMeshEntity(2.0f, 32, 32));
+            final MeshEntity sphereMeshEntity = this.scene.addEntity(SPHERE_ENTITY_NAME,
+                    new SphereMeshEntity(2.0f, 32, 32));
             sphereMeshEntity.setShaderProgram(this.program);
             sphereMeshEntity.buildMesh();
-            this.scene.setEntityParameter("sphere", "useLighting", 1);
+            this.scene.setEntityParameter(SPHERE_ENTITY_NAME, USE_LIGHTING_PARAM, 1);
+            this.scene.setEntityParameter(SPHERE_ENTITY_NAME, DIFFUSE_COLOR_PARAM, new Vector4f(0.8f, 0.0f, 0.0f, 1.0f));
 
-            final CubeMeshEntity ground = this.scene.addEntity("ground", new CubeMeshEntity(1.0f));
+            final CubeMeshEntity ground = this.scene.addEntity(GROUND_ENTITY_NAME, new CubeMeshEntity(1.0f));
             ground.setTranslation(new Vector3f(0.0f, -5.0f, 0.0f));
             ground.setScale(new Vector3f(10.0f, 0.5f, 10.0f));
             ground.setShaderProgram(this.program);
             ground.buildMesh();
-            this.scene.setEntityParameter("ground", "useLighting", 0);
+            this.scene.setEntityParameter(GROUND_ENTITY_NAME, USE_LIGHTING_PARAM, 1);
+            this.scene.setEntityParameter(GROUND_ENTITY_NAME, DIFFUSE_COLOR_PARAM, new Vector4f(0.8f, 0.8f, 0.8f, 1.0f));
 
             //  Setup the camera.
             this.camera = new CameraEntity();

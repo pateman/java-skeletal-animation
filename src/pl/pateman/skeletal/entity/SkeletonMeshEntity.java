@@ -99,7 +99,7 @@ public class SkeletonMeshEntity extends AbstractEntity {
         tempVars.release();
     }
 
-    public void drawSkeletonMesh(final Matrix4f viewMatrix, final Matrix4f projectionMatrix) {
+    public void drawSkeletonMesh(final CameraEntity camera) {
         final TempVars tempVars = TempVars.get();
 
         final Matrix4f worldTrans = tempVars.tempMat4x41;
@@ -112,10 +112,14 @@ public class SkeletonMeshEntity extends AbstractEntity {
             this.getTransformation().mul(joint.getTransformation(), worldTrans);
 
             //  Prepare the model-view matrix.
-            viewMatrix.mul(worldTrans, modelViewMatrix);
+            camera.getViewMatrix().mul(worldTrans, modelViewMatrix);
 
             this.meshProgram.setUniformMatrix4(Utils.MODELVIEW_UNIFORM, Utils.matrix4fToBuffer(modelViewMatrix));
-            this.meshProgram.setUniformMatrix4(Utils.PROJECTION_UNIFORM, Utils.matrix4fToBuffer(projectionMatrix));
+            this.meshProgram.setUniformMatrix4(Utils.PROJECTION_UNIFORM, Utils.matrix4fToBuffer(camera.
+                    getProjectionMatrix()));
+            this.meshProgram.setUniform3(Utils.CAMERADIRECTION_UNIFORM, camera.getDirection().x,
+                    camera.getDirection().y, camera.getDirection().z);
+            this.meshProgram.setUniform4(Utils.DIFFUSECOLOR_UNIFORM, 0.8f, 0.8f, 0.8f, 1.0f);
             this.meshProgram.setUniform1(Utils.USESKINNING_UNIFORM, 0);
             this.meshProgram.setUniform1(Utils.USETEXTURING_UNIFORM, 0);
             this.meshProgram.setUniform1(Utils.USELIGHTING_UNIFORM, 1);

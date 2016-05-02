@@ -2,6 +2,8 @@ package pl.pateman.skeletal.entity;
 
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
+import pl.pateman.skeletal.TempVars;
+import pl.pateman.skeletal.Utils;
 import pl.pateman.skeletal.entity.camera.CameraProjection;
 
 /**
@@ -39,27 +41,27 @@ public class CameraEntity extends AbstractEntity {
                 this.cameraProjection.getFarPlane());
     }
 
-    public void updateViewMatrix() {
+    private void updateViewMatrix() {
+        final TempVars tempVars = TempVars.get();
+
         final Vector3f cameraPosition = this.getTranslation();
+        final Vector3f up = tempVars.vect3d1.set(Utils.AXIS_Y);
+        final Vector3f target = tempVars.vect3d2;
+        final Vector3f z = tempVars.vect3d3;
+        final Vector3f x = tempVars.vect3d4;
+        final Vector3f y =  tempVars.vect3d5;
+        final Matrix4f tmp = tempVars.tempMat4x41;
 
-        Vector3f up = new Vector3f(0.0f, 1.0f, 0.0f);
-
-        Vector3f target = new Vector3f();
         cameraPosition.add(this.getDirection().negate(), target);
-
-        Vector3f z = new Vector3f();
         cameraPosition.sub(target, z);
         z.normalize();
 
-        Vector3f x = new Vector3f();
         up.cross(z, x);
         x.normalize();
 
-        Vector3f y = new Vector3f();
         z.cross(x, y);
         y.normalize();
 
-        final Matrix4f tmp = new Matrix4f();
         tmp.m00 = x.x;
         tmp.m10 = x.y;
         tmp.m20 = x.z;
@@ -78,14 +80,15 @@ public class CameraEntity extends AbstractEntity {
         tmp.m33 = 1.0f;
 
         this.viewMatrix.set(tmp);
+        tempVars.release();
     }
 
     public Matrix4f getViewMatrix() {
-        return new Matrix4f(viewMatrix);
+        return this.viewMatrix;
     }
 
     public Matrix4f getProjectionMatrix() {
-        return new Matrix4f(projectionMatrix);
+        return this.projectionMatrix;
     }
 
     public CameraProjection getCameraProjection() {

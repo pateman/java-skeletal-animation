@@ -223,7 +223,7 @@ public class Main {
         final TempVars tempVars = TempVars.get();
 
         //  Draw the skeleton mesh first.
-        this.skeletonMeshEntity.drawSkeletonMesh(this.camera.getViewMatrix(), this.camera.getProjectionMatrix());
+        this.skeletonMeshEntity.drawSkeletonMesh(this.camera);
 
         //  Prepare the model-view matrix.
         final Matrix4f modelViewMatrix = this.camera.getViewMatrix().mul(this.meshEntity.getTransformation(),
@@ -234,13 +234,16 @@ public class Main {
         renderer.initializeRendering();
         this.meshTexture.bind();
 
-        //  Pass matrices to the shader.
+        //  Pass uniforms to the shader.
         this.meshProgram.setUniformMatrix4(Utils.MODELVIEW_UNIFORM, Utils.matrix4fToBuffer(modelViewMatrix));
         this.meshProgram.setUniformMatrix4(Utils.PROJECTION_UNIFORM, Utils.matrix4fToBuffer(this.camera.
                 getProjectionMatrix()));
         this.meshProgram.setUniform1(Utils.TEXTURE_UNIFORM, 0);
         this.meshProgram.setUniform1(Utils.USETEXTURING_UNIFORM, 1);
         this.meshProgram.setUniform1(Utils.USELIGHTING_UNIFORM, 1);
+        this.meshProgram.setUniform4(Utils.DIFFUSECOLOR_UNIFORM, 0.8f, 0.8f, 0.8f, 1.0f);
+        this.meshProgram.setUniform3(Utils.CAMERADIRECTION_UNIFORM, this.camera.getDirection().x,
+                this.camera.getDirection().y, this.camera.getDirection().z);
         if (this.meshEntity.getMesh().hasSkeleton()) {
             this.meshProgram.setUniform1(Utils.USESKINNING_UNIFORM, 1);
 

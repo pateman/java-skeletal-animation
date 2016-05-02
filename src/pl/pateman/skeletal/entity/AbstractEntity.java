@@ -1,10 +1,10 @@
 package pl.pateman.skeletal.entity;
 
-import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 import pl.pateman.skeletal.Clearable;
+import pl.pateman.skeletal.TempVars;
 import pl.pateman.skeletal.Utils;
 
 /**
@@ -14,6 +14,7 @@ public class AbstractEntity implements Clearable {
     private final Vector3f translation;
     private final Quaternionf rotation;
     private final Vector3f scale;
+    private final Vector3f direction;
 
     private final Matrix4f transformation;
 
@@ -21,12 +22,27 @@ public class AbstractEntity implements Clearable {
         this.translation = new Vector3f();
         this.rotation = new Quaternionf();
         this.scale = new Vector3f().set(1.0f, 1.0f, 1.0f);
-
         this.transformation = new Matrix4f();
+
+        this.direction = new Vector3f();
+        this.updateDirection();
     }
 
     protected void updateTransformationMatrix() {
         Utils.fromRotationTranslationScale(this.transformation, this.rotation, this.translation, this.scale);
+        this.updateDirection();
+    }
+
+    protected void updateDirection() {
+        final TempVars vars = TempVars.get();
+
+        final Matrix4f rotationPart = vars.tempMat4x41.set(this.transformation).setTranslation(0.0f, 0.0f, 0.0f);
+        rotationPart.m33 = 1.0f;
+
+        Utils.NEG_AXIS_Z.mul(rotationPart.get3x3(vars.tempMat3x3), this.direction);
+        this.direction.normalize();
+
+        vars.release();
     }
 
     public final void translate(final Vector3f offset) {
@@ -107,12 +123,7 @@ public class AbstractEntity implements Clearable {
     }
 
     public Vector3f getDirection() {
-        Matrix4f rotationPart = new Matrix4f(this.transformation).setTranslation(0.0f, 0.0f, 0.0f);
-        rotationPart.m33 = 1.0f;
-        final Vector3f direction = new Vector3f(0.0f, 0.0f, -1.0f).mul(rotationPart.get3x3(new Matrix3f()));
-        direction.normalize();
-
-        return direction;
+        return this.direction;
     }
 
     @Override

@@ -31,12 +31,14 @@
  */
 package pl.pateman.core;
 
+import com.bulletphysics.linearmath.Transform;
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
 import org.lwjgl.BufferUtils;
 
+import javax.vecmath.Quat4f;
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -207,4 +209,14 @@ public final class TempVars {
     public final Quaternionf quat1 = new Quaternionf();
     public final Quaternionf quat2 = new Quaternionf();
     public final Quaternionf quat3 = new Quaternionf();
+
+    /**
+     * For converting between Vecmath and JOML.
+     */
+    public final Transform vecmathTransform = new Transform();
+    public final javax.vecmath.Vector3f vecmathVect3d = new javax.vecmath.Vector3f();
+    public final Quat4f vecmathQuat = new Quat4f();
+    public final javax.vecmath.Matrix4f vecmathMat4x4 = new javax.vecmath.Matrix4f(1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f,
+            0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);
+    public final float[] matrix4x4AsArray = new float[16];
 }

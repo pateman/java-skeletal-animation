@@ -1,5 +1,7 @@
 package pl.pateman.core;
 
+import com.bulletphysics.dynamics.RigidBody;
+import com.bulletphysics.linearmath.Transform;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.joml.Vector2f;
@@ -124,6 +126,30 @@ public final class Utils {
 
         out.set(T.mul(R).mul(S));
         tempVars.release();
+    }
+
+    public static void matrixToTransform(final Transform out, final Matrix4f transformMatrix) {
+        final TempVars tempVars = TempVars.get();
+
+        transformMatrix.get(tempVars.matrix4x4AsArray);
+        tempVars.vecmathMat4x4.set(tempVars.matrix4x4AsArray);
+        out.set(tempVars.vecmathMat4x4);
+
+        //  The original set(Matrix4f mat) method is broken, so we need to set the translation separately.
+        out.origin.set(tempVars.matrix4x4AsArray[12], tempVars.matrix4x4AsArray[13], tempVars.matrix4x4AsArray[14]);
+
+        tempVars.release();
+    }
+
+    public static void setRigidBodyMass(final RigidBody out, float mass) {
+        if (out.getCollisionShape() == null) {
+            throw new IllegalArgumentException("Rigid body needs a collider");
+        }
+
+        final TempVars vars = TempVars.get();
+        out.getCollisionShape().calculateLocalInertia(mass, vars.vecmathVect3d);
+        out.setMassProps(mass, vars.vecmathVect3d);
+        vars.release();
     }
 
     public static List<Vector3f> arrayToVector3fList(float... components) {

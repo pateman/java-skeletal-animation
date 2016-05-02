@@ -1,5 +1,7 @@
 package pl.pateman.core.entity;
 
+import com.bulletphysics.dynamics.RigidBody;
+import com.bulletphysics.linearmath.DefaultMotionState;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
@@ -16,15 +18,15 @@ public class AbstractEntity implements Clearable {
     private static final AtomicLong ID_GENERATOR = new AtomicLong(0L);
 
     private final Long entityId = ID_GENERATOR.getAndIncrement();
+    private String name;
 
     private final Vector3f translation;
     private final Quaternionf rotation;
     private final Vector3f scale;
     private final Vector3f direction;
-
     private final Matrix4f transformation;
 
-    private String name;
+    private final RigidBody rigidBody;
 
     public AbstractEntity() {
         this(null);
@@ -40,11 +42,25 @@ public class AbstractEntity implements Clearable {
 
         this.direction = new Vector3f();
         this.updateDirection();
+
+        this.rigidBody = new RigidBody(1.0f, new DefaultMotionState(), null);
     }
 
     protected void updateTransformationMatrix() {
+        this.updateTransformationMatrix(true);
+    }
+
+    private void updateTransformationMatrix(boolean updateRigidBody) {
         Utils.fromRotationTranslationScale(this.transformation, this.rotation, this.translation, this.scale);
         this.updateDirection();
+
+        //  Update the rigid body's transformation.
+        if (updateRigidBody) {
+            final TempVars vars = TempVars.get();
+            Utils.matrixToTransform(vars.vecmathTransform, this.transformation);
+            this.rigidBody.setWorldTransform(vars.vecmathTransform);
+            vars.release();
+        }
     }
 
     protected void updateDirection() {
@@ -93,10 +109,15 @@ public class AbstractEntity implements Clearable {
         this.rotation.mul(rotation);
         this.translation.add(translation);
         this.scale(scale);
+        this.updateTransformationMatrix();
     }
 
     public final void forceTransformationUpdate() {
-        this.updateTransformationMatrix();
+        this.forceTransformationUpdate(true);
+    }
+
+    public final void forceTransformationUpdate(boolean updateRigidBody) {
+        this.updateTransformationMatrix(updateRigidBody);
     }
 
     public Vector3f getTranslation() {
@@ -150,6 +171,10 @@ public class AbstractEntity implements Clearable {
 
     public final void setName(String name) {
         this.name = name;
+    }
+
+    public RigidBody getRigidBody() {
+        return rigidBody;
     }
 
     @Override

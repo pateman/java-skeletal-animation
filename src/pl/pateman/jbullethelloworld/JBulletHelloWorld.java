@@ -1,5 +1,7 @@
 package pl.pateman.jbullethelloworld;
 
+import com.bulletphysics.collision.shapes.BoxShape;
+import com.bulletphysics.collision.shapes.SphereShape;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
@@ -8,19 +10,12 @@ import org.lwjgl.glfw.GLFWKeyCallback;
 import org.lwjgl.glfw.GLFWVidMode;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL20;
-import pl.pateman.skeletal.TempVars;
-import pl.pateman.skeletal.Utils;
-import pl.pateman.skeletal.entity.CameraEntity;
-import pl.pateman.skeletal.entity.CubeMeshEntity;
-import pl.pateman.skeletal.entity.MeshEntity;
-import pl.pateman.skeletal.entity.SphereMeshEntity;
-import pl.pateman.skeletal.entity.mesh.MeshRenderer;
-import pl.pateman.skeletal.shader.Program;
-import pl.pateman.skeletal.shader.Shader;
-
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import pl.pateman.core.TempVars;
+import pl.pateman.core.Utils;
+import pl.pateman.core.entity.*;
+import pl.pateman.core.entity.mesh.MeshRenderer;
+import pl.pateman.core.shader.Program;
+import pl.pateman.core.shader.Shader;
 
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.opengl.GL11.*;
@@ -30,13 +25,14 @@ import static org.lwjgl.system.MemoryUtil.NULL;
  * Created by pateman.
  */
 public class JBulletHelloWorld {
-    public static final int WINDOW_WIDTH = 1024;
-    public static final int WINDOW_HEIGHT = 768;
-    public static final Vector3f LIGHT_DIR = new Vector3f(-0.1f, 0.75f, 0.05f).normalize();
-    public static final String USE_LIGHTING_PARAM = "useLighting";
-    public static final String DIFFUSE_COLOR_PARAM = "diffuseColor";
-    public static final String SPHERE_ENTITY_NAME = "sphere";
-    public static final String GROUND_ENTITY_NAME = "ground";
+    private static final int WINDOW_WIDTH = 1024;
+    private static final int WINDOW_HEIGHT = 768;
+    private static final Vector3f LIGHT_DIR = new Vector3f(-0.1f, 0.75f, 0.05f).normalize();
+    private static final String USE_LIGHTING_PARAM = "useLighting";
+    private static final String DIFFUSE_COLOR_PARAM = "diffuseColor";
+    private static final String SPHERE_ENTITY_NAME = "sphere";
+    private static final float SPHERE_RADIUS = 2.0f;
+    private static final String GROUND_ENTITY_NAME = "ground";
 
     private GLFWErrorCallback errorCallback;
     private GLFWKeyCallback keyCallback;
@@ -128,17 +124,16 @@ public class JBulletHelloWorld {
 
     private void renderScene() {
         final TempVars tempVars = TempVars.get();
-        for (final MeshEntity meshEntity : this.scene) {
+        for (final AbstractEntity meshEntity : this.scene) {
             //  Prepare the model-view matrix.
             final Matrix4f modelViewMatrix = this.camera.getViewMatrix().mul(meshEntity.getTransformation(),
                     tempVars.tempMat4x41);
 
             //  Start rendering.
-            final MeshRenderer renderer = meshEntity.getMeshRenderer();
+            final MeshRenderer renderer = ((MeshEntity) meshEntity).getMeshRenderer();
             renderer.initializeRendering();
 
             //  Pass uniforms to the shader.
-            final String entityName = this.scene.getNameForEntity(meshEntity);
             this.program.setUniformMatrix4(Utils.MODELVIEW_UNIFORM, Utils.matrix4fToBuffer(modelViewMatrix));
             this.program.setUniformMatrix4(Utils.PROJECTION_UNIFORM, Utils.matrix4fToBuffer(this.camera.
                     getProjectionMatrix()));
@@ -146,10 +141,10 @@ public class JBulletHelloWorld {
             this.program.setUniform1(Utils.USETEXTURING_UNIFORM, 0);
             this.program.setUniform1(Utils.USESKINNING_UNIFORM, 0);
             this.program.setUniform3(Utils.CAMERADIRECTION_UNIFORM, LIGHT_DIR.x, LIGHT_DIR.y, LIGHT_DIR.z);
-            this.program.setUniform1(Utils.USELIGHTING_UNIFORM, (int) this.scene.getEntityParameter(entityName,
-                    USE_LIGHTING_PARAM));
+            this.program.setUniform1(Utils.USELIGHTING_UNIFORM, (int) this.scene.getEntityParameter(
+                    meshEntity.getName(), USE_LIGHTING_PARAM));
 
-            final Vector4f diffuseColor = this.scene.getEntityParameter(entityName, DIFFUSE_COLOR_PARAM);
+            final Vector4f diffuseColor = this.scene.getEntityParameter(meshEntity.getName(), DIFFUSE_COLOR_PARAM);
             this.program.setUniform4(Utils.DIFFUSECOLOR_UNIFORM, diffuseColor.x, diffuseColor.y, diffuseColor.z,
                     diffuseColor.w);
 
@@ -167,6 +162,8 @@ public class JBulletHelloWorld {
 
         this.deltaTime = (float) (currentTime - this.lastTime);
         this.lastTime = currentTime;
+
+        this.scene.updateScene(this.deltaTime);
     }
 
     private void initScene() {
@@ -196,20 +193,29 @@ public class JBulletHelloWorld {
             //  Create the scene.
             this.scene = new Scene();
 
-            final MeshEntity sphereMeshEntity = this.scene.addEntity(SPHERE_ENTITY_NAME,
-                    new SphereMeshEntity(2.0f, 32, 32));
-            sphereMeshEntity.setShaderProgram(this.program);
-            sphereMeshEntity.buildMesh();
-            this.scene.setEntityParameter(SPHERE_ENTITY_NAME, USE_LIGHTING_PARAM, 1);
-            this.scene.setEntityParameter(SPHERE_ENTITY_NAME, DIFFUSE_COLOR_PARAM, new Vector4f(0.8f, 0.0f, 0.0f, 1.0f));
+            final MeshEntity sphere = this.scene.addEntity(new SphereMeshEntity(SPHERE_ENTITY_NAME, SPHERE_RADIUS, 32,
+                    32));
+            sphere.setTranslation(new Vector3f(0.0f, 3.0f, 0.0f));
+            sphere.setShaderProgram(this.program);
+            sphere.buildMesh();
+            sphere.getRigidBody().setCollisionShape(new SphereShape(SPHERE_RADIUS));
+            sphere.getRigidBody().setRestitution(1f);
+            Utils.setRigidBodyMass(sphere.getRigidBody(), 1.0f);
+            this.setEntityLightingParams(sphere, new Vector4f(0.8f, 0.0f, 0.0f, 1.0f));
 
-            final CubeMeshEntity ground = this.scene.addEntity(GROUND_ENTITY_NAME, new CubeMeshEntity(1.0f));
+            final CubeMeshEntity ground = this.scene.addEntity(new CubeMeshEntity(GROUND_ENTITY_NAME, 1.0f));
             ground.setTranslation(new Vector3f(0.0f, -5.0f, 0.0f));
             ground.setScale(new Vector3f(10.0f, 0.5f, 10.0f));
             ground.setShaderProgram(this.program);
             ground.buildMesh();
-            this.scene.setEntityParameter(GROUND_ENTITY_NAME, USE_LIGHTING_PARAM, 1);
-            this.scene.setEntityParameter(GROUND_ENTITY_NAME, DIFFUSE_COLOR_PARAM, new Vector4f(0.8f, 0.8f, 0.8f, 1.0f));
+            ground.getRigidBody().setCollisionShape(new BoxShape(new javax.vecmath.Vector3f(5.0f, 0.75f, 5.0f)));
+            ground.getRigidBody().setRestitution(0.25f);
+            Utils.setRigidBodyMass(ground.getRigidBody(), 0.0f);
+            this.setEntityLightingParams(ground, new Vector4f(0.8f, 0.8f, 0.8f, 1.0f));
+
+            //  Add the objects to the physics world.
+            this.scene.addEntityToPhysicsWorld(GROUND_ENTITY_NAME);
+            this.scene.addEntityToPhysicsWorld(SPHERE_ENTITY_NAME);
 
             //  Setup the camera.
             this.camera = new CameraEntity();
@@ -222,67 +228,15 @@ public class JBulletHelloWorld {
         }
     }
 
+    private void setEntityLightingParams(final AbstractEntity entity, final Vector4f diffuseColor) {
+        final String entityName = entity.getName();
+
+        this.scene.setEntityParameter(entityName, USE_LIGHTING_PARAM, 1);
+        this.scene.setEntityParameter(entityName, DIFFUSE_COLOR_PARAM, diffuseColor);
+    }
+
     public static void main(String[] args) {
         new JBulletHelloWorld().run();
     }
 
-    class Scene implements Iterable<MeshEntity> {
-        private class Entity {
-            private final MeshEntity entityInstance;
-            private final Map<String, Object> properties;
-
-            Entity(MeshEntity entityInstance) {
-                this.entityInstance = entityInstance;
-                this.properties = new HashMap<>();
-            }
-
-            public MeshEntity getEntityInstance() {
-                return entityInstance;
-            }
-
-            public <T> T getProperty(final String name) {
-                return (T) this.properties.get(name);
-            }
-
-            public void setProperty(final String name, Object value) {
-                this.properties.put(name, value);
-            }
-        }
-
-        private final Map<String, Entity> entities;
-        private final Map<MeshEntity, String> entityNames;
-
-        public Scene() {
-            this.entities = new HashMap<>();
-            this.entityNames = new HashMap<>();
-        }
-
-        public <T extends MeshEntity> T addEntity(final String name, final T entityInstance) {
-            this.entities.put(name, new Entity(entityInstance));
-            this.entityNames.put(entityInstance, name);
-
-            return entityInstance;
-        }
-
-        public <T extends MeshEntity> T getEntity(final String name) {
-            return (T) this.entities.get(name).entityInstance;
-        }
-
-        public String getNameForEntity(final MeshEntity meshEntity) {
-            return this.entityNames.get(meshEntity);
-        }
-
-        public <T> T getEntityParameter(final String entity, final String parameter) {
-            return (T) this.entities.get(entity).properties.get(parameter);
-        }
-
-        public void setEntityParameter(final String entity, final String parameterName, final Object value) {
-            this.entities.get(entity).properties.put(parameterName, value);
-        }
-
-        @Override
-        public Iterator<MeshEntity> iterator() {
-            return this.entityNames.keySet().iterator();
-        }
-    }
 }

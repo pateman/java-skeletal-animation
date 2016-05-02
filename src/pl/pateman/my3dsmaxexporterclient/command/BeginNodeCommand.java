@@ -5,7 +5,7 @@ import org.joml.Vector3f;
 import pl.pateman.my3dsmaxexporterclient.ClientCommand;
 import pl.pateman.my3dsmaxexporterclient.CommandContext;
 import pl.pateman.my3dsmaxexporterclient.ExporterUtils;
-import pl.pateman.skeletal.mesh.Mesh;
+import pl.pateman.core.mesh.Mesh;
 
 import static pl.pateman.my3dsmaxexporterclient.Constants.*;
 

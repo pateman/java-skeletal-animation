@@ -2,7 +2,7 @@ package pl.pateman.my3dsmaxexporterclient.command;
 
 import pl.pateman.my3dsmaxexporterclient.ClientCommand;
 import pl.pateman.my3dsmaxexporterclient.CommandContext;
-import pl.pateman.skeletal.mesh.Animation;
+import pl.pateman.core.mesh.Animation;
 
 import static pl.pateman.my3dsmaxexporterclient.Constants.CURRENT_ANIMATION;
 

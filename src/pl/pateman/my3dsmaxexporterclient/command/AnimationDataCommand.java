@@ -5,10 +5,10 @@ import org.joml.Vector3f;
 import pl.pateman.my3dsmaxexporterclient.ClientCommand;
 import pl.pateman.my3dsmaxexporterclient.CommandContext;
 import pl.pateman.my3dsmaxexporterclient.Constants;
-import pl.pateman.skeletal.mesh.Animation;
-import pl.pateman.skeletal.mesh.AnimationKeyframe;
-import pl.pateman.skeletal.mesh.AnimationTrack;
-import pl.pateman.skeletal.mesh.Bone;
+import pl.pateman.core.mesh.Animation;
+import pl.pateman.core.mesh.AnimationKeyframe;
+import pl.pateman.core.mesh.AnimationTrack;
+import pl.pateman.core.mesh.Bone;
 
 import static pl.pateman.my3dsmaxexporterclient.Constants.CURRENT_ANIMATION;
 import static pl.pateman.my3dsmaxexporterclient.Constants.CURRENT_ANIMATION_TRACK;

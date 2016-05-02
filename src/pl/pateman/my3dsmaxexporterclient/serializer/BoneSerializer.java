@@ -4,7 +4,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
-import pl.pateman.skeletal.mesh.Bone;
+import pl.pateman.core.mesh.Bone;
 
 import java.lang.reflect.Type;
 

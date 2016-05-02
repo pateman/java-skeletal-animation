@@ -2,7 +2,7 @@ package pl.pateman.my3dsmaxexporterclient;
 
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
-import pl.pateman.skeletal.mesh.Mesh;
+import pl.pateman.core.mesh.Mesh;
 
 import java.util.HashMap;
 import java.util.Map;

@@ -5,8 +5,8 @@ import com.google.gson.GsonBuilder;
 import pl.pateman.my3dsmaxexporterclient.command.*;
 import pl.pateman.my3dsmaxexporterclient.serializer.AnimationTrackSerializer;
 import pl.pateman.my3dsmaxexporterclient.serializer.BoneSerializer;
-import pl.pateman.skeletal.mesh.AnimationTrack;
-import pl.pateman.skeletal.mesh.Bone;
+import pl.pateman.core.mesh.AnimationTrack;
+import pl.pateman.core.mesh.Bone;
 
 import java.io.PrintWriter;
 import java.io.RandomAccessFile;

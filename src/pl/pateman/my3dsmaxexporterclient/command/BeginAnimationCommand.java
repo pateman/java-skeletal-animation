@@ -4,7 +4,7 @@ import pl.pateman.my3dsmaxexporterclient.ClientCommand;
 import pl.pateman.my3dsmaxexporterclient.CommandContext;
 import pl.pateman.my3dsmaxexporterclient.Constants;
 import pl.pateman.my3dsmaxexporterclient.ExporterUtils;
-import pl.pateman.skeletal.mesh.Animation;
+import pl.pateman.core.mesh.Animation;
 
 /**
  * Created by pateman.

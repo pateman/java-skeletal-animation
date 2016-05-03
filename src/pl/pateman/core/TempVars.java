@@ -214,7 +214,8 @@ public final class TempVars {
      * For converting between Vecmath and JOML.
      */
     public final Transform vecmathTransform = new Transform();
-    public final javax.vecmath.Vector3f vecmathVect3d = new javax.vecmath.Vector3f();
+    public final javax.vecmath.Vector3f vecmathVect3d1 = new javax.vecmath.Vector3f();
+    public final javax.vecmath.Vector3f vecmathVect3d2 = new javax.vecmath.Vector3f();
     public final Quat4f vecmathQuat = new Quat4f();
     public final javax.vecmath.Matrix4f vecmathMat4x4 = new javax.vecmath.Matrix4f(1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f,
             0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f);

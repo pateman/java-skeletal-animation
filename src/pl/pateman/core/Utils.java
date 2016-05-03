@@ -36,6 +36,7 @@ public final class Utils {
     public static final float HALF_PI = 0.5f * (float) Math.PI;
     public static final float TWO_PI = 2.0f * (float) Math.PI;
     public static final Vector3f AXIS_Y = new Vector3f(0.0f, 1.0f, 0.0f);
+    public static final Vector3f NEG_AXIS_Y = new Vector3f(0.0f, -1.0f, 0.0f);
     public static final Vector3f NEG_AXIS_Z = new Vector3f(0.0f, 0.0f, -1.0f);
 
     private Utils() {
@@ -147,8 +148,8 @@ public final class Utils {
         }
 
         final TempVars vars = TempVars.get();
-        out.getCollisionShape().calculateLocalInertia(mass, vars.vecmathVect3d);
-        out.setMassProps(mass, vars.vecmathVect3d);
+        out.getCollisionShape().calculateLocalInertia(mass, vars.vecmathVect3d1);
+        out.setMassProps(mass, vars.vecmathVect3d1);
         vars.release();
     }
 

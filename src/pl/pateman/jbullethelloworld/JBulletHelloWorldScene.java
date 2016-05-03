@@ -9,6 +9,8 @@ import com.bulletphysics.dynamics.constraintsolver.SequentialImpulseConstraintSo
 import com.bulletphysics.linearmath.Transform;
 import pl.pateman.core.TempVars;
 import pl.pateman.core.entity.AbstractEntity;
+import pl.pateman.core.physics.raycast.PhysicsRaycast;
+import pl.pateman.core.physics.raycast.PhysicsRaycastResult;
 
 import javax.vecmath.Vector3f;
 import java.util.*;
@@ -16,15 +18,16 @@ import java.util.*;
 /**
  * Created by pateman.
  */
-public final class Scene implements Iterable<AbstractEntity> {
+public final class JBulletHelloWorldScene implements Iterable<AbstractEntity> {
     public static final Vector3f DEFAULT_GRAVITY = new Vector3f(0.0f, -9.81f, 0.0f);
     private final Map<String, AbstractEntity> entities;
     private final Map<String, Map<String, Object>> parameters;
     private final List<String> physicsBodies;
 
     private final DynamicsWorld dynamicsWorld;
+    private final PhysicsRaycast raycast;
 
-    public Scene() {
+    public JBulletHelloWorldScene() {
         this.entities = new HashMap<>();
         this.parameters = new HashMap<>();
         this.physicsBodies = new ArrayList<>();
@@ -37,6 +40,7 @@ public final class Scene implements Iterable<AbstractEntity> {
         this.dynamicsWorld = new DiscreteDynamicsWorld(collisionDispatcher, broadphase, constraintSolver,
                 collisionConfiguration);
         this.dynamicsWorld.setGravity(DEFAULT_GRAVITY);
+        this.raycast = new PhysicsRaycast(this.dynamicsWorld);
     }
 
     public <T extends AbstractEntity> T addEntity(final T entityInstance) {
@@ -97,6 +101,16 @@ public final class Scene implements Iterable<AbstractEntity> {
 
     public void setEntityParameter(final String entity, final String parameterName, final Object value) {
         this.parameters.get(entity).put(parameterName, value);
+    }
+
+    public PhysicsRaycastResult raycast(final org.joml.Vector3f rayOrigin,
+                                        final org.joml.Vector3f rayDirection) {
+        return this.raycast(rayOrigin, rayDirection, PhysicsRaycast.DEFAULT_RAY_LENGTH);
+    }
+
+    public PhysicsRaycastResult raycast(final org.joml.Vector3f rayOrigin,
+                                        final org.joml.Vector3f rayDirection, float rayLength) {
+        return this.raycast.raycast(rayOrigin, rayDirection, rayLength);
     }
 
     @Override

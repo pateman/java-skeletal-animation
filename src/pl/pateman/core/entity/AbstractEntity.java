@@ -44,6 +44,7 @@ public class AbstractEntity implements Clearable {
         this.updateDirection();
 
         this.rigidBody = new RigidBody(1.0f, new DefaultMotionState(), null);
+        this.rigidBody.setUserPointer(this);
     }
 
     protected void updateTransformationMatrix() {

@@ -2,6 +2,7 @@ package pl.pateman.jbullethelloworld;
 
 import com.bulletphysics.collision.shapes.BoxShape;
 import com.bulletphysics.collision.shapes.SphereShape;
+import com.bulletphysics.dynamics.RigidBody;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
@@ -14,6 +15,7 @@ import pl.pateman.core.TempVars;
 import pl.pateman.core.Utils;
 import pl.pateman.core.entity.*;
 import pl.pateman.core.entity.mesh.MeshRenderer;
+import pl.pateman.core.physics.raycast.PhysicsRaycastResult;
 import pl.pateman.core.shader.Program;
 import pl.pateman.core.shader.Shader;
 
@@ -43,7 +45,7 @@ public class JBulletHelloWorld {
     private double lastTime;
     private float deltaTime;
 
-    private Scene scene;
+    private JBulletHelloWorldScene scene;
 
     private void run() {
         try {
@@ -82,6 +84,22 @@ public class JBulletHelloWorld {
                         //  Escape key.
                         case GLFW_KEY_ESCAPE:
                             glfwSetWindowShouldClose(window, GLFW_TRUE);
+                            break;
+                        //  'G' key:
+                        case GLFW_KEY_G:
+                            final Vector3f sphereTranslation = JBulletHelloWorld.this.scene.
+                                    getEntity(SPHERE_ENTITY_NAME).getTranslation();
+                            final PhysicsRaycastResult raycastResult = JBulletHelloWorld.this.scene.
+                                    raycast(sphereTranslation, Utils.NEG_AXIS_Y, SPHERE_RADIUS);
+
+                            System.out.printf("Ball is%son the ground\n", raycastResult == null ? " NOT " : " ");
+                            break;
+                        //  Space bar.
+                        case GLFW_KEY_SPACE:
+                            final RigidBody sphereBody = JBulletHelloWorld.this.scene.getEntity(SPHERE_ENTITY_NAME).
+                                    getRigidBody();
+                            sphereBody.applyImpulse(new javax.vecmath.Vector3f(0.0f, SPHERE_RADIUS * 3.0f, 0.0f),
+                                    new javax.vecmath.Vector3f(0.0f, -SPHERE_RADIUS, 0.0f));
                             break;
                     }
                 }
@@ -191,7 +209,7 @@ public class JBulletHelloWorld {
             }
 
             //  Create the scene.
-            this.scene = new Scene();
+            this.scene = new JBulletHelloWorldScene();
 
             final MeshEntity sphere = this.scene.addEntity(new SphereMeshEntity(SPHERE_ENTITY_NAME, SPHERE_RADIUS, 32,
                     32));

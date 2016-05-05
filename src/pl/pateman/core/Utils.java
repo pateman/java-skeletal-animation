@@ -2,10 +2,7 @@ package pl.pateman.core;
 
 import com.bulletphysics.dynamics.RigidBody;
 import com.bulletphysics.linearmath.Transform;
-import org.joml.Matrix4f;
-import org.joml.Quaternionf;
-import org.joml.Vector2f;
-import org.joml.Vector3f;
+import org.joml.*;
 import org.lwjgl.BufferUtils;
 
 import java.io.IOException;
@@ -23,6 +20,7 @@ public final class Utils {
     public static final String TEXCOORD_ATTRIBUTE = "TexCoord";
     public static final String INDICES_ATTRIBUTE = "BoneIndices";
     public static final String WEIGHTS_ATTRIBUTE = "BoneWeights";
+    public static final String COLOR_ATTRIBUTE = "Color";
     public static final String MODELVIEW_UNIFORM = "modelView";
     public static final String PROJECTION_UNIFORM = "projection";
     public static final String TEXTURE_UNIFORM = "texture";
@@ -81,6 +79,21 @@ public final class Utils {
         for (Vector3f vector : vertices) {
             vector.get(fb);
             fb.position(fb.position() + 3);
+        }
+        fb.flip();
+
+        return fb;
+    }
+
+    public static FloatBuffer vertices4fToBuffer(final List<Vector4f> vertices) {
+        if (vertices == null || vertices.isEmpty()) {
+            throw new IllegalArgumentException();
+        }
+
+        final FloatBuffer fb = BufferUtils.createFloatBuffer(vertices.size() * 4);
+        for (Vector4f vector : vertices) {
+            vector.get(fb);
+            fb.position(fb.position() + 4);
         }
         fb.flip();
 

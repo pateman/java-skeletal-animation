@@ -19,11 +19,11 @@ public final class VertexBufferObject implements Clearable {
     private final int componentSize;
     private final int handle;
 
-    private VertexBufferObject() {
+    public VertexBufferObject() {
         this(-1, 0);
     }
 
-    VertexBufferObject(int attribLocation, int componentSize) {
+    public VertexBufferObject(int attribLocation, int componentSize) {
         this.shaderAttributeLocation = attribLocation;
         this.componentSize = componentSize;
 

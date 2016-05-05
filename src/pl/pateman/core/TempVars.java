@@ -32,10 +32,7 @@
 package pl.pateman.core;
 
 import com.bulletphysics.linearmath.Transform;
-import org.joml.Matrix3f;
-import org.joml.Matrix4f;
-import org.joml.Quaternionf;
-import org.joml.Vector3f;
+import org.joml.*;
 import org.lwjgl.BufferUtils;
 
 import javax.vecmath.Quat4f;
@@ -194,6 +191,7 @@ public final class TempVars {
     public final Vector3f vect3d3 = new Vector3f();
     public final Vector3f vect3d4 = new Vector3f();
     public final Vector3f vect3d5 = new Vector3f();
+    public final Vector4f vect4d = new Vector4f();
 
     /**
      * General matrices.

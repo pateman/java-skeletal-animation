@@ -44,6 +44,7 @@ public class JBulletHelloWorld {
     private Program program;
     private double lastTime;
     private float deltaTime;
+    private boolean drawDebug;
 
     private JBulletHelloWorldScene scene;
 
@@ -56,6 +57,14 @@ public class JBulletHelloWorld {
             this.keyCallback.release();
         } finally {
             glfwTerminate();
+
+            if (this.scene != null) {
+                this.scene.clearAndDestroy();
+            }
+            if (this.program != null) {
+                this.program.clearAndDestroy();
+            }
+
             this.errorCallback.release();
         }
     }
@@ -84,6 +93,10 @@ public class JBulletHelloWorld {
                         //  Escape key.
                         case GLFW_KEY_ESCAPE:
                             glfwSetWindowShouldClose(window, GLFW_TRUE);
+                            break;
+                        //  'D' key.
+                        case GLFW_KEY_D:
+                            JBulletHelloWorld.this.drawDebug = !JBulletHelloWorld.this.drawDebug;
                             break;
                         //  'G' key:
                         case GLFW_KEY_G:
@@ -173,6 +186,11 @@ public class JBulletHelloWorld {
             renderer.finalizeRendering();
         }
         tempVars.release();
+
+        //  If debug information is enabled, draw it.
+        if (this.drawDebug) {
+            this.scene.debugDrawWorld(this.camera);
+        }
     }
 
     private void updateScene() {
@@ -226,7 +244,7 @@ public class JBulletHelloWorld {
             ground.setScale(new Vector3f(10.0f, 0.5f, 10.0f));
             ground.setShaderProgram(this.program);
             ground.buildMesh();
-            ground.getRigidBody().setCollisionShape(new BoxShape(new javax.vecmath.Vector3f(5.0f, 0.75f, 5.0f)));
+            ground.getRigidBody().setCollisionShape(new BoxShape(new javax.vecmath.Vector3f(1.0f, 1.0f, 1.0f)));
             ground.getRigidBody().setRestitution(0.25f);
             Utils.setRigidBodyMass(ground.getRigidBody(), 0.0f);
             this.setEntityLightingParams(ground, new Vector4f(0.8f, 0.8f, 0.8f, 1.0f));

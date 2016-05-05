@@ -91,6 +91,10 @@ public class Shader implements Clearable {
         return source;
     }
 
+    public void setSource(String source) {
+        this.source = source;
+    }
+
     public String getInfoLog() {
         return glGetShaderInfoLog(this.handle);
     }

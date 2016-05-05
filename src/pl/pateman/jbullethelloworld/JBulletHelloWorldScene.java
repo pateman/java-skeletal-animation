@@ -7,8 +7,11 @@ import com.bulletphysics.dynamics.DiscreteDynamicsWorld;
 import com.bulletphysics.dynamics.DynamicsWorld;
 import com.bulletphysics.dynamics.constraintsolver.SequentialImpulseConstraintSolver;
 import com.bulletphysics.linearmath.Transform;
+import pl.pateman.core.Clearable;
 import pl.pateman.core.TempVars;
 import pl.pateman.core.entity.AbstractEntity;
+import pl.pateman.core.entity.CameraEntity;
+import pl.pateman.core.physics.debug.PhysicsDebugger;
 import pl.pateman.core.physics.raycast.PhysicsRaycast;
 import pl.pateman.core.physics.raycast.PhysicsRaycastResult;
 
@@ -18,7 +21,7 @@ import java.util.*;
 /**
  * Created by pateman.
  */
-public final class JBulletHelloWorldScene implements Iterable<AbstractEntity> {
+public final class JBulletHelloWorldScene implements Iterable<AbstractEntity>, Clearable {
     public static final Vector3f DEFAULT_GRAVITY = new Vector3f(0.0f, -9.81f, 0.0f);
     private final Map<String, AbstractEntity> entities;
     private final Map<String, Map<String, Object>> parameters;
@@ -26,6 +29,7 @@ public final class JBulletHelloWorldScene implements Iterable<AbstractEntity> {
 
     private final DynamicsWorld dynamicsWorld;
     private final PhysicsRaycast raycast;
+    private final PhysicsDebugger physicsDebugger;
 
     public JBulletHelloWorldScene() {
         this.entities = new HashMap<>();
@@ -41,6 +45,7 @@ public final class JBulletHelloWorldScene implements Iterable<AbstractEntity> {
                 collisionConfiguration);
         this.dynamicsWorld.setGravity(DEFAULT_GRAVITY);
         this.raycast = new PhysicsRaycast(this.dynamicsWorld);
+        this.physicsDebugger = new PhysicsDebugger(this.dynamicsWorld);
     }
 
     public <T extends AbstractEntity> T addEntity(final T entityInstance) {
@@ -113,8 +118,28 @@ public final class JBulletHelloWorldScene implements Iterable<AbstractEntity> {
         return this.raycast.raycast(rayOrigin, rayDirection, rayLength);
     }
 
+    public void debugDrawWorld(final CameraEntity cameraEntity) {
+        this.physicsDebugger.debugDrawWorld(cameraEntity);
+    }
+
     @Override
     public Iterator<AbstractEntity> iterator() {
         return this.entities.values().iterator();
+    }
+
+    @Override
+    public void clear() {
+        for (AbstractEntity abstractEntity : this) {
+            this.dynamicsWorld.removeRigidBody(abstractEntity.getRigidBody());
+            abstractEntity.clearAndDestroy();
+        }
+        this.physicsBodies.clear();
+        this.entities.clear();
+        this.physicsDebugger.clearAndDestroy();
+    }
+
+    @Override
+    public void clearAndDestroy() {
+        this.clear();
     }
 }

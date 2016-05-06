@@ -1,8 +1,9 @@
 package pl.pateman.core.physics.debug;
 
+import com.bulletphysics.collision.shapes.CollisionShape;
 import com.bulletphysics.dynamics.DynamicsWorld;
 import com.bulletphysics.linearmath.DebugDrawModes;
-import com.bulletphysics.linearmath.IDebugDraw;
+import com.bulletphysics.linearmath.Transform;
 import org.joml.Vector4f;
 import pl.pateman.core.Clearable;
 import pl.pateman.core.TempVars;
@@ -14,7 +15,7 @@ import javax.vecmath.Vector3f;
 /**
  * Created by pateman.
  */
-public class PhysicsDebugger extends IDebugDraw implements Clearable {
+public class PhysicsDebugger extends IDebugDrawEx implements Clearable {
     private int debugMode;
     private final LineRenderer lineRenderer;
     private final DynamicsWorld dynamicsWorld;
@@ -82,5 +83,9 @@ public class PhysicsDebugger extends IDebugDraw implements Clearable {
     @Override
     public void clearAndDestroy() {
         this.clear();
+    }
+
+    @Override
+    public void debugDrawObject(Transform worldTransform, CollisionShape shape, Vector3f color) {
     }
 }

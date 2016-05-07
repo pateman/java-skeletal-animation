@@ -19,7 +19,7 @@ public final class PhysicsRaycast {
     }
 
     public PhysicsRaycastResult raycast(final org.joml.Vector3f rayOrigin, final org.joml.Vector3f rayDirection,
-                                        float rayLength) {
+                                        float rayLength, short collisionGroup) {
         final TempVars tempVars = TempVars.get();
 
         //  Calculate the end part of the ray.
@@ -32,6 +32,7 @@ public final class PhysicsRaycast {
         //  Perform the actual raycasting.
         final ClosestRayResultCallbackEx resultCallbackEx = new ClosestRayResultCallbackEx(tempVars.vecmathVect3d1,
                 tempVars.vecmathVect3d2);
+        resultCallbackEx.collisionFilterGroup = collisionGroup;
         this.dynamicsWorld.rayTest(tempVars.vecmathVect3d1, tempVars.vecmathVect3d2, resultCallbackEx);
         tempVars.release();
 

@@ -1,5 +1,6 @@
 package pl.pateman.jbullethelloworld;
 
+import com.bulletphysics.collision.broadphase.CollisionFilterGroups;
 import com.bulletphysics.collision.broadphase.DbvtBroadphase;
 import com.bulletphysics.collision.dispatch.CollisionDispatcher;
 import com.bulletphysics.collision.dispatch.DefaultCollisionConfiguration;
@@ -17,6 +18,9 @@ import pl.pateman.core.physics.raycast.PhysicsRaycastResult;
 
 import javax.vecmath.Vector3f;
 import java.util.*;
+
+import static org.lwjgl.opengl.GL11.GL_DEPTH_BUFFER_BIT;
+import static org.lwjgl.opengl.GL11.glClear;
 
 /**
  * Created by pateman.
@@ -74,7 +78,7 @@ public final class JBulletHelloWorldScene implements Iterable<AbstractEntity>, C
     }
 
     public void updateScene(float deltaTime) {
-        this.dynamicsWorld.stepSimulation(deltaTime);
+        this.dynamicsWorld.stepSimulation(deltaTime, 4);
 
         final TempVars tempVars = TempVars.get();
         final Transform transform = tempVars.vecmathTransform;
@@ -110,15 +114,18 @@ public final class JBulletHelloWorldScene implements Iterable<AbstractEntity>, C
 
     public PhysicsRaycastResult raycast(final org.joml.Vector3f rayOrigin,
                                         final org.joml.Vector3f rayDirection) {
-        return this.raycast(rayOrigin, rayDirection, PhysicsRaycast.DEFAULT_RAY_LENGTH);
+        return this.raycast(rayOrigin, rayDirection, PhysicsRaycast.DEFAULT_RAY_LENGTH,
+                CollisionFilterGroups.DEFAULT_FILTER);
     }
 
     public PhysicsRaycastResult raycast(final org.joml.Vector3f rayOrigin,
-                                        final org.joml.Vector3f rayDirection, float rayLength) {
-        return this.raycast.raycast(rayOrigin, rayDirection, rayLength);
+                                        final org.joml.Vector3f rayDirection, float rayLength, short collisionGroup) {
+        return this.raycast.raycast(rayOrigin, rayDirection, rayLength, collisionGroup);
     }
 
     public void debugDrawWorld(final CameraEntity cameraEntity) {
+        //  Make sure that the debug info is drawn over the geometry.
+        glClear(GL_DEPTH_BUFFER_BIT);
         this.physicsDebugger.debugDrawWorld(cameraEntity);
     }
 

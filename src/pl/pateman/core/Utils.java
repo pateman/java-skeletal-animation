@@ -146,13 +146,18 @@ public final class Utils {
         final TempVars tempVars = TempVars.get();
 
         transformMatrix.get(tempVars.matrix4x4AsArray);
-        tempVars.vecmathMat4x4.set(tempVars.matrix4x4AsArray);
-        out.set(tempVars.vecmathMat4x4);
-
-        //  The original set(Matrix4f mat) method is broken, so we need to set the translation separately.
-        out.origin.set(tempVars.matrix4x4AsArray[12], tempVars.matrix4x4AsArray[13], tempVars.matrix4x4AsArray[14]);
+        out.setFromOpenGLMatrix(tempVars.matrix4x4AsArray);
 
         tempVars.release();
+    }
+
+    public static void transformToMatrix(final Matrix4f out, final Transform transform) {
+        final TempVars vars = TempVars.get();
+
+        transform.getOpenGLMatrix(vars.matrix4x4AsArray);
+        out.set(vars.matrix4x4AsArray);
+
+        vars.release();
     }
 
     public static void setRigidBodyMass(final RigidBody out, float mass) {
@@ -163,6 +168,7 @@ public final class Utils {
         final TempVars vars = TempVars.get();
         out.getCollisionShape().calculateLocalInertia(mass, vars.vecmathVect3d1);
         out.setMassProps(mass, vars.vecmathVect3d1);
+        out.updateInertiaTensor();
         vars.release();
     }
 

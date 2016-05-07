@@ -17,6 +17,23 @@ import java.util.concurrent.atomic.AtomicLong;
 public class AbstractEntity implements Clearable {
     private static final AtomicLong ID_GENERATOR = new AtomicLong(0L);
 
+    public static final short COLLISION_GROUP_NONE = 0x00000000;
+    public static final short COLLISION_GROUP_01 = 0x00000001;
+    public static final short COLLISION_GROUP_02 = 0x00000002;
+    public static final short COLLISION_GROUP_03 = 0x00000004;
+    public static final short COLLISION_GROUP_04 = 0x00000008;
+    public static final short COLLISION_GROUP_05 = 0x00000010;
+    public static final short COLLISION_GROUP_06 = 0x00000020;
+    public static final short COLLISION_GROUP_07 = 0x00000040;
+    public static final short COLLISION_GROUP_08 = 0x00000080;
+    public static final short COLLISION_GROUP_09 = 0x00000100;
+    public static final short COLLISION_GROUP_10 = 0x00000200;
+    public static final short COLLISION_GROUP_11 = 0x00000400;
+    public static final short COLLISION_GROUP_12 = 0x00000800;
+    public static final short COLLISION_GROUP_13 = 0x00001000;
+    public static final short COLLISION_GROUP_14 = 0x00002000;
+    public static final short COLLISION_GROUP_15 = 0x00004000;
+
     private final Long entityId = ID_GENERATOR.getAndIncrement();
     private String name;
 
@@ -176,6 +193,32 @@ public class AbstractEntity implements Clearable {
 
     public RigidBody getRigidBody() {
         return rigidBody;
+    }
+
+    public int getCollisionGroup() {
+        if (this.rigidBody.getBroadphaseHandle() == null) {
+            return COLLISION_GROUP_NONE;
+        }
+        return this.rigidBody.getBroadphaseHandle().collisionFilterGroup;
+    }
+
+    public void setCollisionGroup(short collisionGroup) {
+        if (this.rigidBody.getBroadphaseHandle() != null) {
+            this.rigidBody.getBroadphaseHandle().collisionFilterGroup = collisionGroup;
+        }
+    }
+
+    public int getCollisionMask() {
+        if (this.rigidBody.getBroadphaseHandle() == null) {
+            return COLLISION_GROUP_NONE;
+        }
+        return this.rigidBody.getBroadphaseHandle().collisionFilterMask;
+    }
+
+    public void setCollisionMask(short collisionMask) {
+        if (this.rigidBody.getBroadphaseHandle() != null) {
+            this.rigidBody.getBroadphaseHandle().collisionFilterMask = collisionMask;
+        }
     }
 
     @Override

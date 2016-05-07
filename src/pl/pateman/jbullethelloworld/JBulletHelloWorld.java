@@ -1,5 +1,6 @@
 package pl.pateman.jbullethelloworld;
 
+import com.bulletphysics.collision.dispatch.CollisionObject;
 import com.bulletphysics.collision.shapes.BoxShape;
 import com.bulletphysics.collision.shapes.SphereShape;
 import com.bulletphysics.dynamics.RigidBody;
@@ -22,6 +23,7 @@ import pl.pateman.core.shader.Shader;
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.system.MemoryUtil.NULL;
+import static pl.pateman.core.entity.AbstractEntity.COLLISION_GROUP_02;
 
 /**
  * Created by pateman.
@@ -103,7 +105,7 @@ public class JBulletHelloWorld {
                             final Vector3f sphereTranslation = JBulletHelloWorld.this.scene.
                                     getEntity(SPHERE_ENTITY_NAME).getTranslation();
                             final PhysicsRaycastResult raycastResult = JBulletHelloWorld.this.scene.
-                                    raycast(sphereTranslation, Utils.NEG_AXIS_Y, SPHERE_RADIUS);
+                                    raycast(sphereTranslation, Utils.NEG_AXIS_Y, SPHERE_RADIUS, COLLISION_GROUP_02);
 
                             System.out.printf("Ball is%son the ground\n", raycastResult == null ? " NOT " : " ");
                             break;
@@ -235,7 +237,8 @@ public class JBulletHelloWorld {
             sphere.setShaderProgram(this.program);
             sphere.buildMesh();
             sphere.getRigidBody().setCollisionShape(new SphereShape(SPHERE_RADIUS));
-            sphere.getRigidBody().setRestitution(1f);
+            sphere.getRigidBody().setRestitution(0.5f);
+            sphere.getRigidBody().setActivationState(CollisionObject.DISABLE_DEACTIVATION);
             Utils.setRigidBodyMass(sphere.getRigidBody(), 1.0f);
             this.setEntityLightingParams(sphere, new Vector4f(0.8f, 0.0f, 0.0f, 1.0f));
 
@@ -244,14 +247,24 @@ public class JBulletHelloWorld {
             ground.setScale(new Vector3f(10.0f, 0.5f, 10.0f));
             ground.setShaderProgram(this.program);
             ground.buildMesh();
-            ground.getRigidBody().setCollisionShape(new BoxShape(new javax.vecmath.Vector3f(1.0f, 1.0f, 1.0f)));
-            ground.getRigidBody().setRestitution(0.25f);
+            //  The ball can sometimes fall through the ground and this link describes the problem:
+            //  https://wiki.jmonkeyengine.org/doku.php/jme3:advanced:bullet_pitfalls
+            //  I'm too lazy to fix it right now :)
+            final BoxShape boxShape = new BoxShape(new javax.vecmath.Vector3f(0.5f, 0.5f, 0.5f));
+            boxShape.setLocalScaling(new javax.vecmath.Vector3f(2.0f, 5.0f, 2.0f));
+            ground.getRigidBody().setCollisionShape(boxShape);
+            ground.getRigidBody().setRestitution(1f);
             Utils.setRigidBodyMass(ground.getRigidBody(), 0.0f);
             this.setEntityLightingParams(ground, new Vector4f(0.8f, 0.8f, 0.8f, 1.0f));
 
             //  Add the objects to the physics world.
             this.scene.addEntityToPhysicsWorld(GROUND_ENTITY_NAME);
             this.scene.addEntityToPhysicsWorld(SPHERE_ENTITY_NAME);
+
+            //  Set collision groups and mask. Note that setting groups/masks is possible AFTER an entity has been
+            //  added to the physics world.
+            sphere.setCollisionGroup(COLLISION_GROUP_02);
+            ground.setCollisionMask(COLLISION_GROUP_02);
 
             //  Setup the camera.
             this.camera = new CameraEntity();

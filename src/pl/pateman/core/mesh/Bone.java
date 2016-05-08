@@ -27,6 +27,10 @@ public class Bone {
     private final List<Bone> children;
     private final Map<Integer, Float> vertexWeights;
 
+    private BoneManualControlType manualControlType;
+    private final Vector3f manualControlPosition;
+    private final Quaternionf manualControlRotation;
+
     public Bone(String name, int index) {
         if (name == null) {
             throw new IllegalArgumentException("Bone name cannot be null");
@@ -45,6 +49,10 @@ public class Bone {
         this.worldBindMatrix = new Matrix4f();
         this.inverseBindMatrix = new Matrix4f();
         this.offsetMatrix = new Matrix4f();
+
+        this.manualControlType = BoneManualControlType.OFF;
+        this.manualControlPosition = new Vector3f();
+        this.manualControlRotation = new Quaternionf();
     }
 
     public void addVertexWeight(int vertexId, float weight) {
@@ -111,6 +119,22 @@ public class Bone {
 
     public Matrix4f getOffsetMatrix() {
         return offsetMatrix;
+    }
+
+    public BoneManualControlType getManualControlType() {
+        return manualControlType;
+    }
+
+    public void setManualControlType(BoneManualControlType manualControlType) {
+        this.manualControlType = manualControlType;
+    }
+
+    public Vector3f getManualControlPosition() {
+        return manualControlPosition;
+    }
+
+    public Quaternionf getManualControlRotation() {
+        return manualControlRotation;
     }
 
     private String boneToString(final int depth) {

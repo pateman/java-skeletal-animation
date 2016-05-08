@@ -17,6 +17,7 @@ import pl.pateman.core.entity.SkeletonMeshEntity;
 import pl.pateman.core.entity.mesh.MeshRenderer;
 import pl.pateman.core.entity.mesh.animation.AnimationPlaybackMode;
 import pl.pateman.core.entity.mesh.animation.BoneAnimationChannel;
+import pl.pateman.core.mesh.BoneManualControlType;
 import pl.pateman.importer.json.JSONImporter;
 import pl.pateman.core.mesh.Animation;
 import pl.pateman.core.mesh.Bone;
@@ -53,6 +54,9 @@ public class Main {
     private BoneAnimationChannel upperBodyChannel;
     private BoneAnimationChannel lowerBodyChannel;
     private String wholeBodyCurrentAnimation;
+
+    private int currentManualControlMode;
+    private Bone manualBone;
 
     public void run() {
         System.out.println("LWJGL " + Version.getVersion() + "!");
@@ -96,6 +100,15 @@ public class Main {
         }
 
         glfwSetKeyCallback(this.window, this.keyCallback = new GLFWKeyCallback() {
+            private boolean canRotateFurther(boolean toTheLeft) {
+                final TempVars vars = TempVars.get();
+                Main.this.manualBone.getManualControlRotation().getEulerAnglesXYZ(vars.vect3d1);
+                vars.release();
+
+                final float degrees = (float) Math.toDegrees(vars.vect3d1.x);
+                return toTheLeft ? degrees >= -45.0f : degrees <= 45.0f;
+            }
+
             @Override
             public void invoke(long window, int key, int scancode, int action, int mods) {
                 if (action == GLFW_RELEASE) {
@@ -118,6 +131,27 @@ public class Main {
                             Main.this.upperBodyChannel.switchToAnimation("alert");
                             Main.this.upperBodyChannel.setPlaybackMode(AnimationPlaybackMode.ONCE);
                             Main.this.lowerBodyChannel.switchToAnimation("run");
+                            break;
+                        //  'M' key.
+                        case GLFW_KEY_M:
+                            Main.this.currentManualControlMode = Utils.clamp(++Main.this.currentManualControlMode % 3, 0, 2);
+                            Main.this.manualBone.setManualControlType(BoneManualControlType.
+                                    values()[Main.this.currentManualControlMode]);
+                            System.out.printf("Current mode: %s\n", Main.this.manualBone.getManualControlType());
+                            break;
+                        //  Left arrow key.
+                        case GLFW_KEY_LEFT:
+                            if (this.canRotateFurther(true)) {
+                                Main.this.manualBone.getManualControlRotation().rotate(
+                                    (float) Math.toRadians(-120.0f * Main.this.deltaTime), 0.0f, 0.0f);
+                            }
+                            break;
+                        //  Right arrow key.
+                        case GLFW_KEY_RIGHT:
+                            if (this.canRotateFurther(false)) {
+                                Main.this.manualBone.getManualControlRotation().rotate(
+                                    (float) Math.toRadians(120.0f * Main.this.deltaTime), 0.0f, 0.0f);
+                            }
                             break;
                     }
                 }
@@ -172,6 +206,7 @@ public class Main {
             this.meshEntity.translate(0.25f, 0.0f, 0.0f);
             this.meshEntity.rotate(0.0f, (float) Math.toRadians(180.0f), 0.0f);
             this.meshEntity.setScale(new Vector3f(0.95f, 0.95f, 0.95f));
+            this.manualBone = this.meshEntity.getMesh().getSkeleton().getBoneByName("Bip01 Head");
 
             //  Print information about the mesh.
             System.out.println("*** ANIMATIONS ***");

@@ -2,8 +2,11 @@ package pl.pateman.jbullethelloworld;
 
 import com.bulletphysics.collision.dispatch.CollisionObject;
 import com.bulletphysics.collision.shapes.BoxShape;
+import com.bulletphysics.collision.shapes.ConvexHullShape;
+import com.bulletphysics.collision.shapes.ShapeHull;
 import com.bulletphysics.collision.shapes.SphereShape;
 import com.bulletphysics.dynamics.RigidBody;
+import com.bulletphysics.util.ObjectArrayList;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
@@ -16,9 +19,11 @@ import pl.pateman.core.TempVars;
 import pl.pateman.core.Utils;
 import pl.pateman.core.entity.*;
 import pl.pateman.core.entity.mesh.MeshRenderer;
+import pl.pateman.core.mesh.Mesh;
 import pl.pateman.core.physics.raycast.PhysicsRaycastResult;
 import pl.pateman.core.shader.Program;
 import pl.pateman.core.shader.Shader;
+import pl.pateman.importer.json.JSONImporter;
 
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.opengl.GL11.*;
@@ -37,6 +42,7 @@ public class JBulletHelloWorld {
     private static final String SPHERE_ENTITY_NAME = "sphere";
     private static final float SPHERE_RADIUS = 2.0f;
     private static final String GROUND_ENTITY_NAME = "ground";
+    private static final String BANANA_ENTITY_NAME = "banana";
 
     private GLFWErrorCallback errorCallback;
     private GLFWKeyCallback keyCallback;
@@ -231,17 +237,20 @@ public class JBulletHelloWorld {
             //  Create the scene.
             this.scene = new JBulletHelloWorldScene();
 
+            //  A red sphere.
             final MeshEntity sphere = this.scene.addEntity(new SphereMeshEntity(SPHERE_ENTITY_NAME, SPHERE_RADIUS, 32,
                     32));
             sphere.setTranslation(new Vector3f(0.0f, 3.0f, 0.0f));
             sphere.setShaderProgram(this.program);
             sphere.buildMesh();
-            sphere.getRigidBody().setCollisionShape(new SphereShape(SPHERE_RADIUS));
+            final SphereShape sphereShape = new SphereShape(SPHERE_RADIUS);
+            sphereShape.setMargin(0.0f);
+            sphere.createRigidBody(sphereShape, 1.0f);
             sphere.getRigidBody().setRestitution(0.5f);
             sphere.getRigidBody().setActivationState(CollisionObject.DISABLE_DEACTIVATION);
-            Utils.setRigidBodyMass(sphere.getRigidBody(), 1.0f);
             this.setEntityLightingParams(sphere, new Vector4f(0.8f, 0.0f, 0.0f, 1.0f));
 
+            //  Ground.
             final CubeMeshEntity ground = this.scene.addEntity(new CubeMeshEntity(GROUND_ENTITY_NAME, 1.0f));
             ground.setTranslation(new Vector3f(0.0f, -5.0f, 0.0f));
             ground.setScale(new Vector3f(10.0f, 0.5f, 10.0f));
@@ -250,20 +259,35 @@ public class JBulletHelloWorld {
             //  The ball can sometimes fall through the ground and this link describes the problem:
             //  https://wiki.jmonkeyengine.org/doku.php/jme3:advanced:bullet_pitfalls
             //  I'm too lazy to fix it right now :)
-            final BoxShape boxShape = new BoxShape(new javax.vecmath.Vector3f(0.5f, 0.5f, 0.5f));
-            boxShape.setLocalScaling(new javax.vecmath.Vector3f(2.0f, 5.0f, 2.0f));
-            ground.getRigidBody().setCollisionShape(boxShape);
+            final BoxShape boxShape = new BoxShape(new javax.vecmath.Vector3f(0.1f, 0.1f, 0.1f));
+            boxShape.setLocalScaling(new javax.vecmath.Vector3f(10.0f, 5.0f, 10.0f));
+            boxShape.setMargin(0.0f);
+            ground.createRigidBody(this.createConvexHullShape(ground.getMesh(), Utils.IDENTITY_VECTOR), 0.0f);
             ground.getRigidBody().setRestitution(1f);
-            Utils.setRigidBodyMass(ground.getRigidBody(), 0.0f);
             this.setEntityLightingParams(ground, new Vector4f(0.8f, 0.8f, 0.8f, 1.0f));
+
+            //  A banana mesh :)
+            final MeshEntity bananaMesh = new JSONImporter().load("banana.json");
+            bananaMesh.setName(BANANA_ENTITY_NAME);
+            bananaMesh.setScale(new Vector3f(15.0f, 15.0f, 15.0f));
+            bananaMesh.setTranslation(new Vector3f(0f, 10.0f, 0.0f));
+            bananaMesh.setShaderProgram(this.program);
+            bananaMesh.buildMesh();
+            bananaMesh.createRigidBody(this.createConvexHullShape(bananaMesh.getMesh(), new Vector3f(4.0f, 4.0f, 4.0f)), 1.0f);
+            bananaMesh.getRigidBody().setRestitution(1.0f);
+
+            this.scene.addEntity(bananaMesh);
+            this.setEntityLightingParams(bananaMesh, new Vector4f(1.0f, 1.0f, 0.2f, 1.0f));
 
             //  Add the objects to the physics world.
             this.scene.addEntityToPhysicsWorld(GROUND_ENTITY_NAME);
             this.scene.addEntityToPhysicsWorld(SPHERE_ENTITY_NAME);
+            this.scene.addEntityToPhysicsWorld(BANANA_ENTITY_NAME);
 
             //  Set collision groups and mask. Note that setting groups/masks is possible AFTER an entity has been
             //  added to the physics world.
             sphere.setCollisionGroup(COLLISION_GROUP_02);
+            bananaMesh.setCollisionGroup(COLLISION_GROUP_02);
             ground.setCollisionMask(COLLISION_GROUP_02);
 
             //  Setup the camera.
@@ -282,6 +306,39 @@ public class JBulletHelloWorld {
 
         this.scene.setEntityParameter(entityName, USE_LIGHTING_PARAM, 1);
         this.scene.setEntityParameter(entityName, DIFFUSE_COLOR_PARAM, diffuseColor);
+    }
+
+    private ConvexHullShape createConvexHullShape(final Mesh mesh, final Vector3f scale) {
+        //  Convert the list of mesh vertices.
+        final ObjectArrayList<javax.vecmath.Vector3f> vertices = new ObjectArrayList<>(mesh.getTriangles().size() * 3);
+        for (Integer meshTriangle : mesh.getTriangles()) {
+            final Vector3f vertex = mesh.getVertices().get(meshTriangle);
+            vertices.add(Utils.convert(new javax.vecmath.Vector3f(), vertex));
+        }
+        final javax.vecmath.Vector3f localScaling = Utils.convert(new javax.vecmath.Vector3f(), scale);
+
+        //  Create the first convex hull shape.
+        final ConvexHullShape firstShape = new ConvexHullShape(vertices);
+        firstShape.setMargin(0.0f);
+        firstShape.setLocalScaling(localScaling);
+
+        //  Create a shape hull from the convex shape.
+        final ShapeHull shapeHull = new ShapeHull(firstShape);
+        shapeHull.buildHull(firstShape.getMargin());
+
+        //  Collect the calculated shape's vertices and create another convex hull shape from them.
+        final ObjectArrayList<javax.vecmath.Vector3f> shapeHullVertices = new ObjectArrayList<>(shapeHull.numVertices());
+        int triangleIndex = 0;
+        for (int i = 0; i < shapeHull.numTriangles(); i++) {
+            shapeHullVertices.add(shapeHull.getVertexPointer().get(shapeHull.getIndexPointer().get(triangleIndex++)));
+            shapeHullVertices.add(shapeHull.getVertexPointer().get(shapeHull.getIndexPointer().get(triangleIndex++)));
+            shapeHullVertices.add(shapeHull.getVertexPointer().get(shapeHull.getIndexPointer().get(triangleIndex++)));
+        }
+
+        final ConvexHullShape finalShape = new ConvexHullShape(shapeHullVertices);
+        finalShape.setLocalScaling(localScaling);
+        finalShape.setMargin(0.0f);
+        return finalShape;
     }
 
     public static void main(String[] args) {

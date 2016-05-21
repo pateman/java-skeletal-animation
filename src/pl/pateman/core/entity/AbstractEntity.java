@@ -1,5 +1,6 @@
 package pl.pateman.core.entity;
 
+import com.bulletphysics.collision.shapes.CollisionShape;
 import com.bulletphysics.dynamics.RigidBody;
 import com.bulletphysics.linearmath.DefaultMotionState;
 import org.joml.Matrix4f;
@@ -43,7 +44,7 @@ public class AbstractEntity implements Clearable {
     private final Vector3f direction;
     private final Matrix4f transformation;
 
-    private final RigidBody rigidBody;
+    private RigidBody rigidBody;
 
     public AbstractEntity() {
         this(null);
@@ -59,13 +60,16 @@ public class AbstractEntity implements Clearable {
 
         this.direction = new Vector3f();
         this.updateDirection();
-
-        this.rigidBody = new RigidBody(1.0f, new DefaultMotionState(), null);
-        this.rigidBody.setUserPointer(this);
     }
 
     protected void updateTransformationMatrix() {
         this.updateTransformationMatrix(true);
+    }
+
+    private void checkRigidBodyExists() throws IllegalStateException {
+        if (this.rigidBody == null) {
+            throw new IllegalStateException("A rigid body has not been created for this entity");
+        }
     }
 
     private void updateTransformationMatrix(boolean updateRigidBody) {
@@ -73,10 +77,10 @@ public class AbstractEntity implements Clearable {
         this.updateDirection();
 
         //  Update the rigid body's transformation.
-        if (updateRigidBody) {
+        if (updateRigidBody && this.rigidBody != null) {
             final TempVars vars = TempVars.get();
             Utils.matrixToTransform(vars.vecmathTransform, this.transformation);
-            this.rigidBody.setWorldTransform(vars.vecmathTransform);
+            this.rigidBody.getMotionState().setWorldTransform(vars.vecmathTransform);
             vars.release();
         }
     }
@@ -191,11 +195,38 @@ public class AbstractEntity implements Clearable {
         this.name = name;
     }
 
+    public void createRigidBody(final CollisionShape collisionShape, float mass) {
+        if (collisionShape == null) {
+            throw new IllegalArgumentException("A valid collision shape needs to be specified");
+        }
+
+        if (mass < 0.0f) {
+            throw new IllegalArgumentException("Mass must be greater or equal to 0");
+        }
+
+        final TempVars vars = TempVars.get();
+        //  Calculate local inertia.
+        collisionShape.calculateLocalInertia(mass, vars.vecmathVect3d1);
+
+        //  Make sure the transformation matrix is up-to-date and convert it to a format that JBullet understands.
+        this.updateTransformationMatrix(false);
+        Utils.matrixToTransform(vars.vecmathTransform, this.transformation);
+
+        //  Construct the rigid body.
+        this.rigidBody = new RigidBody(mass, new DefaultMotionState(vars.vecmathTransform), collisionShape,
+                vars.vecmathVect3d1);
+        this.rigidBody.setUserPointer(this);
+
+        vars.release();
+    }
+
     public RigidBody getRigidBody() {
+        this.checkRigidBodyExists();
         return rigidBody;
     }
 
     public int getCollisionGroup() {
+        this.checkRigidBodyExists();
         if (this.rigidBody.getBroadphaseHandle() == null) {
             return COLLISION_GROUP_NONE;
         }
@@ -203,12 +234,14 @@ public class AbstractEntity implements Clearable {
     }
 
     public void setCollisionGroup(short collisionGroup) {
+        this.checkRigidBodyExists();
         if (this.rigidBody.getBroadphaseHandle() != null) {
             this.rigidBody.getBroadphaseHandle().collisionFilterGroup = collisionGroup;
         }
     }
 
     public int getCollisionMask() {
+        this.checkRigidBodyExists();
         if (this.rigidBody.getBroadphaseHandle() == null) {
             return COLLISION_GROUP_NONE;
         }
@@ -216,6 +249,7 @@ public class AbstractEntity implements Clearable {
     }
 
     public void setCollisionMask(short collisionMask) {
+        this.checkRigidBodyExists();
         if (this.rigidBody.getBroadphaseHandle() != null) {
             this.rigidBody.getBroadphaseHandle().collisionFilterMask = collisionMask;
         }

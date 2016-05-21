@@ -119,8 +119,8 @@ public class PhysicsDebugger extends IDebugDrawEx implements Clearable {
             final org.joml.Vector3f transformedVertexB = transformMatrix.transformPosition(b, vars.vect3d2);
 
             //  Convert between libraries.
-            vars.vecmathVect3d1.set(transformedVertexA.x, transformedVertexA.y, transformedVertexA.z);
-            vars.vecmathVect3d2.set(transformedVertexB.x, transformedVertexB.y, transformedVertexB.z);
+            Utils.convert(vars.vecmathVect3d1, transformedVertexA);
+            Utils.convert(vars.vecmathVect3d2, transformedVertexB);
 
             //  Draw the line.
             this.drawLine(vars.vecmathVect3d1, vars.vecmathVect3d2, color);

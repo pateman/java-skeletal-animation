@@ -3,6 +3,7 @@ package pl.pateman.core.physics.debug;
 import com.bulletphysics.collision.shapes.*;
 import com.google.gson.reflect.TypeToken;
 import org.joml.Vector3f;
+import pl.pateman.core.Utils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -51,15 +52,15 @@ final class PhysicsDebugMeshFactory {
                 for (int i = 0; i < numOfTriangles; i++) {
                     //  First vertex.
                     tmp = shapeHull.getVertexPointer().get(shapeHull.getIndexPointer().get(index++));
-                    result.add(new Vector3f(tmp.x, tmp.y, tmp.z));
+                    result.add(Utils.convert(new Vector3f(), tmp));
 
                     //  Second vertex.
                     tmp = shapeHull.getVertexPointer().get(shapeHull.getIndexPointer().get(index++));
-                    result.add(new Vector3f(tmp.x, tmp.y, tmp.z));
+                    result.add(Utils.convert(new Vector3f(), tmp));
 
                     //  Third vertex.
                     tmp = shapeHull.getVertexPointer().get(shapeHull.getIndexPointer().get(index++));
-                    result.add(new Vector3f(tmp.x, tmp.y, tmp.z));
+                    result.add(Utils.convert(new Vector3f(), tmp));
                 }
             }
         }
@@ -77,9 +78,9 @@ final class PhysicsDebugMeshFactory {
 
         @Override
         public void processTriangle(javax.vecmath.Vector3f[] triangle, int partId, int triangleIndex) {
-            this.triangles.add(new Vector3f(triangle[0].x, triangle[0].y, triangle[0].z));
-            this.triangles.add(new Vector3f(triangle[1].x, triangle[1].y, triangle[1].z));
-            this.triangles.add(new Vector3f(triangle[2].x, triangle[2].y, triangle[2].z));
+            this.triangles.add(Utils.convert(new Vector3f(), triangle[0]));
+            this.triangles.add(Utils.convert(new Vector3f(), triangle[1]));
+            this.triangles.add(Utils.convert(new Vector3f(), triangle[2]));
         }
 
         List<Vector3f> getTriangles() {

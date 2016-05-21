@@ -9,6 +9,7 @@ import com.bulletphysics.dynamics.constraintsolver.SequentialImpulseConstraintSo
 import com.bulletphysics.linearmath.Transform;
 import pl.pateman.core.Clearable;
 import pl.pateman.core.TempVars;
+import pl.pateman.core.Utils;
 import pl.pateman.core.entity.AbstractEntity;
 import pl.pateman.core.entity.CameraEntity;
 import pl.pateman.core.physics.DiscreteDynamicsWorldEx;
@@ -63,6 +64,9 @@ public final class JBulletHelloWorldScene implements Iterable<AbstractEntity>, C
 
     public void addEntityToPhysicsWorld(final String name) {
         final AbstractEntity entity = this.entities.get(name);
+        if (entity.getRigidBody() == null) {
+            throw new IllegalStateException("Entity '" + name + "' does not have a rigid body");
+        }
         this.physicsBodies.add(name);
 
         entity.forceTransformationUpdate(true);
@@ -78,19 +82,19 @@ public final class JBulletHelloWorldScene implements Iterable<AbstractEntity>, C
     }
 
     public void updateScene(float deltaTime) {
-        this.dynamicsWorld.stepSimulation(deltaTime, 4);
+        this.dynamicsWorld.stepSimulation(deltaTime, 10);
 
         final TempVars tempVars = TempVars.get();
         final Transform transform = tempVars.vecmathTransform;
         for (final String physicsBody : this.physicsBodies) {
             final AbstractEntity abstractEntity = this.entities.get(physicsBody);
-            abstractEntity.getRigidBody().getWorldTransform(transform);
+            abstractEntity.getRigidBody().getMotionState().getWorldTransform(transform);
 
             //  Convert between different math libraries.
             transform.getRotation(tempVars.vecmathQuat);
             tempVars.quat1.set(tempVars.vecmathQuat.x, tempVars.vecmathQuat.y, tempVars.vecmathQuat.z,
                     tempVars.vecmathQuat.w);
-            tempVars.vect3d1.set(transform.origin.x, transform.origin.y, transform.origin.z);
+            Utils.convert(tempVars.vect3d1, transform.origin);
 
             //  Assign transformation computed by jBullet to the entity.
             abstractEntity.setTransformation(tempVars.quat1, tempVars.vect3d1, abstractEntity.getScale());

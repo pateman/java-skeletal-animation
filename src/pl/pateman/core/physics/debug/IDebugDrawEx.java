@@ -11,4 +11,10 @@ import javax.vecmath.Vector3f;
  */
 public abstract class IDebugDrawEx extends IDebugDraw {
     public abstract void debugDrawObject(Transform worldTransform, CollisionShape shape, Vector3f color);
+
+    @Override
+    public void drawAabb(Vector3f from, Vector3f to, Vector3f color) {
+        color.set(255.0f, 197.0f, 61.f);
+        super.drawAabb(from, to, color);
+    }
 }

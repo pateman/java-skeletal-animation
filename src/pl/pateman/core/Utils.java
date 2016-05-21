@@ -1,6 +1,5 @@
 package pl.pateman.core;
 
-import com.bulletphysics.dynamics.RigidBody;
 import com.bulletphysics.linearmath.Transform;
 import org.joml.*;
 import org.lwjgl.BufferUtils;
@@ -36,6 +35,9 @@ public final class Utils {
     public static final Vector3f AXIS_Y = new Vector3f(0.0f, 1.0f, 0.0f);
     public static final Vector3f NEG_AXIS_Y = new Vector3f(0.0f, -1.0f, 0.0f);
     public static final Vector3f NEG_AXIS_Z = new Vector3f(0.0f, 0.0f, -1.0f);
+    public static final Quaternionf IDENTITY_QUATERNION = new Quaternionf();
+    public static final Vector3f IDENTITY_VECTOR = new Vector3f(1.0f, 1.0f, 1.0f);
+    public static final Vector3f ZERO_VECTOR = new Vector3f(0.0f, 0.0f, 0.0f);
 
     private Utils() {
     }
@@ -160,18 +162,6 @@ public final class Utils {
         vars.release();
     }
 
-    public static void setRigidBodyMass(final RigidBody out, float mass) {
-        if (out.getCollisionShape() == null) {
-            throw new IllegalArgumentException("Rigid body needs a collider");
-        }
-
-        final TempVars vars = TempVars.get();
-        out.getCollisionShape().calculateLocalInertia(mass, vars.vecmathVect3d1);
-        out.setMassProps(mass, vars.vecmathVect3d1);
-        out.updateInertiaTensor();
-        vars.release();
-    }
-
     public static List<Vector3f> arrayToVector3fList(float... components) {
         if (components == null || components.length % 3 != 0) {
             throw new IllegalArgumentException("Array of components must be divisible by 3");
@@ -189,5 +179,15 @@ public final class Utils {
 
     public static int clamp(int val, int min, int max) {
         return Math.max(min, Math.min(max, val));
+    }
+
+    public static javax.vecmath.Vector3f convert(final javax.vecmath.Vector3f out, final Vector3f vector3f) {
+        out.set(vector3f.x, vector3f.y, vector3f.z);
+        return out;
+    }
+
+    public static Vector3f convert(final Vector3f out, final javax.vecmath.Vector3f vector3f) {
+        out.set(vector3f.x, vector3f.y, vector3f.z);
+        return out;
     }
 }

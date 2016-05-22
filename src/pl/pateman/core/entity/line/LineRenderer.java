@@ -11,6 +11,7 @@ import pl.pateman.core.shader.Program;
 import pl.pateman.core.shader.Shader;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import static org.lwjgl.opengl.GL11.*;
@@ -22,7 +23,7 @@ import static org.lwjgl.opengl.GL30.glDeleteVertexArrays;
 /**
  * Created by pateman.
  */
-public class LineRenderer implements Clearable {
+public class LineRenderer implements Iterable<Line>, Clearable {
     private final int vao;
     private final List<Line> lineList;
     private final List<Vector3f> positions;
@@ -109,6 +110,35 @@ public class LineRenderer implements Clearable {
         return this.addLine(new Line(from, to, color));
     }
 
+    public void addWireBox(final Vector3f extents, final Vector4f color) {
+        //  Create the list od vertices.
+        final List<Vector3f> vertices = new ArrayList<>(8);
+        vertices.add(new Vector3f(-extents.x, -extents.y, extents.z));
+        vertices.add(new Vector3f(extents.x, -extents.y, extents.z));
+        vertices.add(new Vector3f(extents.x, extents.y, extents.z));
+        vertices.add(new Vector3f(-extents.x, extents.y, extents.z));
+        vertices.add(new Vector3f(-extents.x, -extents.y, -extents.z));
+        vertices.add(new Vector3f(extents.x, -extents.y, -extents.z));
+        vertices.add(new Vector3f(extents.x, extents.y, -extents.z));
+        vertices.add(new Vector3f(-extents.x, extents.y, -extents.z));
+
+        //  Add lines now.
+        this.addLine(vertices.get(0), vertices.get(1), color);
+        this.addLine(vertices.get(1), vertices.get(2), color);
+        this.addLine(vertices.get(2), vertices.get(3), color);
+        this.addLine(vertices.get(3), vertices.get(0), color);
+
+        this.addLine(vertices.get(4), vertices.get(5), color);
+        this.addLine(vertices.get(5), vertices.get(6), color);
+        this.addLine(vertices.get(6), vertices.get(7), color);
+        this.addLine(vertices.get(7), vertices.get(4), color);
+
+        this.addLine(vertices.get(0), vertices.get(4), color);
+        this.addLine(vertices.get(1), vertices.get(5), color);
+        this.addLine(vertices.get(2), vertices.get(6), color);
+        this.addLine(vertices.get(3), vertices.get(7), color);
+    }
+
     public Line removeLine(int index) {
         final Line removedLine = this.lineList.remove(index);
         if (removedLine != null) {
@@ -119,6 +149,10 @@ public class LineRenderer implements Clearable {
 
     public Line getLine(int index) {
         return this.lineList.get(index);
+    }
+
+    public int getLineCount() {
+        return this.lineList.size();
     }
 
     public void clearLines() {
@@ -199,6 +233,11 @@ public class LineRenderer implements Clearable {
         this.lineRenderingMode = lineRenderingMode;
     }
 
+    @Override
+    public Iterator<Line> iterator() {
+        return this.lineList.iterator();
+    }
+
     private static final String LINE_VERTEX_SHADER = "#version 330\n" +
             "\n" +
             "in vec3 Position;\n" +
@@ -213,6 +252,7 @@ public class LineRenderer implements Clearable {
             "    lineColor = Color;\n" +
             "    gl_Position = projection * modelView * vec4(Position, 1.0);\n" +
             "}";
+
     private static final String LINE_FRAGMENT_SHADER = "#version 330\n" +
             "\n" +
             "in vec4 lineColor;\n" +

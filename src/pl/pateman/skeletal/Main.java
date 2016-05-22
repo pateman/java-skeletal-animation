@@ -1,5 +1,16 @@
 package pl.pateman.skeletal;
 
+import com.bulletphysics.collision.broadphase.DbvtBroadphase;
+import com.bulletphysics.collision.dispatch.CollisionDispatcher;
+import com.bulletphysics.collision.dispatch.CollisionObject;
+import com.bulletphysics.collision.dispatch.DefaultCollisionConfiguration;
+import com.bulletphysics.collision.shapes.StaticPlaneShape;
+import com.bulletphysics.dynamics.RigidBody;
+import com.bulletphysics.dynamics.RigidBodyConstructionInfo;
+import com.bulletphysics.dynamics.constraintsolver.SequentialImpulseConstraintSolver;
+import com.bulletphysics.linearmath.DebugDrawModes;
+import com.bulletphysics.linearmath.DefaultMotionState;
+import com.bulletphysics.linearmath.Transform;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.lwjgl.Version;
@@ -11,20 +22,24 @@ import org.lwjgl.opengl.GL20;
 import pl.pateman.core.MeshImporter;
 import pl.pateman.core.TempVars;
 import pl.pateman.core.Utils;
+import pl.pateman.core.entity.AbstractEntity;
 import pl.pateman.core.entity.CameraEntity;
 import pl.pateman.core.entity.MeshEntity;
 import pl.pateman.core.entity.SkeletonMeshEntity;
 import pl.pateman.core.entity.mesh.MeshRenderer;
 import pl.pateman.core.entity.mesh.animation.AnimationPlaybackMode;
 import pl.pateman.core.entity.mesh.animation.BoneAnimationChannel;
-import pl.pateman.core.mesh.BoneManualControlType;
-import pl.pateman.importer.json.JSONImporter;
 import pl.pateman.core.mesh.Animation;
 import pl.pateman.core.mesh.Bone;
+import pl.pateman.core.mesh.BoneManualControlType;
+import pl.pateman.core.physics.DiscreteDynamicsWorldEx;
+import pl.pateman.core.physics.Ragdoll;
+import pl.pateman.core.physics.debug.PhysicsDebugger;
 import pl.pateman.core.shader.Program;
 import pl.pateman.core.shader.Shader;
 import pl.pateman.core.texture.Texture;
 import pl.pateman.core.texture.TextureLoader;
+import pl.pateman.importer.json.JSONImporter;
 
 import java.util.List;
 
@@ -57,6 +72,11 @@ public class Main {
 
     private int currentManualControlMode;
     private Bone manualBone;
+
+    private DiscreteDynamicsWorldEx dynamicsWorld;
+    private PhysicsDebugger physicsDebugger;
+    private boolean physicsDebug;
+    private boolean physicsSimulation;
 
     public void run() {
         System.out.println("LWJGL " + Version.getVersion() + "!");
@@ -131,6 +151,14 @@ public class Main {
                             Main.this.upperBodyChannel.switchToAnimation("alert");
                             Main.this.upperBodyChannel.setPlaybackMode(AnimationPlaybackMode.ONCE);
                             Main.this.lowerBodyChannel.switchToAnimation("run");
+                            break;
+                        //  'D' key.
+                        case GLFW_KEY_D:
+                            Main.this.physicsDebug = !Main.this.physicsDebug;
+                            break;
+                        //  'P' key
+                        case GLFW_KEY_P:
+                            Main.this.physicsSimulation = !Main.this.physicsSimulation;
                             break;
                         //  'M' key.
                         case GLFW_KEY_M:
@@ -242,9 +270,88 @@ public class Main {
             this.camera.translate(0.0f, 0.2f, -0.65f);
             this.camera.getCameraProjection().setViewport(WINDOW_WIDTH, WINDOW_HEIGHT);
             this.camera.updateProjectionMatrix();
+
+            //  Create the physics world.
+            final DbvtBroadphase broadphase = new DbvtBroadphase();
+            final DefaultCollisionConfiguration collisionConfiguration = new DefaultCollisionConfiguration();
+            final CollisionDispatcher collisionDispatcher = new CollisionDispatcher(collisionConfiguration);
+            final SequentialImpulseConstraintSolver constraintSolver = new SequentialImpulseConstraintSolver();
+
+            this.dynamicsWorld = new DiscreteDynamicsWorldEx(collisionDispatcher, broadphase, constraintSolver,
+                    collisionConfiguration);
+            this.dynamicsWorld.setGravity(new javax.vecmath.Vector3f(0.0f, -9.81f, 0.0f));
+            this.physicsDebugger = new PhysicsDebugger(this.dynamicsWorld);
+
+            final StaticPlaneShape ground = new StaticPlaneShape(new javax.vecmath.Vector3f(0.0f, 1.0f, 0.0f), 0.0f);
+            final Transform transform = new Transform();
+            transform.setIdentity();
+            transform.origin.set(0.0f, 0.0f, 0.0f);
+            RigidBodyConstructionInfo rbInfo = new RigidBodyConstructionInfo(0.0f, new DefaultMotionState(transform),
+                    ground);
+            final RigidBody rigidBody = new RigidBody(rbInfo);
+            this.dynamicsWorld.addRigidBody(rigidBody);
+
+            //  Build the ragdoll.
+            final Ragdoll ragdoll = this.meshEntity.getAnimationController().getRagdoll();
+            ragdoll.setDynamicsWorld(this.dynamicsWorld);
+            ragdoll.setRagdollBone(Ragdoll.RagdollBodyPart.HEAD, "Bip01 Head");
+            ragdoll.setRagdollBone(Ragdoll.RagdollBodyPart.LEFT_UPPER_ARM, "Bip01 L UpperArm");
+            ragdoll.setRagdollBone(Ragdoll.RagdollBodyPart.LEFT_ELBOW, "Bip01 L Forearm");
+            ragdoll.setRagdollBone(Ragdoll.RagdollBodyPart.RIGHT_UPPER_ARM, "Bip01 R UpperArm");
+            ragdoll.setRagdollBone(Ragdoll.RagdollBodyPart.RIGHT_ELBOW, "Bip01 R Forearm");
+            ragdoll.setRagdollBone(Ragdoll.RagdollBodyPart.CHEST, "Bip01 Neck");
+            ragdoll.setRagdollBone(Ragdoll.RagdollBodyPart.LEFT_LOWER_ARM, "Bip01 L Hand");
+            ragdoll.setRagdollBone(Ragdoll.RagdollBodyPart.RIGHT_LOWER_ARM, "Bip01 R Hand");
+            ragdoll.setRagdollBone(Ragdoll.RagdollBodyPart.HIPS, "Bip01 Pelvis");
+            ragdoll.setRagdollBone(Ragdoll.RagdollBodyPart.LEFT_UPPER_LEG, "Bip01 L Thigh");
+            ragdoll.setRagdollBone(Ragdoll.RagdollBodyPart.LEFT_KNEE, "Bip01 L Calf");
+            ragdoll.setRagdollBone(Ragdoll.RagdollBodyPart.RIGHT_UPPER_LEG, "Bip01 R Thigh");
+            ragdoll.setRagdollBone(Ragdoll.RagdollBodyPart.RIGHT_KNEE, "Bip01 R Calf");
+            ragdoll.setRagdollBone(Ragdoll.RagdollBodyPart.LEFT_LOWER_LEG, "Bip01 L Foot");
+            ragdoll.setRagdollBone(Ragdoll.RagdollBodyPart.RIGHT_LOWER_LEG, "Bip01 R Foot");
+            ragdoll.buildRagdoll();
+
+//            ragdoll.addRagdollPart("Head", this.meshEntity.getTransformation(), new Vector3f(0.0f, 0.34f, 0.0f),
+//                    Utils.IDENTITY_QUATERNION, new Vector3f(0.05f, 0.2f, 0.35f), "Bip01 Neck", "Bip01 Head");
+//            ragdoll.addRagdollPart("Torso", this.meshEntity.getTransformation(), new Vector3f(0.0f, 0.13f, 0.0f),
+//                    Utils.IDENTITY_QUATERNION, new Vector3f(0.15f, 0.54f, 0.5f), "Bip01 Spine", "Bip01 Spine1");
+//            ragdoll.addRagdollPart("Left arm", this.meshEntity.getTransformation(), new Vector3f(0.0f, 0.15f, 0.0f),
+//                    Utils.IDENTITY_QUATERNION, new Vector3f(0.5f, 0.5f, 0.5f), "Bip01 L Clavicle", "Bip01 L UpperArm");
+//            ragdoll.addRagdollPart("Head", true, new Vector3f(0.05f, 0.05f, 0.05f), this.getBoneBindPosition("Bip01 Head"),
+//                    this.meshEntity.getTransformation());
+//            ragdoll.addRagdollPart("Torso", true, new Vector3f(0.08f, 0.16f, 0.05f),
+//                    this.getBoneBindPosition("Bip01 Spine").add(0.0f, 0.025f, 0.0f),
+//                    this.meshEntity.getTransformation());
+////            ragdoll.addRagdollPart("Left Upperarm", false, new Vector3f(0.035f, 0.045f, 0.0f),
+////                    this.getBoneBindPosition("Bip01 L UpperArm").add(0.0f, -0.04f, 0.0f),
+////                    this.meshEntity.getTransformation());
+////            ragdoll.addRagdollPart("Right Upperarm", false, new Vector3f(0.035f, 0.045f, 0.0f),
+////                    this.getBoneBindPosition("Bip01 R UpperArm").add(0.0f, -0.04f, 0.0f),
+////                    this.meshEntity.getTransformation());
+////            ragdoll.addRagdollPart("Left Lowerarm", false, new Vector3f(0.035f, 0.085f, 0.0f),
+////                    this.getBoneBindPosition("Bip01 L Forearm").add(0.0f, -0.06f, 0.0f),
+////                    this.meshEntity.getTransformation());
+////            ragdoll.addRagdollPart("Right Lowerarm", false, new Vector3f(0.035f, 0.085f, 0.0f),
+////                    this.getBoneBindPosition("Bip01 R Forearm").add(0.0f, -0.06f, 0.0f),
+////                    this.meshEntity.getTransformation());
+//            ragdoll.addRagdollPart("Left Upperleg", true, new Vector3f(0.03f, 0.1f, 0.03f),
+//                    this.getBoneBindPosition("Bip01 L Thigh").add(-0.01f, -0.07f, -0.02f),
+//                    this.meshEntity.getTransformation());
+//            ragdoll.addRagdollPart("Right Upperleg", true, new Vector3f(0.03f, 0.1f, 0.03f),
+//                    this.getBoneBindPosition("Bip01 R Thigh").add(0f, -0.07f, -0.02f),
+//                    this.meshEntity.getTransformation());
+//            ragdoll.addRagdollPart("Left Lowerleg", true, new Vector3f(0.03f, 0.1f, 0.03f),
+//                    this.getBoneBindPosition("Bip01 L Calf").add(-0.01f, -0.03f, -0.02f),
+//                    this.meshEntity.getTransformation());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private Vector3f getBoneBindPosition(final String boneName) {
+        final Matrix4f worldBindMatrix = this.meshEntity.getMesh().getSkeleton().getBoneByName(boneName).getWorldBindMatrix();
+        final Vector3f bindPosition = worldBindMatrix.getTranslation(new Vector3f());
+        return bindPosition;
     }
 
     private void updateScene() {
@@ -253,6 +360,32 @@ public class Main {
         this.deltaTime = (float) (currentTime - this.lastTime);
         this.lastTime = currentTime;
 
+        if (this.physicsSimulation) {
+            this.dynamicsWorld.stepSimulation(this.deltaTime);
+
+            //  After stepping the physics simulation, update graphical representations of objects.
+            final TempVars tempVars = TempVars.get();
+            for (CollisionObject collisionObject : this.dynamicsWorld.getCollisionObjectArray()) {
+                if (collisionObject.getUserPointer() == null) {
+                    continue;
+                }
+
+                if (collisionObject.getUserPointer() instanceof AbstractEntity) {
+                    //  Get the collision object's world transformation.
+                    if (collisionObject instanceof RigidBody) {
+                        ((RigidBody) collisionObject).getMotionState().getWorldTransform(tempVars.vecmathTransform);
+                    } else {
+                        collisionObject.getWorldTransform(tempVars.vecmathTransform);
+                    }
+
+                    //  Set the transformation of the entity attached to this collision object.
+                    AbstractEntity entity = (AbstractEntity) collisionObject.getUserPointer();
+                    Utils.transformToMatrix(tempVars.tempMat4x41, tempVars.vecmathTransform);
+                    entity.getTransformation().set(tempVars.tempMat4x41);
+                }
+            }
+            tempVars.release();
+        }
         this.meshEntity.getAnimationController().stepAnimation(this.deltaTime);
         this.skeletonMeshEntity.applyAnimation(this.meshEntity.getMeshRenderer().getBoneMatrices());
     }
@@ -307,6 +440,13 @@ public class Main {
         this.meshTexture.unbind();
 
         tempVars.release();
+
+        //  Draw the physics debug.
+        if (this.physicsDebug) {
+            this.meshEntity.getAnimationController().getRagdoll().drawRagdollLines(this.camera, Utils.ZERO_VECTOR);
+            this.physicsDebugger.setDebugMode(DebugDrawModes.DRAW_WIREFRAME);
+            this.physicsDebugger.debugDrawWorld(this.camera);
+        }
     }
 
     private void loop() {

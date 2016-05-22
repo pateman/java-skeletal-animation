@@ -3,6 +3,7 @@ package pl.pateman.core.entity.mesh.animation;
 import org.joml.Matrix4f;
 import pl.pateman.core.mesh.Bone;
 import pl.pateman.core.mesh.Mesh;
+import pl.pateman.core.physics.Ragdoll;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -19,6 +20,7 @@ public final class AnimationController {
 
     private final List<Matrix4f> animationMatrices;
     private final Map<String, BoneAnimationChannel> animationChannels;
+    private final Ragdoll ragdoll;
 
     public AnimationController(Mesh mesh) {
         this.mesh = mesh;
@@ -30,6 +32,7 @@ public final class AnimationController {
         }
 
         this.animationChannels = new HashMap<>();
+        this.ragdoll = new Ragdoll(this.mesh);
     }
 
     private void checkChannelNameValid(final String channelName) throws IllegalArgumentException {
@@ -82,6 +85,10 @@ public final class AnimationController {
         for (BoneAnimationChannel channel : this.animationChannels.values()) {
             channel.switchToAnimation(animation, blendingTime);
         }
+    }
+
+    public Ragdoll getRagdoll() {
+        return ragdoll;
     }
 
     public List<Matrix4f> getAnimationMatrices() {

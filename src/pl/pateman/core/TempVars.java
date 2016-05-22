@@ -191,7 +191,8 @@ public final class TempVars {
     public final Vector3f vect3d3 = new Vector3f();
     public final Vector3f vect3d4 = new Vector3f();
     public final Vector3f vect3d5 = new Vector3f();
-    public final Vector4f vect4d = new Vector4f();
+    public final Vector4f vect4d1 = new Vector4f();
+    public final Vector4f vect4d2 = new Vector4f();
 
     /**
      * General matrices.

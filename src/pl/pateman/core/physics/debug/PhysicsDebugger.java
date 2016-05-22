@@ -42,7 +42,7 @@ public class PhysicsDebugger extends IDebugDrawEx implements Clearable {
 
         final org.joml.Vector3f lineFrom = tempVars.vect3d1.set(from.x, from.y, from.z);
         final org.joml.Vector3f lineTo = tempVars.vect3d2.set(to.x, to.y, to.z);
-        final Vector4f lineColor = tempVars.vect4d.set(color.x / 255.0f, color.y / 255.0f, color.z / 255.0f, 1.0f);
+        final Vector4f lineColor = tempVars.vect4d1.set(color.x / 255.0f, color.y / 255.0f, color.z / 255.0f, 1.0f);
 
         this.lineRenderer.addLine(lineFrom, lineTo, lineColor);
 

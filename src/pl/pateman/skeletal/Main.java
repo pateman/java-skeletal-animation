@@ -13,6 +13,7 @@ import com.bulletphysics.linearmath.DefaultMotionState;
 import com.bulletphysics.linearmath.Transform;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
+import org.joml.Vector4f;
 import org.lwjgl.Version;
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.glfw.GLFWKeyCallback;
@@ -22,10 +23,7 @@ import org.lwjgl.opengl.GL20;
 import pl.pateman.core.MeshImporter;
 import pl.pateman.core.TempVars;
 import pl.pateman.core.Utils;
-import pl.pateman.core.entity.AbstractEntity;
-import pl.pateman.core.entity.CameraEntity;
-import pl.pateman.core.entity.MeshEntity;
-import pl.pateman.core.entity.SkeletonMeshEntity;
+import pl.pateman.core.entity.*;
 import pl.pateman.core.entity.mesh.MeshRenderer;
 import pl.pateman.core.entity.mesh.animation.AnimationPlaybackMode;
 import pl.pateman.core.entity.mesh.animation.BoneAnimationChannel;
@@ -53,6 +51,9 @@ import static org.lwjgl.system.MemoryUtil.NULL;
 public class Main {
     public static final int WINDOW_WIDTH = 1024;
     public static final int WINDOW_HEIGHT = 768;
+    public static final Vector4f DIFFUSE_COLOR = new Vector4f(0.8f, 0.8f, 0.8f, 1.0f);
+    public static final float CAMERA_SPEED = 5.0f;
+    public static final float CAMERA_ROTATION_SPEED = 50.0f;
 
     private GLFWErrorCallback errorCallback;
     private GLFWKeyCallback keyCallback;
@@ -152,8 +153,8 @@ public class Main {
                             Main.this.upperBodyChannel.setPlaybackMode(AnimationPlaybackMode.ONCE);
                             Main.this.lowerBodyChannel.switchToAnimation("run");
                             break;
-                        //  'D' key.
-                        case GLFW_KEY_D:
+                        //  F12 key.
+                        case GLFW_KEY_F12:
                             Main.this.physicsDebug = !Main.this.physicsDebug;
                             break;
                         //  'P' key
@@ -182,6 +183,46 @@ public class Main {
                             }
                             break;
                     }
+                } else if (action == GLFW_PRESS || action == GLFW_REPEAT) {
+                    final TempVars vars = TempVars.get();
+                    final Vector3f movement = vars.vect3d1.set(Utils.ZERO_VECTOR);
+                    final Vector3f rotation = vars.vect3d2.set(Utils.ZERO_VECTOR);
+
+                    switch (key) {
+                        case GLFW_KEY_W:
+                            movement.set(0.0f, 0.0f, CAMERA_SPEED * Main.this.deltaTime);
+                            break;
+                        case GLFW_KEY_S:
+                            movement.set(0.0f, 0.0f, -CAMERA_SPEED * Main.this.deltaTime);
+                            break;
+                        case GLFW_KEY_A:
+                            movement.set(CAMERA_SPEED * Main.this.deltaTime, 0.0f, 0.0f);
+                            break;
+                        case GLFW_KEY_D:
+                            movement.set(-CAMERA_SPEED * Main.this.deltaTime, 0.0f, 0.0f);
+                            break;
+                        case GLFW_KEY_G:
+                            movement.set(0.0f, CAMERA_SPEED * Main.this.deltaTime, 0.0f);
+                            break;
+                        case GLFW_KEY_H:
+                            movement.set(0.0f, -CAMERA_SPEED * Main.this.deltaTime, 0.0f);
+                            break;
+                        case GLFW_KEY_Q:
+                            rotation.set(0.0f, (float) Math.toRadians(CAMERA_ROTATION_SPEED * Main.this.deltaTime), 0.0f);
+                            break;
+                        case GLFW_KEY_E:
+                            rotation.set(0.0f, (float) Math.toRadians(-CAMERA_ROTATION_SPEED * Main.this.deltaTime), 0.0f);
+                            break;
+                    }
+
+                    if (movement.lengthSquared() != 0.0f) {
+                        Main.this.camera.getTransformation().get3x3(vars.tempMat3x3).transform(movement);
+                        Main.this.camera.translate(movement);
+                    }
+                    if (rotation.lengthSquared() != 0.0f) {
+                        Main.this.camera.rotate(rotation.x, rotation.y, rotation.z);
+                    }
+                    vars.release();
                 }
             }
         });
@@ -233,7 +274,7 @@ public class Main {
             this.meshEntity.buildMesh();
             this.meshEntity.translate(0.25f, 0.0f, 0.0f);
             this.meshEntity.rotate(0.0f, (float) Math.toRadians(180.0f), 0.0f);
-            this.meshEntity.setScale(new Vector3f(0.95f, 0.95f, 0.95f));
+            this.meshEntity.setScale(new Vector3f(1f, 1f, 1f));
             this.manualBone = this.meshEntity.getMesh().getSkeleton().getBoneByName("Bip01 Head");
 
             //  Print information about the mesh.
@@ -310,48 +351,9 @@ public class Main {
             ragdoll.setRagdollBone(Ragdoll.RagdollBodyPart.LEFT_LOWER_LEG, "Bip01 L Foot");
             ragdoll.setRagdollBone(Ragdoll.RagdollBodyPart.RIGHT_LOWER_LEG, "Bip01 R Foot");
             ragdoll.buildRagdoll();
-
-//            ragdoll.addRagdollPart("Head", this.meshEntity.getTransformation(), new Vector3f(0.0f, 0.34f, 0.0f),
-//                    Utils.IDENTITY_QUATERNION, new Vector3f(0.05f, 0.2f, 0.35f), "Bip01 Neck", "Bip01 Head");
-//            ragdoll.addRagdollPart("Torso", this.meshEntity.getTransformation(), new Vector3f(0.0f, 0.13f, 0.0f),
-//                    Utils.IDENTITY_QUATERNION, new Vector3f(0.15f, 0.54f, 0.5f), "Bip01 Spine", "Bip01 Spine1");
-//            ragdoll.addRagdollPart("Left arm", this.meshEntity.getTransformation(), new Vector3f(0.0f, 0.15f, 0.0f),
-//                    Utils.IDENTITY_QUATERNION, new Vector3f(0.5f, 0.5f, 0.5f), "Bip01 L Clavicle", "Bip01 L UpperArm");
-//            ragdoll.addRagdollPart("Head", true, new Vector3f(0.05f, 0.05f, 0.05f), this.getBoneBindPosition("Bip01 Head"),
-//                    this.meshEntity.getTransformation());
-//            ragdoll.addRagdollPart("Torso", true, new Vector3f(0.08f, 0.16f, 0.05f),
-//                    this.getBoneBindPosition("Bip01 Spine").add(0.0f, 0.025f, 0.0f),
-//                    this.meshEntity.getTransformation());
-////            ragdoll.addRagdollPart("Left Upperarm", false, new Vector3f(0.035f, 0.045f, 0.0f),
-////                    this.getBoneBindPosition("Bip01 L UpperArm").add(0.0f, -0.04f, 0.0f),
-////                    this.meshEntity.getTransformation());
-////            ragdoll.addRagdollPart("Right Upperarm", false, new Vector3f(0.035f, 0.045f, 0.0f),
-////                    this.getBoneBindPosition("Bip01 R UpperArm").add(0.0f, -0.04f, 0.0f),
-////                    this.meshEntity.getTransformation());
-////            ragdoll.addRagdollPart("Left Lowerarm", false, new Vector3f(0.035f, 0.085f, 0.0f),
-////                    this.getBoneBindPosition("Bip01 L Forearm").add(0.0f, -0.06f, 0.0f),
-////                    this.meshEntity.getTransformation());
-////            ragdoll.addRagdollPart("Right Lowerarm", false, new Vector3f(0.035f, 0.085f, 0.0f),
-////                    this.getBoneBindPosition("Bip01 R Forearm").add(0.0f, -0.06f, 0.0f),
-////                    this.meshEntity.getTransformation());
-//            ragdoll.addRagdollPart("Left Upperleg", true, new Vector3f(0.03f, 0.1f, 0.03f),
-//                    this.getBoneBindPosition("Bip01 L Thigh").add(-0.01f, -0.07f, -0.02f),
-//                    this.meshEntity.getTransformation());
-//            ragdoll.addRagdollPart("Right Upperleg", true, new Vector3f(0.03f, 0.1f, 0.03f),
-//                    this.getBoneBindPosition("Bip01 R Thigh").add(0f, -0.07f, -0.02f),
-//                    this.meshEntity.getTransformation());
-//            ragdoll.addRagdollPart("Left Lowerleg", true, new Vector3f(0.03f, 0.1f, 0.03f),
-//                    this.getBoneBindPosition("Bip01 L Calf").add(-0.01f, -0.03f, -0.02f),
-//                    this.meshEntity.getTransformation());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-    }
-
-    private Vector3f getBoneBindPosition(final String boneName) {
-        final Matrix4f worldBindMatrix = this.meshEntity.getMesh().getSkeleton().getBoneByName(boneName).getWorldBindMatrix();
-        final Vector3f bindPosition = worldBindMatrix.getTranslation(new Vector3f());
-        return bindPosition;
     }
 
     private void updateScene() {
@@ -361,7 +363,7 @@ public class Main {
         this.lastTime = currentTime;
 
         if (this.physicsSimulation) {
-            this.dynamicsWorld.stepSimulation(this.deltaTime);
+            this.dynamicsWorld.stepSimulation(this.deltaTime, 4);
 
             //  After stepping the physics simulation, update graphical representations of objects.
             final TempVars tempVars = TempVars.get();
@@ -378,10 +380,16 @@ public class Main {
                         collisionObject.getWorldTransform(tempVars.vecmathTransform);
                     }
 
-                    //  Set the transformation of the entity attached to this collision object.
-                    AbstractEntity entity = (AbstractEntity) collisionObject.getUserPointer();
-                    Utils.transformToMatrix(tempVars.tempMat4x41, tempVars.vecmathTransform);
-                    entity.getTransformation().set(tempVars.tempMat4x41);
+                    //  Convert between different math libraries.
+                    tempVars.vecmathTransform.getRotation(tempVars.vecmathQuat);
+                    tempVars.quat1.set(tempVars.vecmathQuat.x, tempVars.vecmathQuat.y, tempVars.vecmathQuat.z,
+                            tempVars.vecmathQuat.w);
+                    Utils.convert(tempVars.vect3d1, tempVars.vecmathTransform.origin);
+
+                    //  Assign transformation computed by jBullet to the entity.
+                    final AbstractEntity abstractEntity = (AbstractEntity) collisionObject.getUserPointer();
+                    abstractEntity.setTransformation(tempVars.quat1, tempVars.vect3d1, abstractEntity.getScale());
+                    abstractEntity.forceTransformationUpdate(false);
                 }
             }
             tempVars.release();
@@ -390,46 +398,46 @@ public class Main {
         this.skeletonMeshEntity.applyAnimation(this.meshEntity.getMeshRenderer().getBoneMatrices());
     }
 
-    private void drawScene() {
+    private void drawMeshEntity(final MeshEntity meshEntity, final Program program, final CameraEntity camera,
+                                final Texture texture, final Vector4f diffuseColor) {
         final TempVars tempVars = TempVars.get();
 
-        //  Draw the skeleton mesh first.
-        this.skeletonMeshEntity.drawSkeletonMesh(this.camera);
-
         //  Prepare the model-view matrix.
-        final Matrix4f modelViewMatrix = this.camera.getViewMatrix().mul(this.meshEntity.getTransformation(),
-                tempVars.tempMat4x41);
+        final Matrix4f modelViewMatrix = camera.getViewMatrix().mul(meshEntity.getTransformation(), tempVars.tempMat4x41);
 
         //  Start rendering.
-        final MeshRenderer renderer = this.meshEntity.getMeshRenderer();
+        final MeshRenderer renderer = meshEntity.getMeshRenderer();
         renderer.initializeRendering();
-        this.meshTexture.bind();
+
+        byte useTexturing = 0;
+        if (texture != null) {
+            texture.bind();
+            useTexturing = 1;
+        }
 
         //  Pass uniforms to the shader.
-        this.meshProgram.setUniformMatrix4(Utils.MODELVIEW_UNIFORM, Utils.matrix4fToBuffer(modelViewMatrix));
-        this.meshProgram.setUniformMatrix4(Utils.PROJECTION_UNIFORM, Utils.matrix4fToBuffer(this.camera.
-                getProjectionMatrix()));
-        this.meshProgram.setUniform1(Utils.TEXTURE_UNIFORM, 0);
-        this.meshProgram.setUniform1(Utils.USETEXTURING_UNIFORM, 1);
-        this.meshProgram.setUniform1(Utils.USELIGHTING_UNIFORM, 1);
-        this.meshProgram.setUniform4(Utils.DIFFUSECOLOR_UNIFORM, 0.8f, 0.8f, 0.8f, 1.0f);
-        this.meshProgram.setUniform3(Utils.CAMERADIRECTION_UNIFORM, this.camera.getDirection().x,
-                this.camera.getDirection().y, this.camera.getDirection().z);
-        if (this.meshEntity.getMesh().hasSkeleton()) {
-            this.meshProgram.setUniform1(Utils.USESKINNING_UNIFORM, 1);
+        program.setUniformMatrix4(Utils.MODELVIEW_UNIFORM, Utils.matrix4fToBuffer(modelViewMatrix));
+        program.setUniformMatrix4(Utils.PROJECTION_UNIFORM, Utils.matrix4fToBuffer(camera.getProjectionMatrix()));
+        program.setUniform1(Utils.TEXTURE_UNIFORM, 0);
+        program.setUniform1(Utils.USETEXTURING_UNIFORM, useTexturing);
+        program.setUniform1(Utils.USELIGHTING_UNIFORM, 1);
+        program.setUniform4(Utils.DIFFUSECOLOR_UNIFORM, diffuseColor.x, diffuseColor.y, diffuseColor.z, diffuseColor.w);
+        program.setUniform3(Utils.CAMERADIRECTION_UNIFORM, 0.0f, 0.0f, 1.0f);
+        if (meshEntity.getMesh().hasSkeleton()) {
+            program.setUniform1(Utils.USESKINNING_UNIFORM, 1);
 
             //  Apply the inverse bind transform to bone matrices.
             final List<Matrix4f> boneMatrices = renderer.getBoneMatrices();
-            for (int i = 0; i < this.meshEntity.getMesh().getSkeleton().getBones().size(); i++) {
-                final Bone bone = this.meshEntity.getMesh().getSkeleton().getBone(i);
+            for (int i = 0; i < meshEntity.getMesh().getSkeleton().getBones().size(); i++) {
+                final Bone bone = meshEntity.getMesh().getSkeleton().getBone(i);
                 final Matrix4f boneMatrix = tempVars.boneMatricesList.get(i).set(boneMatrices.get(i));
 
                 boneMatrix.mul(bone.getInverseBindMatrix(), boneMatrix);
             }
-            this.meshProgram.setUniformMatrix4Array(Utils.BONES_UNIFORM, tempVars.boneMatricesList.size(),
+            program.setUniformMatrix4Array(Utils.BONES_UNIFORM, tempVars.boneMatricesList.size(),
                     Utils.matrices4fToBuffer(tempVars.boneMatricesList));
         } else {
-            this.meshProgram.setUniform1(Utils.USESKINNING_UNIFORM, 0);
+            program.setUniform1(Utils.USESKINNING_UNIFORM, 0);
         }
 
         //  Draw the entity.
@@ -437,9 +445,19 @@ public class Main {
 
         //  Finalize rendering.
         renderer.finalizeRendering();
-        this.meshTexture.unbind();
+        if (texture != null) {
+            texture.unbind();
+        }
 
         tempVars.release();
+    }
+
+    private void drawScene() {
+        //  Draw the skeleton mesh first.
+        this.skeletonMeshEntity.drawSkeletonMesh(this.camera);
+
+        //  Draw the skinned mesh.
+        this.drawMeshEntity(this.meshEntity, this.meshProgram, this.camera, this.meshTexture, DIFFUSE_COLOR);
 
         //  Draw the physics debug.
         if (this.physicsDebug) {

@@ -88,10 +88,7 @@ public class AbstractEntity implements Clearable {
     protected void updateDirection() {
         final TempVars vars = TempVars.get();
 
-        final Matrix4f rotationPart = vars.tempMat4x41.set(this.transformation).setTranslation(0.0f, 0.0f, 0.0f);
-        rotationPart.m33 = 1.0f;
-
-        Utils.NEG_AXIS_Z.mul(rotationPart.get3x3(vars.tempMat3x3), this.direction);
+        Utils.NEG_AXIS_Z.mul(this.transformation.get3x3(vars.tempMat3x3), this.direction);
         this.direction.normalize();
 
         vars.release();

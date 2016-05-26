@@ -210,6 +210,11 @@ public final class TempVars {
     public final Quaternionf quat3 = new Quaternionf();
 
     /**
+     * Other.
+     */
+    public final AxisAngle4f axisAngle4f1 = new AxisAngle4f();
+
+    /**
      * For converting between Vecmath and JOML.
      */
     public final Transform vecmathTransform = new Transform();

@@ -190,4 +190,18 @@ public final class Utils {
         out.set(vector3f.x, vector3f.y, vector3f.z);
         return out;
     }
+
+    public static void rotationBetweenVectors(final Quaternionf out, final Vector3f a, final Vector3f b) {
+        final TempVars vars = TempVars.get();
+
+        //  Calculate the axis-angle between two vectors.
+        final Vector3f v = a.cross(b, vars.vect3d1).normalize();
+        final float angle = -a.angle(b);
+        vars.axisAngle4f1.set(angle, v);
+
+        //  Convert the axis-angle to quaternion.
+        out.set(vars.axisAngle4f1);
+
+        vars.release();
+    }
 }

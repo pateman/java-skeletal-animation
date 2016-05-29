@@ -3,7 +3,7 @@ package pl.pateman.core.entity.mesh.animation;
 import org.joml.Matrix4f;
 import pl.pateman.core.mesh.Bone;
 import pl.pateman.core.mesh.Mesh;
-import pl.pateman.core.physics.Ragdoll;
+import pl.pateman.core.physics.ragdoll.Ragdoll;
 
 import java.util.ArrayList;
 import java.util.HashMap;

@@ -23,7 +23,10 @@ import org.lwjgl.opengl.GL20;
 import pl.pateman.core.MeshImporter;
 import pl.pateman.core.TempVars;
 import pl.pateman.core.Utils;
-import pl.pateman.core.entity.*;
+import pl.pateman.core.entity.AbstractEntity;
+import pl.pateman.core.entity.CameraEntity;
+import pl.pateman.core.entity.MeshEntity;
+import pl.pateman.core.entity.SkeletonMeshEntity;
 import pl.pateman.core.entity.mesh.MeshRenderer;
 import pl.pateman.core.entity.mesh.animation.AnimationPlaybackMode;
 import pl.pateman.core.entity.mesh.animation.BoneAnimationChannel;
@@ -31,8 +34,10 @@ import pl.pateman.core.mesh.Animation;
 import pl.pateman.core.mesh.Bone;
 import pl.pateman.core.mesh.BoneManualControlType;
 import pl.pateman.core.physics.DiscreteDynamicsWorldEx;
-import pl.pateman.core.physics.Ragdoll;
 import pl.pateman.core.physics.debug.PhysicsDebugger;
+import pl.pateman.core.physics.ragdoll.Ragdoll;
+import pl.pateman.core.physics.ragdoll.RagdollStructure;
+import pl.pateman.core.physics.ragdoll.RagdollStructureBuilder;
 import pl.pateman.core.shader.Program;
 import pl.pateman.core.shader.Shader;
 import pl.pateman.core.texture.Texture;
@@ -44,6 +49,7 @@ import java.util.List;
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.system.MemoryUtil.NULL;
+import static pl.pateman.core.physics.ragdoll.BodyPartType.*;
 
 /**
  * Created by pateman on 2016-03-17.
@@ -335,21 +341,33 @@ public class Main {
             //  Build the ragdoll.
             final Ragdoll ragdoll = this.meshEntity.getAnimationController().getRagdoll();
             ragdoll.setDynamicsWorld(this.dynamicsWorld);
-            ragdoll.setRagdollBone(Ragdoll.RagdollBodyPart.HEAD, "Bip01 Head");
-            ragdoll.setRagdollBone(Ragdoll.RagdollBodyPart.LEFT_UPPER_ARM, "Bip01 L UpperArm");
-            ragdoll.setRagdollBone(Ragdoll.RagdollBodyPart.LEFT_ELBOW, "Bip01 L Forearm");
-            ragdoll.setRagdollBone(Ragdoll.RagdollBodyPart.RIGHT_UPPER_ARM, "Bip01 R UpperArm");
-            ragdoll.setRagdollBone(Ragdoll.RagdollBodyPart.RIGHT_ELBOW, "Bip01 R Forearm");
-            ragdoll.setRagdollBone(Ragdoll.RagdollBodyPart.CHEST, "Bip01 Neck");
-            ragdoll.setRagdollBone(Ragdoll.RagdollBodyPart.LEFT_LOWER_ARM, "Bip01 L Hand");
-            ragdoll.setRagdollBone(Ragdoll.RagdollBodyPart.RIGHT_LOWER_ARM, "Bip01 R Hand");
-            ragdoll.setRagdollBone(Ragdoll.RagdollBodyPart.HIPS, "Bip01 Pelvis");
-            ragdoll.setRagdollBone(Ragdoll.RagdollBodyPart.LEFT_UPPER_LEG, "Bip01 L Thigh");
-            ragdoll.setRagdollBone(Ragdoll.RagdollBodyPart.LEFT_KNEE, "Bip01 L Calf");
-            ragdoll.setRagdollBone(Ragdoll.RagdollBodyPart.RIGHT_UPPER_LEG, "Bip01 R Thigh");
-            ragdoll.setRagdollBone(Ragdoll.RagdollBodyPart.RIGHT_KNEE, "Bip01 R Calf");
-            ragdoll.setRagdollBone(Ragdoll.RagdollBodyPart.LEFT_LOWER_LEG, "Bip01 L Foot");
-            ragdoll.setRagdollBone(Ragdoll.RagdollBodyPart.RIGHT_LOWER_LEG, "Bip01 R Foot");
+            final RagdollStructure ragdollStructure = new RagdollStructureBuilder(this.meshEntity.getMesh())
+                    .startPart(HEAD)
+                        .addBones("Bip01 HeadNub", "Bip01 Head", "Bip01 Neck").endPart()
+                    .startPart(CHEST)
+                        .addBones("Bip01 Neck", "Bip01 Spine", "Bip01 R Clavicle", "Bip01 L Clavicle",
+                            "Bip01 R UpperArm", "Bip01 L UpperArm", "Bip01 Spine1", "Bip01 R Thigh", "Bip01 L Thigh",
+                            "Bip01 Pelvis").endPart()
+                    .startPart(LEFT_UPPER_ARM)
+                        .addBones("Bip01 L Clavicle", "Bip01 L UpperArm", "Bip01 L Forearm").endPart()
+                    .startPart(LEFT_LOWER_ARM)
+                        .addBones("Bip01 L Forearm", "Bip01 L Hand", "Bip01 L Finger3").endPart()
+                    .startPart(RIGHT_UPPER_ARM)
+                        .addBones("Bip01 R Clavicle", "Bip01 R UpperArm", "Bip01 R Forearm").endPart()
+                    .startPart(RIGHT_LOWER_ARM)
+                        .addBones("Bip01 R Forearm", "Bip01 R Hand", "Bip01 R Finger3").endPart()
+                    .startPart(LEFT_UPPER_LEG)
+                        .addBones("Bip01 L Thigh", "Bip01 L Calf").endPart()
+                    .startPart(LEFT_LOWER_LEG)
+                        .addBones("Bip01 L Calf", "Bip01 L Foot")
+                        .setRotation(Utils.IDENTITY_QUATERNION).endPart()
+                    .startPart(RIGHT_UPPER_LEG)
+                        .addBones("Bip01 R Thigh", "Bip01 R Calf").endPart()
+                    .startPart(RIGHT_LOWER_LEG)
+                        .addBones("Bip01 R Calf", "Bip01 R Foot")
+                        .setRotation(Utils.IDENTITY_QUATERNION).endPart()
+                    .build();
+            ragdoll.setRagdollStructure(ragdollStructure);
             ragdoll.buildRagdoll();
         } catch (Exception e) {
             throw new RuntimeException(e);

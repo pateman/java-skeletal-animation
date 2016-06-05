@@ -1,3 +1,5 @@
 1.	Copy My3dsMaxExporter.dle to your 3dsmax's plugins directory.
 2.	Copy My3dsMaxExporter.jar to your 3dsmax's root directory.
-3.	Use My3dsMaxExporter_TimeTags.ms in 3dsmax to create the time tags needed for exporting animations.
+3.	Copy Newtonsoft.Json.dll and Newtonsoft.Json.xml to the System32 directory.
+4.	Use My3dsMaxExporter_TimeTags.ms in 3dsmax to create the time tags needed for exporting animations.
+5.	Use My3dsMaxExporter_RagdollExport.ms in 3dsmax to create ragdoll data needed for exporting ragdolls.

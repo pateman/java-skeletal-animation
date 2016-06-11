@@ -35,6 +35,26 @@ fn quatToJSON quat = (
 	arrayToJSON(#(quat.x, quat.y, quat.z, quat.w))
 )
 
+-- Converts a Matrix3 to JSON.
+fn mat3ToJSON mat3 = (
+	mat = #()
+	mat[12]
+	
+	local cnt = 1
+	for i = 1 to 4 do (
+		mat[cnt] = mat3[i].x
+		cnt += 1
+		
+		mat[cnt] = mat3[i].y
+		cnt += 1
+		
+		mat[cnt] = mat3[i].z
+		cnt += 1
+	)
+	
+	arrayToJSON mat
+)
+
 struct RagdollRigidBody (
 	name,
 	vertices,
@@ -67,11 +87,24 @@ struct RagdollRigidBody (
 struct RagdollConstraint (
 	firstBody,
 	secondBody,
+	swingYLocked,
+	swingYAngle,
+	swingZLocked,
+	swingZAngle,
+	twistLocked,
+	twistLowAngle,
+	twistHighAngle,
+	firstBodyTM,
+	secondBodyTM,
 	fn toJSON = (
 		local obj = dotNetObject "Newtonsoft.Json.Linq.JObject"
 		
-		addJSONProperty obj "bodyA" firstBody
-		addJSONProperty obj "bodyB" secondBody
+		addJSONProperty obj "bodies" (arrayToJSON(#(firstBody, secondBody)))
+		addJSONProperty obj "locks" (arrayToJSON(#(swingYLocked, swingZLocked, twistLocked)))
+		addJSONProperty obj "swingAngles" (arrayToJSON(#(swingYAngle, swingZAngle)))
+		addJSONProperty obj "twistAngles" (arrayToJSON(#(twistLowAngle, twistHighAngle)))
+		addJSONProperty obj "firstBodyTM" (mat3ToJSON(firstBodyTM))
+		addJSONProperty obj "secondBodyTM" (mat3ToJSON(secondBodyTM))
 		obj
 	)
 )
@@ -109,7 +142,7 @@ struct RagdollSkinData (
 	)
 )
 
-fn getSkinForBone skinsArray boneName = (
+fn getSkinForBone &skinsArray boneName = (
 	for j = 1 to skinsArray.count do (
 		local currentSkin = skinsArray[j]
 		if (currentSkin.hasBone(boneName)) then (
@@ -119,85 +152,129 @@ fn getSkinForBone skinsArray boneName = (
 	return undefined
 )
 
-allObjects = $*
-for OBJ in allObjects do(	
-	local filename = "C:\\Users\\pateman\\Desktop\\" + OBJ.name + "test.xml"
-	
-	-- Hack to get the ragdoll's data. We're dumping the data to a file, and then parse it to
-	-- our internal structures. Once we're done, we delete the file.
-	if nvpx.RagdollSave OBJ filename do (	
-		local xmlDoc = dotNetObject "System.Xml.XmlDocument" 
-		xmlDoc.Load filename
+fn processSkinModifier &skinsArray skinModifier skinNode = (
+	local ragdollSkin = RagdollSkinData name: skinNode.name
+	ragdollSkin.skinModifier = skinModifier
+	ragdollSkin.rigidbodies = #()
+	ragdollSkin.constraints = #()
 		
-		local json = dotNetObject "Newtonsoft.Json.Linq.JObject"
-		local skins = #()
-		
-		-- Find the skins.
-		local xmlSkins = xmlDoc.SelectNodes "*/parameter[@name='multiRagdollSkins']"
-		for i = 0 to (xmlSkins.Count - 1) do (
-			local xmlSkin = xmlSkins.ItemOf i
-			local skinNode = getNodeByName xmlSkin.InnerText
-			
-			-- Find the 'Skin' modifier.
-			for j = 1 to skinNode.modifiers.count do (
-				if classof skinNode.modifiers[j] as string == "Skin" then (
-					local ragdollSkin = RagdollSkinData name: skinNode.name
-					ragdollSkin.skinModifier = skinNode.modifiers[j]
-					ragdollSkin.rigidbodies = #()
-					ragdollSkin.constraints = #()
+	append skinsArray ragdollSkin
+)
+
+fn processRigidBody &skinsArray rigidBodyModifier rigidBodyNode = (
+	local rigidBodyMesh = rigidBodyModifier.GetRBMeshShape 1
+	local rigidBody = RagdollRigidBody name: rigidBodyNode.name
+
+	local vertices = #()
+	local faces = #()
 					
-					append skins ragdollSkin
-				)
-			)
-		)
-				
-		-- Find rigidbodies and dump their meshes. This script assumes that all rigid bodies are made of convex hulls.
-		local xmlRigidbodies = xmlDoc.SelectNodes "//rigidbody"
-		for i = 0 to (xmlRigidbodies.Count - 1) do (
-			local xmlRigidBody = xmlRigidbodies.ItemOf i
-			local name = xmlRigidBody.GetAttribute "name"
-			local bodyNode = getNodeByName name
-						
-			local meshNode = xmlRigidBody.SelectSingleNode "mesh"			
-			local vertices = FilterString (meshNode.SelectSingleNode("vertices")).InnerText ","
-			local faces = FilterString (meshNode.SelectSingleNode("faces")).InnerText ","
-			
-			local rigidBody = RagdollRigidBody name: name vertices: vertices triangles: faces
-			rigidBody.position = bodyNode.position
-			rigidBody.rotation = bodyNode.rotation
-			rigidBody.scale = bodyNode.scale
-			
-			-- Figure out which skin the body belongs to.
-			local rigidBodySkin = getSkinForBone skins rigidBody.name
-			if rigidBodySkin != undefined then (
-				append rigidBodySkin.rigidbodies rigidBody
-			)
-		)
+	-- Initialize arrays.
+	local vertexCount = getNumVerts rigidBodyMesh
+	vertices[vertexCount * 3]
+	
+	local faceCount = getNumFaces rigidBodyMesh
+	faces[faceCount * 3]
+	
+	-- Export vertices
+	local cnt = 0
+	for j = 1 to vertexCount do (
+		local v = getVert rigidBodyMesh j
+		vertices[cnt * 3 + 1] = v[1]
+		vertices[cnt * 3 + 2] = v[2]
+		vertices[cnt * 3 + 3] = v[3]
 		
-		-- Find joints.
-		local xmlJoints = xmlDoc.SelectNodes "//joint"
-		for i = 0 to (xmlJoints.Count - 1) do (
-			local xmlJoint = xmlJoints.ItemOf i
-			
-			local tmpNode = xmlJoint.SelectSingleNode "*[@name='body0']"
-			local firstBody = tmpNode.InnerText
-			
-			tmpNode = xmlJoint.SelectSingleNode "*[@name='body1']"
-			local secondBody = tmpNode.InnerText
-			
-			local constraint = RagdollConstraint firstBody: firstBody secondBody: secondBody
-			local constraintSkin = getSkinForBone skins firstBody
-			if constraintSkin != undefined then (
-				append constraintSkin.constraints constraint
-			)
-		)
+		cnt += 1
+	)
+	
+	-- Export faces
+	cnt = 0
+	for j = 1 to faceCount do (
+		local f = getFace rigidBodyMesh j
+		faces[cnt * 3 + 1] = f[1] - 1
+		faces[cnt * 3 + 2] = f[2] - 1
+		faces[cnt * 3 + 3] = f[3] - 1
 		
-		-- Serialize everything to JSON.
-		addJSONProperty json "skins" (arrayToJSON skins)
-		local jsonString = json.ToString()
-		print jsonString
-		
-		--deleteFile filename
+		cnt += 1
+	)
+	
+	rigidBody.vertices = vertices
+	rigidBody.triangles = faces
+	rigidBody.position = rigidBodyNode.position
+	rigidBody.rotation = rigidBodyNode.rotation
+	rigidBody.scale = rigidBodyNode.scale
+
+	-- Figure out which skin the body belongs to.
+	local rigidBodySkin = getSkinForBone skinsArray rigidBody.name
+	if rigidBodySkin != undefined then (
+		append rigidBodySkin.rigidbodies rigidBody
 	)
 )
 
+fn processJoint &skinsArray jointNode = (
+	local firstBody = jointNode.body0
+	local secondBody = jointNode.body1
+	
+	local constraint = RagdollConstraint firstBody: firstBody.name secondBody: secondBody.name
+	local constraintSkin = getSkinForBone skinsArray firstBody.name
+	
+	constraint.swingYLocked = jointNode.swing1Mode == 2
+	constraint.swingYAngle = jointNode.swing1Angle
+	constraint.swingZLocked = jointNode.swing2Mode == 2
+	constraint.swingZAngle = jointNode.swing2Angle
+	
+	constraint.twistLocked = jointNode.twistMode == 2
+	constraint.twistLowAngle = jointNode.twistAngleLow
+	constraint.twistHighAngle = jointNode.twistAngleHigh
+	
+	constraint.firstBodyTM = firstBody.transform
+	constraint.secondBodyTM = secondBody.transform
+	
+	if constraintSkin != undefined then (
+		append constraintSkin.constraints constraint
+	)
+)
+
+allObjects = $*
+skins = #()
+json = dotNetObject "Newtonsoft.Json.Linq.JObject"
+for OBJ in allObjects do (			
+	-- Check if we're dealing with a mesh object.
+	if classof OBJ == Editable_mesh then (
+		--	Process the modifiers.
+		for i = 1 to OBJ.modifiers.count do (
+			local currentModifier = OBJ.modifiers[i]
+			local modifierClass = classof currentModifier
+			
+			-- Check if it has a Skin modifier.
+			if modifierClass == Skin then (
+				processSkinModifier skins currentModifier OBJ
+				exit
+			)
+			
+			-- Check if it has a MassFX_RBody modifier.
+			if modifierClass == MassFX_RBody then (
+				processRigidBody skins currentModifier OBJ 
+			)
+		)
+		
+		continue
+	)
+	
+	-- Check if we're dealing with a joint.
+	if classof OBJ == UConstraint then (
+		processJoint skins OBJ
+	)
+)
+
+-- Serialize everything to JSON.
+converter = dotnetclass "Newtonsoft.Json.JsonConvert"
+noFormatting = (dotnetclass "Newtonsoft.Json.Formatting").None
+for i = 1 to skins.count do (
+	local currentSkin = skins[i]
+	local skinNode = getNodeByName currentSkin.name
+	
+	local jsonObject = getValueForJSON currentSkin
+	local jsonString = converter.SerializeObject jsonObject noFormatting
+	
+	setUserProp skinNode "RAGDOLL_SKIN_DATA" jsonString
+)

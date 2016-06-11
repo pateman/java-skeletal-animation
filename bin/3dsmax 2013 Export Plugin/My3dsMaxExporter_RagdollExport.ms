@@ -25,16 +25,6 @@ fn arrayToJSON array = (
 	arr
 )
 
--- Converts a Point3 to JSON.
-fn point3ToJSON pt = (
-	arrayToJSON(#(pt.x, pt.y, pt.z))
-)
-
--- Converts a quaternion to JSON.
-fn quatToJSON quat = (
-	arrayToJSON(#(quat.x, quat.y, quat.z, quat.w))
-)
-
 -- Converts a Matrix3 to JSON.
 fn mat3ToJSON mat3 = (
 	mat = #()
@@ -59,9 +49,7 @@ struct RagdollRigidBody (
 	name,
 	vertices,
 	triangles,
-	position,
-	rotation,
-	scale,
+	matrix,
 	fn toJSON = (
 		local obj = dotNetObject "Newtonsoft.Json.Linq.JObject"
 		
@@ -77,9 +65,7 @@ struct RagdollRigidBody (
 		addJSONProperty obj "name" name
 		addJSONProperty obj "vertices" vertices
 		addJSONProperty obj "triangles" triangles
-		addJSONProperty obj "pos" (point3ToJSON position)
-		addJSONProperty obj "rot" (quatToJSON rotation)
-		addJSONProperty obj "scale" (point3ToJSON scale)
+		addJSONProperty obj "TM" (mat3ToJSON matrix)
 		obj
 	)
 )
@@ -199,9 +185,7 @@ fn processRigidBody &skinsArray rigidBodyModifier rigidBodyNode = (
 	
 	rigidBody.vertices = vertices
 	rigidBody.triangles = faces
-	rigidBody.position = rigidBodyNode.position
-	rigidBody.rotation = rigidBodyNode.rotation
-	rigidBody.scale = rigidBodyNode.scale
+	rigidBody.matrix = rigidBodyNode.transform
 
 	-- Figure out which skin the body belongs to.
 	local rigidBodySkin = getSkinForBone skinsArray rigidBody.name

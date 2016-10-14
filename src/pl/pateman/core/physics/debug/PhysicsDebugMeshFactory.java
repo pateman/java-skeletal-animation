@@ -22,15 +22,14 @@ final class PhysicsDebugMeshFactory {
 
     }
 
-    static List<Vector3f> getMeshVertices(final CollisionShape collisionShape) {
-        //  First of all, check if the given collision shape has its user pointer set. If so, we don't need to generate
-        //  the mesh as it had been already generated.
-        if (collisionShape.getUserPointer() != null &&
-            collisionShape.getUserPointer().getClass().isAssignableFrom(VERTICES_LIST_CLASS)) {
-            return (List<Vector3f>) collisionShape.getUserPointer();
+    static void getMeshVertices(final CollisionShape collisionShape, final List<Vector3f> vertices,
+                                final List<Integer> indices) {
+
+        if (vertices == null || indices == null) {
+            throw new IllegalArgumentException("Vertices and indices lists are required");
         }
 
-        //  Otherwise, check the type of the collision shape and generate the mesh.
+        //  Check the type of the collision shape and generate the mesh.
         List<Vector3f> result = null;
         if (collisionShape instanceof ConcaveShape) {
             final ArrayListTriangleCallback callback = new ArrayListTriangleCallback();
@@ -65,8 +64,12 @@ final class PhysicsDebugMeshFactory {
             }
         }
 
-        collisionShape.setUserPointer(result);
-        return result;
+        if (result != null) {
+            vertices.addAll(result);
+            for (int i = 0; i < result.size(); i++) {
+                indices.add(i);
+            }
+        }
     }
 
     private static class ArrayListTriangleCallback extends TriangleCallback {

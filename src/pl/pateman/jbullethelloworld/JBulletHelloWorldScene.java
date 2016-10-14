@@ -101,6 +101,8 @@ public final class JBulletHelloWorldScene implements Iterable<AbstractEntity>, C
             abstractEntity.forceTransformationUpdate(false);
         }
         tempVars.release();
+
+        this.physicsDebugger.updateDebugEntities();
     }
 
     public org.joml.Vector3f getGravity() {

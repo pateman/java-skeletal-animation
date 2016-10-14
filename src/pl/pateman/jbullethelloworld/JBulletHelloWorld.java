@@ -270,10 +270,10 @@ public class JBulletHelloWorld {
             final MeshEntity bananaMesh = new JSONImporter().load("banana.json");
             bananaMesh.setName(BANANA_ENTITY_NAME);
             bananaMesh.setScale(new Vector3f(15.0f, 15.0f, 15.0f));
-            bananaMesh.setTranslation(new Vector3f(0f, 10.0f, 0.0f));
+            bananaMesh.setTranslation(new Vector3f(10.0f, 10.0f, 0.0f));
             bananaMesh.setShaderProgram(this.program);
             bananaMesh.buildMesh();
-            bananaMesh.createRigidBody(this.createConvexHullShape(bananaMesh.getMesh(), new Vector3f(4.0f, 4.0f, 4.0f)), 1.0f);
+            bananaMesh.createRigidBody(this.createConvexHullShape(bananaMesh.getMesh(), new Vector3f(15.0f, 15.0f, 15.0f)), 1.0f);
             bananaMesh.getRigidBody().setRestitution(1.0f);
 
             this.scene.addEntity(bananaMesh);

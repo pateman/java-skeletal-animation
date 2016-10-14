@@ -8,7 +8,6 @@ import com.bulletphysics.collision.shapes.StaticPlaneShape;
 import com.bulletphysics.dynamics.RigidBody;
 import com.bulletphysics.dynamics.RigidBodyConstructionInfo;
 import com.bulletphysics.dynamics.constraintsolver.SequentialImpulseConstraintSolver;
-import com.bulletphysics.linearmath.DebugDrawModes;
 import com.bulletphysics.linearmath.DefaultMotionState;
 import com.bulletphysics.linearmath.Transform;
 import org.joml.Matrix4f;
@@ -407,7 +406,6 @@ public class Main {
                     //  Assign transformation computed by jBullet to the entity.
                     final AbstractEntity abstractEntity = (AbstractEntity) collisionObject.getUserPointer();
                     abstractEntity.setTransformation(tempVars.quat1, tempVars.vect3d1, abstractEntity.getScale());
-                    abstractEntity.forceTransformationUpdate(false);
                 }
             }
             tempVars.release();
@@ -480,7 +478,6 @@ public class Main {
         //  Draw the physics debug.
         if (this.physicsDebug) {
             this.meshEntity.getAnimationController().getRagdoll().drawRagdollLines(this.camera, Utils.ZERO_VECTOR);
-            this.physicsDebugger.setDebugMode(DebugDrawModes.DRAW_WIREFRAME);
             this.physicsDebugger.debugDrawWorld(this.camera);
         }
     }

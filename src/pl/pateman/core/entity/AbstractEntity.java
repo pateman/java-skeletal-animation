@@ -233,7 +233,8 @@ public class AbstractEntity implements Clearable {
         this.rigidBody = new RigidBody(mass, new DefaultMotionState(vars.vecmathTransform), collisionShape,
                 vars.vecmathVect3d1);
         this.rigidBody.setCenterOfMassTransform(vars.vecmathTransform);
-        this.rigidBody.setUserPointer(this);
+        final EntityData entityData = new EntityData(this.entityId, this.name, this);
+        this.rigidBody.setUserPointer(entityData);
 
         vars.release();
     }

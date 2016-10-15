@@ -5,6 +5,7 @@ import com.bulletphysics.collision.dispatch.CollisionDispatcher;
 import com.bulletphysics.collision.dispatch.CollisionObject;
 import com.bulletphysics.collision.dispatch.DefaultCollisionConfiguration;
 import com.bulletphysics.collision.shapes.StaticPlaneShape;
+import com.bulletphysics.dynamics.DiscreteDynamicsWorld;
 import com.bulletphysics.dynamics.RigidBody;
 import com.bulletphysics.dynamics.RigidBodyConstructionInfo;
 import com.bulletphysics.dynamics.constraintsolver.SequentialImpulseConstraintSolver;
@@ -32,7 +33,6 @@ import pl.pateman.core.entity.mesh.animation.BoneAnimationChannel;
 import pl.pateman.core.mesh.Animation;
 import pl.pateman.core.mesh.Bone;
 import pl.pateman.core.mesh.BoneManualControlType;
-import pl.pateman.core.physics.DiscreteDynamicsWorldEx;
 import pl.pateman.core.physics.debug.PhysicsDebugger;
 import pl.pateman.core.physics.ragdoll.Ragdoll;
 import pl.pateman.core.physics.ragdoll.RagdollStructure;
@@ -79,7 +79,7 @@ public class Main {
     private int currentManualControlMode;
     private Bone manualBone;
 
-    private DiscreteDynamicsWorldEx dynamicsWorld;
+    private DiscreteDynamicsWorld dynamicsWorld;
     private PhysicsDebugger physicsDebugger;
     private boolean physicsDebug;
     private boolean physicsSimulation;
@@ -323,7 +323,7 @@ public class Main {
             final CollisionDispatcher collisionDispatcher = new CollisionDispatcher(collisionConfiguration);
             final SequentialImpulseConstraintSolver constraintSolver = new SequentialImpulseConstraintSolver();
 
-            this.dynamicsWorld = new DiscreteDynamicsWorldEx(collisionDispatcher, broadphase, constraintSolver,
+            this.dynamicsWorld = new DiscreteDynamicsWorld(collisionDispatcher, broadphase, constraintSolver,
                     collisionConfiguration);
             this.dynamicsWorld.setGravity(new javax.vecmath.Vector3f(0.0f, -9.81f, 0.0f));
             this.physicsDebugger = new PhysicsDebugger(this.dynamicsWorld);
@@ -368,6 +368,8 @@ public class Main {
                     .build();
             ragdoll.setRagdollStructure(ragdollStructure);
             ragdoll.buildRagdoll();
+
+            this.physicsDebugger.updateDebugEntities();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -408,6 +410,8 @@ public class Main {
                 }
             }
             tempVars.release();
+
+            this.physicsDebugger.updateDebugEntities();
         }
         this.meshEntity.getAnimationController().stepAnimation(this.deltaTime);
         this.skeletonMeshEntity.applyAnimation(this.meshEntity.getMeshRenderer().getBoneMatrices());

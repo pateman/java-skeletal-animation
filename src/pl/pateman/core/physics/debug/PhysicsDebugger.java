@@ -16,6 +16,7 @@ import pl.pateman.core.entity.CameraEntity;
 import pl.pateman.core.entity.MeshEntity;
 import pl.pateman.core.entity.mesh.MeshRenderer;
 import pl.pateman.core.mesh.Mesh;
+import pl.pateman.core.entity.EntityData;
 import pl.pateman.core.shader.Program;
 import pl.pateman.core.shader.Shader;
 
@@ -69,8 +70,8 @@ public final class PhysicsDebugger implements Clearable {
         final TempVars tempVars = TempVars.get();
         for (int bodyIdx = 0; bodyIdx < rigidBodies.size(); bodyIdx++) {
             final RigidBody rigidBody = (RigidBody) rigidBodies.get(bodyIdx);
-            final MeshEntity meshEntity = (MeshEntity) rigidBody.getUserPointer();
-            final Long entityId = meshEntity.getEntityId();
+            final EntityData entityData = (EntityData) rigidBody.getUserPointer();
+            final Long entityId = entityData.getEntityID();
 
             final MeshEntity debugMeshFromRigidBody;
 
@@ -78,7 +79,7 @@ public final class PhysicsDebugger implements Clearable {
             //  entity for it. Otherwise, get the entity from the cache and remove its ID from the set of debug
             //  entities.
             if (!remainingDebugEntityIDs.contains(entityId)) {
-                debugMeshFromRigidBody = this.createDebugMeshFromRigidBody(meshEntity, rigidBody);
+                debugMeshFromRigidBody = this.createDebugMeshFromEntityData(entityData, rigidBody);
                 this.debugEntities.put(entityId, debugMeshFromRigidBody);
             } else {
                 debugMeshFromRigidBody = this.debugEntities.get(entityId);
@@ -115,7 +116,12 @@ public final class PhysicsDebugger implements Clearable {
         final List<CollisionObject> collisionObjects = this.getCollisionObjects();
         for (int i = 0; i < collisionObjects.size(); i++) {
             final CollisionObject colObj = collisionObjects.get(i);
-            final MeshEntity debugMesh = this.debugEntities.get(((MeshEntity) colObj.getUserPointer()).getEntityId());
+            final MeshEntity debugMesh = this.debugEntities.get(((EntityData) colObj.getUserPointer()).getEntityID());
+
+            //  We're unable to get the debug mesh from the cache. Skip it.
+            if (debugMesh == null) {
+                continue;
+            }
 
             final Vector4f color = tempVars.vect4d1.set(1.0f, 0.0f, 0.0f, 1.0f);
 
@@ -174,7 +180,7 @@ public final class PhysicsDebugger implements Clearable {
         return this.dynamicsWorld.getCollisionObjectArray().
                 stream().
                 filter(RigidBody.class::isInstance).
-                filter(x -> x.getUserPointer() instanceof MeshEntity).
+                filter(x -> x.getUserPointer() instanceof EntityData).
                 collect(Collectors.toList());
     }
 
@@ -197,25 +203,22 @@ public final class PhysicsDebugger implements Clearable {
         renderer.finalizeRendering();
     }
 
-    private MeshEntity createDebugMeshFromRigidBody(final MeshEntity entity, final RigidBody rigidBody) {
-        final Mesh entityMesh = entity.getMesh();
-        final int vertexCount = entityMesh.getVertices().size();
-        final int indexCount = entityMesh.getTriangles().size();
-
-        final List<org.joml.Vector3f> vertices = new ArrayList<>(vertexCount);
-        final List<Integer> indices = new ArrayList<>(indexCount);
+    private MeshEntity createDebugMeshFromEntityData(final EntityData entityData, final RigidBody rigidBody) {
+        final List<org.joml.Vector3f> vertices = new ArrayList<>();
+        final List<Integer> indices = new ArrayList<>();
         PhysicsDebugMeshFactory.getMeshVertices(rigidBody.getCollisionShape(), vertices, indices);
 
         final Mesh mesh = new Mesh();
         mesh.getVertices().addAll(vertices);
         mesh.getTriangles().addAll(indices);
 
-        final MeshEntity meshEntity = new MeshEntity("DebugMesh-" + entity.getName() + "-" + entity.getEntityId());
-        meshEntity.setShaderProgram(this.debugShaderProgram);
-        meshEntity.setMesh(mesh);
-        meshEntity.buildMesh();
+        final MeshEntity debugEntity = new MeshEntity("DebugMesh-" + entityData.getEntityName() + "-" +
+                entityData.getEntityID());
+        debugEntity.setShaderProgram(this.debugShaderProgram);
+        debugEntity.setMesh(mesh);
+        debugEntity.buildMesh();
 
-        return meshEntity;
+        return debugEntity;
     }
 
     private void createDebugProgram() {

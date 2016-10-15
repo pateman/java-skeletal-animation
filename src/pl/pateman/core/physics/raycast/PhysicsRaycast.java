@@ -3,7 +3,7 @@ package pl.pateman.core.physics.raycast;
 import com.bulletphysics.collision.dispatch.CollisionWorld;
 import com.bulletphysics.dynamics.DynamicsWorld;
 import pl.pateman.core.TempVars;
-import pl.pateman.core.entity.AbstractEntity;
+import pl.pateman.core.entity.EntityData;
 
 import javax.vecmath.Vector3f;
 
@@ -65,9 +65,8 @@ public final class PhysicsRaycast {
                 triangleIndex = this.rayResult.localShapeInfo.triangleIndex;
             }
 
-            final PhysicsRaycastResult raycastResult = new PhysicsRaycastResult(this.hitNormalWorld, this.hitPointWorld,
-                    (AbstractEntity) this.rayResult.collisionObject.getUserPointer(), shapePart, triangleIndex);
-            return raycastResult;
+            return new PhysicsRaycastResult(this.hitNormalWorld, this.hitPointWorld,
+                    (EntityData) this.rayResult.collisionObject.getUserPointer(), shapePart, triangleIndex);
         }
     }
 

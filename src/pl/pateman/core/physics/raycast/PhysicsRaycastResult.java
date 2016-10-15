@@ -1,6 +1,6 @@
 package pl.pateman.core.physics.raycast;
 
-import pl.pateman.core.entity.AbstractEntity;
+import pl.pateman.core.entity.EntityData;
 
 import javax.vecmath.Vector3f;
 
@@ -10,14 +10,14 @@ import javax.vecmath.Vector3f;
 public final class PhysicsRaycastResult {
     private final org.joml.Vector3f normal;
     private final org.joml.Vector3f hit;
-    private final AbstractEntity entity;
+    private final EntityData entityData;
     private final int shapePart;
     private final int triangleIndex;
 
-    PhysicsRaycastResult(Vector3f normal, Vector3f hit, AbstractEntity entity, int shapePart, int triangleIndex) {
+    PhysicsRaycastResult(Vector3f normal, Vector3f hit, EntityData entityData, int shapePart, int triangleIndex) {
         this.normal = new org.joml.Vector3f(normal.x, normal.y, normal.z);
         this.hit = new org.joml.Vector3f(hit.x, hit.y, hit.z);
-        this.entity = entity;
+        this.entityData = entityData;
         this.shapePart = shapePart;
         this.triangleIndex = triangleIndex;
     }
@@ -30,8 +30,8 @@ public final class PhysicsRaycastResult {
         return hit;
     }
 
-    public AbstractEntity getEntity() {
-        return entity;
+    public EntityData getEntityData() {
+        return entityData;
     }
 
     public int getShapePart() {

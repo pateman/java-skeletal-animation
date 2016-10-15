@@ -8,12 +8,14 @@ import org.joml.Vector4f;
 import pl.pateman.core.TempVars;
 import pl.pateman.core.Utils;
 import pl.pateman.core.entity.CameraEntity;
+import pl.pateman.core.entity.EntityData;
 import pl.pateman.core.entity.line.Line;
 import pl.pateman.core.entity.line.LineRenderer;
 import pl.pateman.core.mesh.Bone;
 import pl.pateman.core.mesh.Mesh;
 
 import java.util.Map;
+import java.util.Random;
 
 /**
  * Created by pateman.
@@ -22,6 +24,7 @@ public final class Ragdoll {
     public static final Vector4f RAGDOLL_DEBUG_BONE_COLOR = new Vector4f(0.0f, 1.0f, 0.0f, 1.0f);
 
     private final Mesh mesh;
+    private final Random random;
     private DiscreteDynamicsWorld dynamicsWorld;
     private boolean enabled;
     private final LineRenderer lineRenderer;
@@ -34,6 +37,7 @@ public final class Ragdoll {
         this.mesh = mesh;
         this.enabled = false;
         this.lineRenderer = new LineRenderer();
+        this.random = new Random();
     }
 
     private void createColliderForBodyPart(final BodyPart bodyPart) {
@@ -93,7 +97,13 @@ public final class Ragdoll {
             //  Finally, create the rigid body's transformation matrix.
             Utils.fromRotationTranslationScale(vars.tempMat4x41, vars.quat1, vars.vect3d1, Utils.IDENTITY_VECTOR);
 
+            //  Create entity data as well. We don't really need a valid identifier, so a random value will do just
+            //  fine.
+            final EntityData entityData = new EntityData(System.currentTimeMillis() + this.random.nextInt() +
+                    firstBone.getIndex() + lastBone.getIndex(), "RagdollBoxCollider-" + firstBone.getName() + "-" +
+                    lastBone.getName(), null);
             final RigidBody rigidBody = RagdollUtils.createRigidBody(1.0f, boxShape, vars.tempMat4x41);
+            rigidBody.setUserPointer(entityData);
             this.dynamicsWorld.addRigidBody(rigidBody);
         }
 

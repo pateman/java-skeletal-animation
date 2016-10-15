@@ -4,6 +4,7 @@ import com.bulletphysics.collision.broadphase.CollisionFilterGroups;
 import com.bulletphysics.collision.broadphase.DbvtBroadphase;
 import com.bulletphysics.collision.dispatch.CollisionDispatcher;
 import com.bulletphysics.collision.dispatch.DefaultCollisionConfiguration;
+import com.bulletphysics.dynamics.DiscreteDynamicsWorld;
 import com.bulletphysics.dynamics.DynamicsWorld;
 import com.bulletphysics.dynamics.constraintsolver.SequentialImpulseConstraintSolver;
 import com.bulletphysics.linearmath.Transform;
@@ -12,7 +13,6 @@ import pl.pateman.core.TempVars;
 import pl.pateman.core.Utils;
 import pl.pateman.core.entity.AbstractEntity;
 import pl.pateman.core.entity.CameraEntity;
-import pl.pateman.core.physics.DiscreteDynamicsWorldEx;
 import pl.pateman.core.physics.debug.PhysicsDebugger;
 import pl.pateman.core.physics.raycast.PhysicsRaycast;
 import pl.pateman.core.physics.raycast.PhysicsRaycastResult;
@@ -46,7 +46,7 @@ public final class JBulletHelloWorldScene implements Iterable<AbstractEntity>, C
         final CollisionDispatcher collisionDispatcher = new CollisionDispatcher(collisionConfiguration);
         final SequentialImpulseConstraintSolver constraintSolver = new SequentialImpulseConstraintSolver();
 
-        this.dynamicsWorld = new DiscreteDynamicsWorldEx(collisionDispatcher, broadphase, constraintSolver,
+        this.dynamicsWorld = new DiscreteDynamicsWorld(collisionDispatcher, broadphase, constraintSolver,
                 collisionConfiguration);
         this.dynamicsWorld.setGravity(DEFAULT_GRAVITY);
         this.raycast = new PhysicsRaycast(this.dynamicsWorld);

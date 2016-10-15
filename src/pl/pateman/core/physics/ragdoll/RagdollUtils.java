@@ -96,6 +96,7 @@ final class RagdollUtils {
 
         final RigidBody body = new RigidBody(mass, new DefaultMotionState(vars.vecmathTransform), collisionShape,
                 vars.vecmathVect3d1);
+        body.setCenterOfMassTransform(vars.vecmathTransform);
         vars.release();
         return body;
     }

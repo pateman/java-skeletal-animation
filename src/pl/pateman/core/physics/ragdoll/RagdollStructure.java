@@ -16,6 +16,7 @@ public final class RagdollStructure {
     static final byte CUSTOM_TRANSFORM_ROTATION = 2;
 
     private final Map<BodyPartType, BodyPart> bodyParts;
+    private final List<RagdollLink> bodyLinks;
     private final Mesh mesh;
 
     RagdollStructure(Mesh mesh) {
@@ -30,10 +31,16 @@ public final class RagdollStructure {
         for (BodyPartType partType : bodyPartTypes) {
             this.bodyParts.put(partType, new BodyPart(partType));
         }
+
+        this.bodyLinks = new ArrayList<>(this.bodyParts.size());
     }
 
     Map<BodyPartType, BodyPart> getBodyParts() {
         return bodyParts;
+    }
+
+    List<RagdollLink> getBodyLinks() {
+        return bodyLinks;
     }
 
     public List<Bone> getBodyPartBones(final BodyPartType bodyPartType) {

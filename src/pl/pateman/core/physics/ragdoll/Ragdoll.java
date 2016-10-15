@@ -3,6 +3,7 @@ package pl.pateman.core.physics.ragdoll;
 import com.bulletphysics.collision.shapes.BoxShape;
 import com.bulletphysics.dynamics.DiscreteDynamicsWorld;
 import com.bulletphysics.dynamics.RigidBody;
+import com.bulletphysics.dynamics.constraintsolver.Generic6DofConstraint;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
 import pl.pateman.core.TempVars;
@@ -14,6 +15,7 @@ import pl.pateman.core.entity.line.LineRenderer;
 import pl.pateman.core.mesh.Bone;
 import pl.pateman.core.mesh.Mesh;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
@@ -29,6 +31,7 @@ public final class Ragdoll {
     private boolean enabled;
     private final LineRenderer lineRenderer;
     private RagdollStructure ragdollStructure;
+    private final Map<BodyPartType, RigidBody> partRigidBodies;
 
     public Ragdoll(Mesh mesh) {
         if (mesh == null) {
@@ -38,6 +41,7 @@ public final class Ragdoll {
         this.enabled = false;
         this.lineRenderer = new LineRenderer();
         this.random = new Random();
+        this.partRigidBodies = new HashMap<>();
     }
 
     private void createColliderForBodyPart(final BodyPart bodyPart) {
@@ -104,13 +108,46 @@ public final class Ragdoll {
                     lastBone.getName(), null);
             final RigidBody rigidBody = RagdollUtils.createRigidBody(1.0f, boxShape, vars.tempMat4x41);
             rigidBody.setUserPointer(entityData);
+            rigidBody.setDamping(0.05f, 0.85f);
+            rigidBody.setDeactivationTime(0.8f);
+            rigidBody.setSleepingThresholds(1.6f, 2.5f);
             this.dynamicsWorld.addRigidBody(rigidBody);
+
+            this.partRigidBodies.put(bodyPart.getPartType(), rigidBody);
         }
 
         //  Draw debug lines between the first and the last bone.
         firstBone.getWorldBindMatrix().getTranslation(vars.vect3d1);
         lastBone.getWorldBindMatrix().getTranslation(vars.vect3d2);
         this.lineRenderer.addLine(vars.vect3d1, vars.vect3d2, RAGDOLL_DEBUG_BONE_COLOR);
+
+        vars.release();
+    }
+
+    private void createConstraintForLink(RagdollLink ragdollLink) {
+        final RigidBody rigidBodyA = this.partRigidBodies.get(ragdollLink.getPartA().getPartType());
+        final RigidBody rigidBodyB = this.partRigidBodies.get(ragdollLink.getPartB().getPartType());
+
+        if (rigidBodyA == null || rigidBodyB == null) {
+            throw new IllegalStateException("One of the body parts does not have a collider");
+        }
+
+        final TempVars vars = TempVars.get();
+
+        Utils.convert(vars.vect3d1, rigidBodyA.getCenterOfMassTransform(vars.vecmathTransform).origin);
+        Utils.convert(vars.vect3d2, rigidBodyB.getCenterOfMassTransform(vars.vecmathTransform).origin);
+        vars.vect3d2.sub(vars.vect3d1, vars.vect3d3);
+
+        vars.vecmathTransform.setIdentity();
+        vars.vecmathTransform2.setIdentity();
+        Utils.convert(vars.vecmathTransform.origin, vars.vect3d3);
+        Utils.convert(vars.vecmathTransform2.origin, Utils.ZERO_VECTOR);
+
+        final Generic6DofConstraint constraint = new Generic6DofConstraint(rigidBodyA, rigidBodyB,
+                vars.vecmathTransform, vars.vecmathTransform2, true);
+        constraint.setAngularUpperLimit(Utils.convert(vars.vecmathVect3d1, ragdollLink.getMaxLimit()));
+        constraint.setAngularLowerLimit(Utils.convert(vars.vecmathVect3d1, ragdollLink.getMinLimit()));
+        this.dynamicsWorld.addConstraint(constraint, true);
 
         vars.release();
     }
@@ -123,13 +160,16 @@ public final class Ragdoll {
             throw new IllegalStateException("A valid ragdoll structure needs to be assigned");
         }
 
-        for (Map.Entry<BodyPartType, BodyPart> partEntry :
-                this.ragdollStructure.getBodyParts().entrySet()) {
+        for (Map.Entry<BodyPartType, BodyPart> partEntry : this.ragdollStructure.getBodyParts().entrySet()) {
             if (partEntry.getValue().isConfigured()) {
                 this.createColliderForBodyPart(partEntry.getValue());
             } else {
                 System.out.println("Ragdoll part '" + partEntry.getKey() + "' is not configured");
             }
+        }
+
+        for (final RagdollLink ragdollLink : this.ragdollStructure.getBodyLinks()) {
+            this.createConstraintForLink(ragdollLink);
         }
     }
 

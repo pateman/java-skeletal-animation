@@ -8,10 +8,7 @@ import pl.pateman.core.mesh.Bone;
 import pl.pateman.core.mesh.Mesh;
 import pl.pateman.core.mesh.Skeleton;
 
-import java.util.HashMap;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * A builder for ragdolls.
@@ -22,11 +19,13 @@ public final class RagdollStructureBuilder {
     private final RagdollStructure ragdollStructure;
     private final Mesh mesh;
     private final Map<BodyPartType, Part> partMap;
+    private final List<Link> linkList;
 
     public RagdollStructureBuilder(final Mesh mesh) {
         this.ragdollStructure = new RagdollStructure(mesh);
         this.mesh = mesh;
         this.partMap = new HashMap<>();
+        this.linkList = new ArrayList<>();
     }
 
     /**
@@ -36,7 +35,7 @@ public final class RagdollStructureBuilder {
      */
     public RagdollStructure build() {
         //  Convert internal structures.
-        for (Map.Entry<BodyPartType, Part> entry : this.partMap.entrySet()) {
+        for (final Map.Entry<BodyPartType, Part> entry : this.partMap.entrySet()) {
             final BodyPartType partType = entry.getKey();
             final Part part = entry.getValue();
 
@@ -49,6 +48,12 @@ public final class RagdollStructureBuilder {
             Utils.fromRotationTranslationScale(customTransform, part.customRotation, part.customTranslation,
                     Utils.IDENTITY_VECTOR);
             this.ragdollStructure.setBodyPartCustomTransform(partType, customTransform, part.customTransformFlag);
+        }
+
+        final Map<BodyPartType, BodyPart> bodyParts = this.ragdollStructure.getBodyParts();
+        for (final Link link : this.linkList) {
+            this.ragdollStructure.getBodyLinks().add(new RagdollLink(bodyParts.get(link.partA),
+                    bodyParts.get(link.partB), link.minLimit, link.maxLimit));
         }
 
         return this.ragdollStructure;
@@ -90,6 +95,33 @@ public final class RagdollStructureBuilder {
         }
 
         return part;
+    }
+
+    /**
+     * Starts building a link between two body parts. If the given body link already exists, it will be used instead of
+     * creating a new one to allow modifications.
+     *
+     * @param partA Body part type of the first part to link.
+     * @param partB Body part type of the second part to link.
+     * @return Body part link builder.
+     */
+    public Link startLink(final BodyPartType partA, final BodyPartType partB) {
+        if (partA == null || partB == null) {
+            throw new IllegalArgumentException();
+        }
+
+        if (!this.partMap.containsKey(partA) || !this.partMap.containsKey(partB)) {
+            throw new IllegalStateException("One of parts is not configured, hence cannot be linked");
+        }
+
+        final Link newLink = new Link(partA, partB, this);
+        final int indexOf = this.linkList.indexOf(newLink);
+        if (indexOf != -1) {
+            return this.linkList.get(indexOf);
+        }
+
+        this.linkList.add(newLink);
+        return newLink;
     }
 
     public final class Part {
@@ -171,6 +203,53 @@ public final class RagdollStructureBuilder {
 
         public RagdollStructureBuilder endPart() {
             return this.builder;
+        }
+    }
+
+    public final class Link {
+        private final BodyPartType partA;
+        private final BodyPartType partB;
+        private final RagdollStructureBuilder builder;
+        private final Vector3f minLimit;
+        private final Vector3f maxLimit;
+
+        Link(BodyPartType partA, BodyPartType partB, RagdollStructureBuilder builder) {
+            this.partA = partA;
+            this.partB = partB;
+            this.builder = builder;
+            this.minLimit = new Vector3f(-Utils.EPSILON);
+            this.maxLimit = new Vector3f(Utils.EPSILON);
+        }
+
+        public Link setMinLimit(final float x, final float y, final float z) {
+            this.minLimit.set(x, y, z);
+            return this;
+        }
+
+        public Link setMaxLimit(final float x, final float y, final float z) {
+            this.maxLimit.set(x, y, z);
+            return this;
+        }
+
+        public RagdollStructureBuilder endLink() {
+            return this.builder;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            Link link = (Link) o;
+
+            return partA == link.partA && partB == link.partB;
+        }
+
+        @Override
+        public int hashCode() {
+            int result = partA.hashCode();
+            result = 31 * result + partB.hashCode();
+            return result;
         }
     }
 }

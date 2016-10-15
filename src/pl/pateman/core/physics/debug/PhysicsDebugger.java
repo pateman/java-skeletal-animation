@@ -5,13 +5,13 @@ import com.bulletphysics.dynamics.DynamicsWorld;
 import com.bulletphysics.dynamics.RigidBody;
 import com.bulletphysics.linearmath.Transform;
 import org.joml.Matrix4f;
+import org.joml.Quaternionf;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
 import org.lwjgl.opengl.GL20;
 import pl.pateman.core.Clearable;
 import pl.pateman.core.TempVars;
 import pl.pateman.core.Utils;
-import pl.pateman.core.entity.AbstractEntity;
 import pl.pateman.core.entity.CameraEntity;
 import pl.pateman.core.entity.MeshEntity;
 import pl.pateman.core.entity.mesh.MeshRenderer;
@@ -32,6 +32,12 @@ public final class PhysicsDebugger implements Clearable {
     private final DynamicsWorld dynamicsWorld;
     private final Map<Long, MeshEntity> debugEntities;
     private Program debugShaderProgram;
+
+    private final Vector4f activeColor = new Vector4f(1.0f, 1.0f, 1.0f, 1.0f);
+    private final Vector4f sleepingColor = new Vector4f(0.0f, 1.0f, 0.0f, 1.0f);
+    private final Vector4f wantsDeactivationColor = new Vector4f(0.0f, 1.0f, 1.0f, 1.0f);
+    private final Vector4f disableDeactivationColor = new Vector4f(1.0f, 0.0f, 0.0f, 1.0f);
+    private final Vector4f disableSimulationColor = new Vector4f(1.0f, 1.0f, 0.0f, 1.0f);
 
     public PhysicsDebugger(final DynamicsWorld dynamicsWorld) {
         this.dynamicsWorld = dynamicsWorld;
@@ -56,24 +62,46 @@ public final class PhysicsDebugger implements Clearable {
     }
 
     public void updateDebugEntities() {
-        this.applyToCollisionObjects((entity, debugMesh, colObj) -> {
-            final TempVars tempVars = TempVars.get();
-            final Transform transform = tempVars.vecmathTransform;
+        //  Filter the available collision objects.
+        final List<CollisionObject> rigidBodies = this.getCollisionObjects();
 
-            entity.getRigidBody().getMotionState().getWorldTransform(transform);
+        final Set<Long> remainingDebugEntityIDs = new HashSet<>(this.debugEntities.keySet());
+        final TempVars tempVars = TempVars.get();
+        for (int bodyIdx = 0; bodyIdx < rigidBodies.size(); bodyIdx++) {
+            final RigidBody rigidBody = (RigidBody) rigidBodies.get(bodyIdx);
+            final MeshEntity meshEntity = (MeshEntity) rigidBody.getUserPointer();
+            final Long entityId = meshEntity.getEntityId();
 
-            //  Convert between different math libraries.
-            transform.getRotation(tempVars.vecmathQuat);
-            tempVars.quat1.set(tempVars.vecmathQuat.x, tempVars.vecmathQuat.y, tempVars.vecmathQuat.z,
-                    tempVars.vecmathQuat.w);
-            Utils.convert(tempVars.vect3d1, transform.origin);
-            Utils.convert(tempVars.vect3d2, colObj.getCollisionShape().getLocalScaling(tempVars.vecmathVect3d1));
+            final MeshEntity debugMeshFromRigidBody;
 
-            //  Assign transformation computed by jBullet to the entity.
-            debugMesh.setTransformation(tempVars.quat1, tempVars.vect3d1, tempVars.vect3d2);
+            //  If the set of remaining debug entities does not contain the current rigid body, create a new debug
+            //  entity for it. Otherwise, get the entity from the cache and remove its ID from the set of debug
+            //  entities.
+            if (!remainingDebugEntityIDs.contains(entityId)) {
+                debugMeshFromRigidBody = this.createDebugMeshFromRigidBody(meshEntity, rigidBody);
+                this.debugEntities.put(entityId, debugMeshFromRigidBody);
+            } else {
+                debugMeshFromRigidBody = this.debugEntities.get(entityId);
+                remainingDebugEntityIDs.remove(entityId);
+            }
 
-            tempVars.release();
-        }, true);
+            //  Update the debug mesh's transformation.
+            final Transform centerOfMassTransform = rigidBody.getCenterOfMassTransform(tempVars.vecmathTransform);
+            centerOfMassTransform.getRotation(tempVars.vecmathQuat);
+            rigidBody.getCollisionShape().getLocalScaling(tempVars.vecmathVect3d1);
+
+            final Vector3f position = Utils.convert(tempVars.vect3d1, centerOfMassTransform.origin);
+            final Quaternionf rotation = Utils.convert(tempVars.quat1, tempVars.vecmathQuat);
+            final Vector3f scale = Utils.convert(tempVars.vect3d2, tempVars.vecmathVect3d1);
+
+            debugMeshFromRigidBody.setTransformation(rotation, position, scale);
+        }
+        tempVars.release();
+
+        //  If the set is not empty, remove the obsolete debug entities.
+        if (!remainingDebugEntityIDs.isEmpty()) {
+            remainingDebugEntityIDs.forEach(this.debugEntities::remove);
+        }
     }
 
     public void debugDrawWorld(final CameraEntity camera) {
@@ -82,8 +110,13 @@ public final class PhysicsDebugger implements Clearable {
         }
 
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-        this.applyToCollisionObjects((entity, debugMesh, colObj) -> {
-            final TempVars tempVars = TempVars.get();
+
+        final TempVars tempVars = TempVars.get();
+        final List<CollisionObject> collisionObjects = this.getCollisionObjects();
+        for (int i = 0; i < collisionObjects.size(); i++) {
+            final CollisionObject colObj = collisionObjects.get(i);
+            final MeshEntity debugMesh = this.debugEntities.get(((MeshEntity) colObj.getUserPointer()).getEntityId());
+
             final Vector4f color = tempVars.vect4d1.set(1.0f, 0.0f, 0.0f, 1.0f);
 
             //  Prepare the model-view matrix.
@@ -93,63 +126,56 @@ public final class PhysicsDebugger implements Clearable {
             //  Depending on the activation state, use the correct color.
             switch (colObj.getActivationState()) {
                 case CollisionObject.ACTIVE_TAG:
-                    color.set(1.0f, 1.0f, 1.0f, 1.0f);
+                    color.set(this.activeColor);
                     break;
                 case CollisionObject.ISLAND_SLEEPING:
-                    color.set(0.0f, 1.0f, 0.0f, 1.0f);
+                    color.set(this.sleepingColor);
                     break;
                 case CollisionObject.WANTS_DEACTIVATION:
-                    color.set(0.0f, 1.0f, 1.0f, 1.0f);
+                    color.set(this.wantsDeactivationColor);
                     break;
                 case CollisionObject.DISABLE_DEACTIVATION:
-                    color.set(1.0f, 0.0f, 0.0f, 1.0f);
+                    color.set(this.disableDeactivationColor);
                     break;
                 case CollisionObject.DISABLE_SIMULATION:
-                    color.set(1.0f, 1.0f, 0.0f, 1.0f);
+                    color.set(this.disableSimulationColor);
                     break;
             }
 
             //  Draw the mesh.
             this.drawMesh(modelViewMatrix, camera.getProjectionMatrix(), debugMesh, color);
+        }
+        tempVars.release();
 
-            tempVars.release();
-        }, false);
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     }
 
-    private void applyToCollisionObjects(final CollisionObjectsConsumer function, final boolean cleanup) {
-        final List<CollisionObject> objectList = this.dynamicsWorld.getCollisionObjectArray().
+    public Vector4f getActiveColor() {
+        return activeColor;
+    }
+
+    public Vector4f getSleepingColor() {
+        return sleepingColor;
+    }
+
+    public Vector4f getWantsDeactivationColor() {
+        return wantsDeactivationColor;
+    }
+
+    public Vector4f getDisableDeactivationColor() {
+        return disableDeactivationColor;
+    }
+
+    public Vector4f getDisableSimulationColor() {
+        return disableSimulationColor;
+    }
+
+    private List<CollisionObject> getCollisionObjects() {
+        return this.dynamicsWorld.getCollisionObjectArray().
                 stream().
                 filter(RigidBody.class::isInstance).
-                filter(collisionObject -> collisionObject.getUserPointer() instanceof MeshEntity).
-                map(CollisionObject.class::cast).
+                filter(x -> x.getUserPointer() instanceof MeshEntity).
                 collect(Collectors.toList());
-
-        for (int idx = 0; idx < objectList.size(); idx++) {
-            final CollisionObject collisionObject = objectList.get(idx);
-
-            final MeshEntity entity = (MeshEntity) collisionObject.getUserPointer();
-            final RigidBody rigidBody = (RigidBody) collisionObject;
-
-            MeshEntity debugMesh = this.debugEntities.get(entity.getEntityId());
-            if (debugMesh == null) {
-                debugMesh = this.createDebugMeshFromRigidBody(entity, rigidBody, entity.getScale());
-                this.debugEntities.put(entity.getEntityId(), debugMesh);
-            }
-
-            function.accept(entity, debugMesh, collisionObject);
-        }
-
-        if (cleanup && objectList.size() != this.debugEntities.size()) {
-            final Set<Long> debugEntities = this.debugEntities.keySet();
-            final Set<Long> entityIds = objectList.
-                    stream().
-                    map(collisionObject -> ((AbstractEntity) collisionObject.getUserPointer()).getEntityId()).
-                    collect(Collectors.toSet());
-            if (debugEntities.removeAll(entityIds)) {
-                debugEntities.forEach(this.debugEntities::remove);
-            }
-        }
     }
 
     //  TODO Refactor the whole rendering thing, because the code is duplicated (or even worse).
@@ -171,21 +197,14 @@ public final class PhysicsDebugger implements Clearable {
         renderer.finalizeRendering();
     }
 
-    private MeshEntity createDebugMeshFromRigidBody(final AbstractEntity entity, final RigidBody rigidBody,
-                                                    final Vector3f originalScale) {
-        int vertexCount = 0, indexCount = 0;
-        if (entity instanceof MeshEntity && ((MeshEntity) entity).getMesh() != null) {
-            final Mesh mesh = ((MeshEntity) entity).getMesh();
-
-            vertexCount = mesh.getVertices().size();
-            indexCount = mesh.getTriangles().size();
-        }
+    private MeshEntity createDebugMeshFromRigidBody(final MeshEntity entity, final RigidBody rigidBody) {
+        final Mesh entityMesh = entity.getMesh();
+        final int vertexCount = entityMesh.getVertices().size();
+        final int indexCount = entityMesh.getTriangles().size();
 
         final List<org.joml.Vector3f> vertices = new ArrayList<>(vertexCount);
         final List<Integer> indices = new ArrayList<>(indexCount);
         PhysicsDebugMeshFactory.getMeshVertices(rigidBody.getCollisionShape(), vertices, indices);
-
-        vertices.forEach(v -> v.mul(originalScale));
 
         final Mesh mesh = new Mesh();
         mesh.getVertices().addAll(vertices);
@@ -240,9 +259,4 @@ public final class PhysicsDebugger implements Clearable {
             "void main() {\n" +
             "    FragColor = color;\n" +
             "}\n";
-
-    @FunctionalInterface
-    private interface CollisionObjectsConsumer {
-        void accept(final MeshEntity entity, final MeshEntity debugMesh, final CollisionObject collisionObject);
-    }
 }

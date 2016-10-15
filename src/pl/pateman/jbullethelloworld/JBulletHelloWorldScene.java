@@ -96,9 +96,9 @@ public final class JBulletHelloWorldScene implements Iterable<AbstractEntity>, C
                     tempVars.vecmathQuat.w);
             Utils.convert(tempVars.vect3d1, transform.origin);
 
-            //  Assign transformation computed by jBullet to the entity.
-            abstractEntity.setTransformation(tempVars.quat1, tempVars.vect3d1, abstractEntity.getScale());
-            abstractEntity.forceTransformationUpdate(false);
+            //  Assign transformation computed by jBullet to the entity. We're passing 'false' as the last parameter,
+            //  because we don't want to update the rigid body again since we're reading its transformation right now.
+            abstractEntity.setTransformation(tempVars.quat1, tempVars.vect3d1, abstractEntity.getScale(), false);
         }
         tempVars.release();
 

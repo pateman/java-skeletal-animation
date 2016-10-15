@@ -20,6 +20,10 @@ public class CubeMeshEntity extends MeshEntity {
         this.cubeSize = cubeSize;
     }
 
+    public float getCubeSize() {
+        return cubeSize;
+    }
+
     @Override
     public void buildMesh() {
         final Mesh mesh = new Mesh();

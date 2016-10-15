@@ -43,6 +43,7 @@ public class AbstractEntity implements Clearable {
     private final Vector3f scale;
     private final Vector3f direction;
     private final Matrix4f transformation;
+    private final Matrix4f transformWithoutScaling;
 
     private RigidBody rigidBody;
 
@@ -55,6 +56,7 @@ public class AbstractEntity implements Clearable {
         this.rotation = new Quaternionf();
         this.scale = new Vector3f().set(1.0f, 1.0f, 1.0f);
         this.transformation = new Matrix4f();
+        this.transformWithoutScaling = new Matrix4f();
 
         this.name = entityName == null ? "Entity " + this.entityId : entityName;
 
@@ -76,11 +78,19 @@ public class AbstractEntity implements Clearable {
         Utils.fromRotationTranslationScale(this.transformation, this.rotation, this.translation, this.scale);
         this.updateDirection();
 
-        //  Update the rigid body's transformation.
+        //  Update the rigid body's transformation if requested so.
         if (updateRigidBody && this.rigidBody != null) {
             final TempVars vars = TempVars.get();
-            Utils.matrixToTransform(vars.vecmathTransform, this.transformation);
+
+            //  Re-compute the transformation matrix again, but this time don't apply any scaling to it, as Bullet
+            //  doesn't like it.
+            Utils.fromRotationTranslationScale(this.transformWithoutScaling, this.rotation, this.translation,
+                    Utils.IDENTITY_VECTOR);
+            Utils.matrixToTransform(vars.vecmathTransform, this.transformWithoutScaling);
+
+            this.rigidBody.setCenterOfMassTransform(vars.vecmathTransform);
             this.rigidBody.getMotionState().setWorldTransform(vars.vecmathTransform);
+
             vars.release();
         }
     }
@@ -171,9 +181,19 @@ public class AbstractEntity implements Clearable {
     }
 
     public void setTransformation(final Quaternionf rotation, final Vector3f translation, final Vector3f scale) {
+        this.setTransformation(rotation, translation, scale, true);
+    }
+
+    public void setTransformation(final Quaternionf rotation, final Vector3f translation, final Vector3f scale,
+                                  final boolean updateRigidBody) {
+        if (rotation == null || translation == null || scale == null) {
+            throw new IllegalArgumentException("Valid transformation components need to be provided");
+        }
+
         this.rotation.set(rotation);
         this.translation.set(translation);
-        this.setScale(scale);
+        this.scale.set(scale);
+        this.updateTransformationMatrix(updateRigidBody);
     }
 
     public Vector3f getDirection() {
@@ -207,11 +227,12 @@ public class AbstractEntity implements Clearable {
 
         //  Make sure the transformation matrix is up-to-date and convert it to a format that JBullet understands.
         this.updateTransformationMatrix(false);
-        Utils.matrixToTransform(vars.vecmathTransform, this.transformation);
+        Utils.matrixToTransform(vars.vecmathTransform, this.transformWithoutScaling);
 
         //  Construct the rigid body.
         this.rigidBody = new RigidBody(mass, new DefaultMotionState(vars.vecmathTransform), collisionShape,
                 vars.vecmathVect3d1);
+        this.rigidBody.setCenterOfMassTransform(vars.vecmathTransform);
         this.rigidBody.setUserPointer(this);
 
         vars.release();

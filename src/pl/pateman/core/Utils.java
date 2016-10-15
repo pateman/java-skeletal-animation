@@ -4,6 +4,7 @@ import com.bulletphysics.linearmath.Transform;
 import org.joml.*;
 import org.lwjgl.BufferUtils;
 
+import javax.vecmath.Quat4f;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.FloatBuffer;
@@ -188,6 +189,11 @@ public final class Utils {
 
     public static Vector3f convert(final Vector3f out, final javax.vecmath.Vector3f vector3f) {
         out.set(vector3f.x, vector3f.y, vector3f.z);
+        return out;
+    }
+
+    public static Quaternionf convert(final Quaternionf out, final Quat4f quat4f) {
+        out.set(quat4f.x, quat4f.y, quat4f.z, quat4f.w);
         return out;
     }
 

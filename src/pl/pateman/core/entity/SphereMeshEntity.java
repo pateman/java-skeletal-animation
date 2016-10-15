@@ -26,6 +26,18 @@ public class SphereMeshEntity extends MeshEntity {
         this.sectors = Math.max(2, sectors);
     }
 
+    public float getRadius() {
+        return radius;
+    }
+
+    public int getRings() {
+        return rings;
+    }
+
+    public int getSectors() {
+        return sectors;
+    }
+
     @Override
     public void buildMesh() {
         final Mesh mesh = new Mesh();

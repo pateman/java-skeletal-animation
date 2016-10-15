@@ -40,7 +40,7 @@ public class JBulletHelloWorld {
     private static final String USE_LIGHTING_PARAM = "useLighting";
     private static final String DIFFUSE_COLOR_PARAM = "diffuseColor";
     private static final String SPHERE_ENTITY_NAME = "sphere";
-    private static final float SPHERE_RADIUS = 2.0f;
+    private static final float SPHERE_RADIUS = 1.0f;
     private static final String GROUND_ENTITY_NAME = "ground";
     private static final String BANANA_ENTITY_NAME = "banana";
 
@@ -111,7 +111,7 @@ public class JBulletHelloWorld {
                             final Vector3f sphereTranslation = JBulletHelloWorld.this.scene.
                                     getEntity(SPHERE_ENTITY_NAME).getTranslation();
                             final PhysicsRaycastResult raycastResult = JBulletHelloWorld.this.scene.
-                                    raycast(sphereTranslation, Utils.NEG_AXIS_Y, SPHERE_RADIUS, COLLISION_GROUP_02);
+                                    raycast(sphereTranslation, Utils.NEG_AXIS_Y, SPHERE_RADIUS + 0.1f, COLLISION_GROUP_02);
 
                             System.out.printf("Ball is%son the ground\n", raycastResult == null ? " NOT " : " ");
                             break;
@@ -180,8 +180,8 @@ public class JBulletHelloWorld {
             this.program.setUniform1(Utils.USETEXTURING_UNIFORM, 0);
             this.program.setUniform1(Utils.USESKINNING_UNIFORM, 0);
             this.program.setUniform3(Utils.CAMERADIRECTION_UNIFORM, LIGHT_DIR.x, LIGHT_DIR.y, LIGHT_DIR.z);
-            this.program.setUniform1(Utils.USELIGHTING_UNIFORM, (int) this.scene.getEntityParameter(
-                    meshEntity.getName(), USE_LIGHTING_PARAM));
+            this.program.setUniform1(Utils.USELIGHTING_UNIFORM, this.scene.getEntityParameter(meshEntity.getName(),
+                    USE_LIGHTING_PARAM));
 
             final Vector4f diffuseColor = this.scene.getEntityParameter(meshEntity.getName(), DIFFUSE_COLOR_PARAM);
             this.program.setUniform4(Utils.DIFFUSECOLOR_UNIFORM, diffuseColor.x, diffuseColor.y, diffuseColor.z,
@@ -244,7 +244,6 @@ public class JBulletHelloWorld {
             sphere.setShaderProgram(this.program);
             sphere.buildMesh();
             final SphereShape sphereShape = new SphereShape(SPHERE_RADIUS);
-            sphereShape.setMargin(0.0f);
             sphere.createRigidBody(sphereShape, 1.0f);
             sphere.getRigidBody().setRestitution(0.5f);
             sphere.getRigidBody().setActivationState(CollisionObject.DISABLE_DEACTIVATION);
@@ -259,10 +258,8 @@ public class JBulletHelloWorld {
             //  The ball can sometimes fall through the ground and this link describes the problem:
             //  https://wiki.jmonkeyengine.org/doku.php/jme3:advanced:bullet_pitfalls
             //  I'm too lazy to fix it right now :)
-            final BoxShape boxShape = new BoxShape(new javax.vecmath.Vector3f(0.1f, 0.1f, 0.1f));
-            boxShape.setLocalScaling(new javax.vecmath.Vector3f(10.0f, 5.0f, 10.0f));
-            boxShape.setMargin(0.0f);
-            ground.createRigidBody(this.createConvexHullShape(ground.getMesh(), Utils.IDENTITY_VECTOR), 0.0f);
+            final BoxShape boxShape = new BoxShape(new javax.vecmath.Vector3f(10.0f, 1f, 10.0f));
+            ground.createRigidBody(boxShape, 0.0f);
             ground.getRigidBody().setRestitution(1f);
             this.setEntityLightingParams(ground, new Vector4f(0.8f, 0.8f, 0.8f, 1.0f));
 
@@ -270,11 +267,11 @@ public class JBulletHelloWorld {
             final MeshEntity bananaMesh = new JSONImporter().load("banana.json");
             bananaMesh.setName(BANANA_ENTITY_NAME);
             bananaMesh.setScale(new Vector3f(15.0f, 15.0f, 15.0f));
-            bananaMesh.setTranslation(new Vector3f(10.0f, 10.0f, 0.0f));
+            bananaMesh.setTranslation(new Vector3f(0.0f, 8.0f, 0.0f));
             bananaMesh.setShaderProgram(this.program);
             bananaMesh.buildMesh();
-            bananaMesh.createRigidBody(this.createConvexHullShape(bananaMesh.getMesh(), new Vector3f(15.0f, 15.0f, 15.0f)), 1.0f);
-            bananaMesh.getRigidBody().setRestitution(1.0f);
+            bananaMesh.createRigidBody(this.createConvexHullShape(bananaMesh.getMesh(), new Vector3f(2.65f, 2.65f, 2.65f)), 1.0f);
+            bananaMesh.getRigidBody().setRestitution(0.1f);
 
             this.scene.addEntity(bananaMesh);
             this.setEntityLightingParams(bananaMesh, new Vector4f(1.0f, 1.0f, 0.2f, 1.0f));

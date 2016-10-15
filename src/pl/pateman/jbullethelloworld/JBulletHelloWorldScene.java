@@ -57,7 +57,7 @@ public final class JBulletHelloWorldScene implements Iterable<AbstractEntity>, C
         final String name = entityInstance.getName();
 
         this.entities.put(name, entityInstance);
-        this.parameters.put(name, new HashMap<String, Object>());
+        this.parameters.put(name, new HashMap<>());
 
         return entityInstance;
     }
@@ -92,8 +92,7 @@ public final class JBulletHelloWorldScene implements Iterable<AbstractEntity>, C
 
             //  Convert between different math libraries.
             transform.getRotation(tempVars.vecmathQuat);
-            tempVars.quat1.set(tempVars.vecmathQuat.x, tempVars.vecmathQuat.y, tempVars.vecmathQuat.z,
-                    tempVars.vecmathQuat.w);
+            Utils.convert(tempVars.quat1, tempVars.vecmathQuat);
             Utils.convert(tempVars.vect3d1, transform.origin);
 
             //  Assign transformation computed by jBullet to the entity. We're passing 'false' as the last parameter,

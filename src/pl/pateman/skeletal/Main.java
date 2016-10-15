@@ -399,8 +399,7 @@ public class Main {
 
                     //  Convert between different math libraries.
                     tempVars.vecmathTransform.getRotation(tempVars.vecmathQuat);
-                    tempVars.quat1.set(tempVars.vecmathQuat.x, tempVars.vecmathQuat.y, tempVars.vecmathQuat.z,
-                            tempVars.vecmathQuat.w);
+                    Utils.convert(tempVars.quat1, tempVars.vecmathQuat);
                     Utils.convert(tempVars.vect3d1, tempVars.vecmathTransform.origin);
 
                     //  Assign transformation computed by jBullet to the entity.

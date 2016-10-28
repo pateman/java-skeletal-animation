@@ -1,5 +1,6 @@
 package pl.pateman.core.physics.ragdoll;
 
+import com.bulletphysics.collision.dispatch.CollisionObject;
 import com.bulletphysics.collision.shapes.BoxShape;
 import com.bulletphysics.dynamics.DiscreteDynamicsWorld;
 import com.bulletphysics.dynamics.RigidBody;
@@ -171,6 +172,7 @@ public final class Ragdoll {
         for (final RagdollLink ragdollLink : this.ragdollStructure.getBodyLinks()) {
             this.createConstraintForLink(ragdollLink);
         }
+        this.setEnabled(false);
     }
 
     public boolean isEnabled() {
@@ -179,6 +181,9 @@ public final class Ragdoll {
 
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
+
+        final int activationState = this.enabled ? CollisionObject.ACTIVE_TAG : CollisionObject.DISABLE_SIMULATION;
+        this.partRigidBodies.values().forEach(rb -> rb.forceActivationState(activationState));
     }
 
     public void setDynamicsWorld(DiscreteDynamicsWorld dynamicsWorld) {

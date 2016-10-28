@@ -166,6 +166,11 @@ public class Main {
                         case GLFW_KEY_P:
                             Main.this.physicsSimulation = !Main.this.physicsSimulation;
                             break;
+                        //  'R' key
+                        case GLFW_KEY_R:
+                            final Ragdoll ragdoll = Main.this.meshEntity.getAnimationController().getRagdoll();
+                            ragdoll.setEnabled(!ragdoll.isEnabled());
+                            break;
                         //  'M' key.
                         case GLFW_KEY_M:
                             Main.this.currentManualControlMode = Utils.clamp(++Main.this.currentManualControlMode % 3, 0, 2);

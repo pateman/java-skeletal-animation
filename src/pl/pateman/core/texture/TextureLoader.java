@@ -41,7 +41,7 @@ public final class TextureLoader {
         ImageIO.setUseCache(false);
     }
 
-    private TextureInformation loadTexture(BufferedImage bufferedImage) {
+    private TextureInformation loadTexture(final BufferedImage bufferedImage) {
         int texWidth = 2;
         int texHeight = 2;
 
@@ -90,8 +90,11 @@ public final class TextureLoader {
             throw new IllegalArgumentException();
         }
 
-        TextureInformation textureInformation = this.loadTextureInformation(is);
+        final TextureInformation textureInformation = this.loadTextureInformation(is);
+        return this.createTexture(textureUnit, textureInformation);
+    }
 
+    private Texture createTexture(int textureUnit, final TextureInformation textureInformation) {
         final Texture texture = new Texture(textureInformation);
         texture.setUnit(textureUnit);
 
@@ -105,7 +108,6 @@ public final class TextureLoader {
         GL30.glGenerateMipmap(GL11.GL_TEXTURE_2D);
 
         Texture.bindTexture(textureUnit, 0);
-
         return texture;
     }
 
@@ -131,5 +133,14 @@ public final class TextureLoader {
         } catch (IOException e) {
             throw new TextureLoaderException("Unable to load texture", e);
         }
+    }
+
+    public Texture load(final BufferedImage bufferedImage) {
+        return this.load(bufferedImage, 0);
+    }
+
+    public Texture load(final BufferedImage bufferedImage, int textureUnit) {
+        final TextureInformation textureInformation = this.loadTexture(bufferedImage);
+        return this.createTexture(textureUnit, textureInformation);
     }
 }

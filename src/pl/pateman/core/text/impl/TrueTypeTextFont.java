@@ -4,10 +4,9 @@ import pl.pateman.core.text.TextFont;
 import pl.pateman.core.text.TextGlyph;
 import pl.pateman.core.texture.Texture;
 import pl.pateman.core.texture.TextureLoader;
+import pl.pateman.core.texture.TextureWrapping;
 
 import java.awt.*;
-import java.awt.geom.AffineTransform;
-import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
@@ -23,6 +22,7 @@ import java.util.Map;
 public final class TrueTypeTextFont implements TextFont {
     private final Map<Character, TextGlyph> fontGlyphs;
     private Texture fontTexture;
+    private int fontHeight;
 
     public TrueTypeTextFont(final String fontName, final int fontSize, final String additionalChars) {
         this.fontGlyphs = new HashMap<>(DEFAULT_FONT_CHARSET.length());
@@ -98,6 +98,9 @@ public final class TrueTypeTextFont implements TextFont {
             characterBufferedImageMap.put(character, characterImg);
         }
 
+        //  Store the font height.
+        this.fontHeight = textureHeight;
+
         //  Create the texture's image.
         BufferedImage texImg = new BufferedImage(textureWidth, textureHeight, BufferedImage.TYPE_INT_ARGB);
         final Graphics2D texImgGraphics = texImg.createGraphics();
@@ -118,11 +121,6 @@ public final class TrueTypeTextFont implements TextFont {
             x += charWidth;
         }
 
-        //  Transform the texture so that its origin is at the bottom left.
-        final AffineTransform affineTransform = AffineTransform.getScaleInstance(1.0f, -1.0f);
-        affineTransform.translate(0.0f, -textureHeight);
-        texImg = new AffineTransformOp(affineTransform, AffineTransformOp.TYPE_NEAREST_NEIGHBOR).filter(texImg, null);
-
         //  For debugging only.
 //        final File file = new File("D:\\" + font.getName() + "_generated.png");
 //        try {
@@ -133,6 +131,8 @@ public final class TrueTypeTextFont implements TextFont {
 
         //  Create OpenGL's texture from the texture image.
         this.fontTexture = new TextureLoader().load(texImg);
+        this.fontTexture.setTextureWrappingS(TextureWrapping.CLAMP_TO_BORDER);
+        this.fontTexture.setTextureWrappingT(TextureWrapping.CLAMP_TO_BORDER);
 
         texImgGraphics.dispose();
     }
@@ -145,5 +145,10 @@ public final class TrueTypeTextFont implements TextFont {
     @Override
     public Texture getFontTexture() {
         return this.fontTexture;
+    }
+
+    @Override
+    public int getFontHeight() {
+        return this.fontHeight;
     }
 }

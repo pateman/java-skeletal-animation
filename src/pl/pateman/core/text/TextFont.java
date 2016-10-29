@@ -11,7 +11,7 @@ public interface TextFont {
     /**
      * The default set of characters a font should consist of.
      */
-    String DEFAULT_FONT_CHARSET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    String DEFAULT_FONT_CHARSET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789,.-;:()+$@! '_";
 
     /**
      * Returns a map of font's glyphs. A glyph holds properties of a single character.
@@ -27,6 +27,13 @@ public interface TextFont {
      * @return {@code Texture}.
      */
     Texture getFontTexture();
+
+    /**
+     * Returns the height of the font.
+     *
+     * @return {@code int}.
+     */
+    int getFontHeight();
 
     /**
      * Determines whether the font has been loaded or not.

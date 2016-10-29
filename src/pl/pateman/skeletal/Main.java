@@ -39,6 +39,8 @@ import pl.pateman.core.physics.ragdoll.RagdollStructure;
 import pl.pateman.core.physics.ragdoll.RagdollStructureBuilder;
 import pl.pateman.core.shader.Program;
 import pl.pateman.core.shader.Shader;
+import pl.pateman.core.text.Text2DRenderer;
+import pl.pateman.core.text.impl.TrueTypeTextFont;
 import pl.pateman.core.texture.Texture;
 import pl.pateman.core.texture.TextureLoader;
 import pl.pateman.importer.json.JSONImporter;
@@ -59,6 +61,21 @@ public class Main {
     public static final Vector4f DIFFUSE_COLOR = new Vector4f(0.8f, 0.8f, 0.8f, 1.0f);
     public static final float CAMERA_SPEED = 5.0f;
     public static final float CAMERA_ROTATION_SPEED = 50.0f;
+    public static final String HELP_TEXT = "Skeletal animation demo by Patryk Nusbaum\n" +
+            " \n" +
+            "Esc - close the window\n" +
+            "0 - switch anim from 'idle' to 'run'\n" +
+            "1 - switch upper body anim to 'alert', lower body to 'run'\n" +
+            "P - toggle physics simulation\n" +
+            "R - toggle ragdoll\n" +
+            "M - toggle manual bone control mode (off, blend_with_anim, full)\n" +
+            "Left arrow - rotate the controlled bone left\n" +
+            "Right arrow - rotate the controlled bone right\n" +
+            "W,S,A,D - camera movement\n" +
+            "G,H - camera move up/down\n" +
+            "Q,E - camera rotate\n" +
+            "F12 - toggle physics debug\n" +
+            "F1 - toggle help display";
 
     private GLFWErrorCallback errorCallback;
     private GLFWKeyCallback keyCallback;
@@ -84,6 +101,9 @@ public class Main {
     private boolean physicsDebug;
     private boolean physicsSimulation;
 
+    private boolean displayHelp;
+    private Text2DRenderer text2DRenderer;
+
     public void run() {
         System.out.println("LWJGL " + Version.getVersion() + "!");
 
@@ -102,6 +122,9 @@ public class Main {
             }
             if (this.meshProgram != null) {
                 this.meshProgram.clearAndDestroy();
+            }
+            if (this.text2DRenderer != null) {
+                this.text2DRenderer.clearAndDestroy();
             }
 
             glfwTerminate();
@@ -161,6 +184,10 @@ public class Main {
                         //  F12 key.
                         case GLFW_KEY_F12:
                             Main.this.physicsDebug = !Main.this.physicsDebug;
+                            break;
+                        //  F1 key.
+                        case GLFW_KEY_F1:
+                            Main.this.displayHelp = !Main.this.displayHelp;
                             break;
                         //  'P' key
                         case GLFW_KEY_P:
@@ -398,6 +425,18 @@ public class Main {
             ragdoll.buildRagdoll();
 
             this.physicsDebugger.updateDebugEntities();
+
+            //  Create the text renderer and prepare the help text.
+            final TrueTypeTextFont trueTypeTextFont = new TrueTypeTextFont("Arial", 12, "");
+            this.text2DRenderer = new Text2DRenderer(trueTypeTextFont);
+            this.text2DRenderer.setWindowDimensions(WINDOW_WIDTH, WINDOW_HEIGHT);
+            final Vector4f fontColor = new Vector4f(1.0f, 0.0f, 0.0f, 1.0f);
+
+            final String[] helpStrings = HELP_TEXT.split("\n");
+            for (int i = 0; i < helpStrings.length; i++) {
+                this.text2DRenderer.addLine(helpStrings[i], 10.0f, 10.0f + (10.0f * i), fontColor);
+            }
+            this.displayHelp = true;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -510,6 +549,10 @@ public class Main {
         if (this.physicsDebug) {
             this.meshEntity.getAnimationController().getRagdoll().drawRagdollLines(this.camera, Utils.ZERO_VECTOR);
             this.physicsDebugger.debugDrawWorld(this.camera);
+        }
+
+        if (this.displayHelp) {
+            this.text2DRenderer.renderText();
         }
     }
 

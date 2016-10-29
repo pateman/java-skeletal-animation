@@ -101,7 +101,8 @@ public final class TextureLoader {
         //  Pass texture data to OpenGL.
         Texture.bindTexture(textureUnit, texture.getHandle());
 
-        GL11.glTexImage2D(GL11.GL_TEXTURE_2D, 0, GL11.GL_RGB, textureInformation.getWidth(),
+        GL11.glTexImage2D(GL11.GL_TEXTURE_2D, 0,
+                textureInformation.hasAlphaChannel() ? GL11.GL_RGBA8 : GL11.GL_RGB, textureInformation.getWidth(),
                 textureInformation.getHeight(), 0,
                 textureInformation.hasAlphaChannel() ? GL11.GL_RGBA : GL11.GL_RGB,
                 GL11.GL_UNSIGNED_BYTE, textureInformation.getImageBuffer());

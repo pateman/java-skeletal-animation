@@ -341,6 +341,5 @@ public class Text2DRenderer implements Clearable {
             "\n" +
             "void main(void) { \n" +
             "\tfragColor = diffuseColor * texture2D(texture, textureCoord); \n" +
-            "fragColor = texture2D(texture, textureCoord).aaaa;" +
             "}";
 }

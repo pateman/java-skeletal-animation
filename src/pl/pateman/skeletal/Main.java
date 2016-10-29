@@ -430,7 +430,7 @@ public class Main {
             final TrueTypeTextFont trueTypeTextFont = new TrueTypeTextFont("Arial", 12, "");
             this.text2DRenderer = new Text2DRenderer(trueTypeTextFont);
             this.text2DRenderer.setWindowDimensions(WINDOW_WIDTH, WINDOW_HEIGHT);
-            final Vector4f fontColor = new Vector4f(1.0f, 1.0f, 1.0f, 0.0f);
+            final Vector4f fontColor = new Vector4f(1.0f, 1.0f, 1.0f, 1.0f);
 
             final String[] helpStrings = HELP_TEXT.split("\n");
             for (int i = 0; i < helpStrings.length; i++) {

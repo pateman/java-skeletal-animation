@@ -15,12 +15,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL14.glBlendFuncSeparate;
 import static org.lwjgl.opengl.GL20.GL_FRAGMENT_SHADER;
 import static org.lwjgl.opengl.GL20.GL_VERTEX_SHADER;
-import static org.lwjgl.opengl.GL30.glBindVertexArray;
-import static org.lwjgl.opengl.GL30.glDeleteVertexArrays;
-import static org.lwjgl.opengl.GL30.glGenVertexArrays;
+import static org.lwjgl.opengl.GL30.*;
 
 /**
  * Renders a 2D text on the screen.
@@ -154,7 +151,7 @@ public class Text2DRenderer implements Clearable {
         //  Start rendering.
         glDisable(GL_DEPTH_TEST);
         glEnable(GL_BLEND);
-        glBlendFuncSeparate(GL_ONE, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
         this.shaderProgram.setUniformMatrix4(Utils.PROJECTION_UNIFORM, Utils.matrix4fToBuffer(this.projMatrix));
         this.shaderProgram.setUniform1(Utils.TEXTURE_UNIFORM, this.textFont.getFontTexture().getUnit());

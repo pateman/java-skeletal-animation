@@ -1,4 +1,4 @@
-package pl.pateman.core.entity.line;
+package pl.pateman.core.line;
 
 import static org.lwjgl.opengl.GL11.GL_LINES;
 import static org.lwjgl.opengl.GL11.GL_LINE_LOOP;

@@ -11,8 +11,8 @@ import pl.pateman.core.TempVars;
 import pl.pateman.core.Utils;
 import pl.pateman.core.entity.CameraEntity;
 import pl.pateman.core.entity.EntityData;
-import pl.pateman.core.entity.line.Line;
-import pl.pateman.core.entity.line.LineRenderer;
+import pl.pateman.core.line.Line;
+import pl.pateman.core.line.LineRenderer;
 import pl.pateman.core.mesh.Bone;
 import pl.pateman.core.mesh.Mesh;
 

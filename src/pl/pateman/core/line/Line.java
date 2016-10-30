@@ -1,4 +1,4 @@
-package pl.pateman.core.entity.line;
+package pl.pateman.core.line;
 
 import org.joml.Vector3f;
 import org.joml.Vector4f;

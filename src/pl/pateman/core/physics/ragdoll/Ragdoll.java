@@ -6,13 +6,9 @@ import com.bulletphysics.dynamics.DiscreteDynamicsWorld;
 import com.bulletphysics.dynamics.RigidBody;
 import com.bulletphysics.dynamics.constraintsolver.Generic6DofConstraint;
 import org.joml.Vector3f;
-import org.joml.Vector4f;
 import pl.pateman.core.TempVars;
 import pl.pateman.core.Utils;
-import pl.pateman.core.entity.CameraEntity;
 import pl.pateman.core.entity.EntityData;
-import pl.pateman.core.line.Line;
-import pl.pateman.core.line.LineRenderer;
 import pl.pateman.core.mesh.Bone;
 import pl.pateman.core.mesh.Mesh;
 
@@ -24,13 +20,10 @@ import java.util.Random;
  * Created by pateman.
  */
 public final class Ragdoll {
-    public static final Vector4f RAGDOLL_DEBUG_BONE_COLOR = new Vector4f(0.0f, 1.0f, 0.0f, 1.0f);
-
     private final Mesh mesh;
     private final Random random;
     private DiscreteDynamicsWorld dynamicsWorld;
     private boolean enabled;
-    private final LineRenderer lineRenderer;
     private RagdollStructure ragdollStructure;
     private final Map<BodyPartType, RigidBody> partRigidBodies;
 
@@ -40,7 +33,6 @@ public final class Ragdoll {
         }
         this.mesh = mesh;
         this.enabled = false;
-        this.lineRenderer = new LineRenderer();
         this.random = new Random();
         this.partRigidBodies = new HashMap<>();
     }
@@ -117,11 +109,6 @@ public final class Ragdoll {
             this.partRigidBodies.put(bodyPart.getPartType(), rigidBody);
         }
 
-        //  Draw debug lines between the first and the last bone.
-        firstBone.getWorldBindMatrix().getTranslation(vars.vect3d1);
-        lastBone.getWorldBindMatrix().getTranslation(vars.vect3d2);
-        this.lineRenderer.addLine(vars.vect3d1, vars.vect3d2, RAGDOLL_DEBUG_BONE_COLOR);
-
         vars.release();
     }
 
@@ -196,13 +183,5 @@ public final class Ragdoll {
 
     public void setRagdollStructure(RagdollStructure ragdollStructure) {
         this.ragdollStructure = ragdollStructure;
-    }
-
-    public void drawRagdollLines(final CameraEntity cameraEntity, final Vector3f translation) {
-        for (final Line line : this.lineRenderer) {
-            line.getTo().add(translation);
-            line.getFrom().add(translation);
-        }
-        this.lineRenderer.drawLines(cameraEntity);
     }
 }

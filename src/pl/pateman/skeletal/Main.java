@@ -35,6 +35,7 @@ import pl.pateman.core.mesh.Bone;
 import pl.pateman.core.mesh.BoneManualControlType;
 import pl.pateman.core.physics.debug.PhysicsDebugger;
 import pl.pateman.core.physics.ragdoll.Ragdoll;
+import pl.pateman.core.physics.ragdoll.RagdollDebugger;
 import pl.pateman.core.physics.ragdoll.RagdollStructure;
 import pl.pateman.core.physics.ragdoll.RagdollStructureBuilder;
 import pl.pateman.core.shader.Program;
@@ -98,6 +99,7 @@ public class Main {
 
     private DiscreteDynamicsWorld dynamicsWorld;
     private PhysicsDebugger physicsDebugger;
+    private RagdollDebugger ragdollDebugger;
     private boolean physicsDebug;
     private boolean physicsSimulation;
 
@@ -125,6 +127,12 @@ public class Main {
             }
             if (this.text2DRenderer != null) {
                 this.text2DRenderer.clearAndDestroy();
+            }
+            if (this.physicsDebugger != null) {
+                this.physicsDebugger.clearAndDestroy();
+            }
+            if (this.ragdollDebugger == null) {
+                this.ragdollDebugger.clearAndDestroy();
             }
 
             glfwTerminate();
@@ -424,6 +432,9 @@ public class Main {
             ragdoll.setRagdollStructure(ragdollStructure);
             ragdoll.buildRagdoll();
 
+            //  Prepare debugging data.
+            this.ragdollDebugger = new RagdollDebugger(ragdoll);
+            this.ragdollDebugger.buildDebugInfo();
             this.physicsDebugger.updateDebugEntities();
 
             //  Create the text renderer and prepare the help text.
@@ -547,7 +558,7 @@ public class Main {
 
         //  Draw the physics debug.
         if (this.physicsDebug) {
-            this.meshEntity.getAnimationController().getRagdoll().drawRagdollLines(this.camera, Utils.ZERO_VECTOR);
+            this.ragdollDebugger.drawDebug(this.camera);
             this.physicsDebugger.debugDrawWorld(this.camera);
         }
 

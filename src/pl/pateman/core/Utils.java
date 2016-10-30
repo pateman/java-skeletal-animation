@@ -135,6 +135,20 @@ public final class Utils {
         return tempVars.paletteSkinningBuffer;
     }
 
+    public static FloatBuffer floatsToBuffer(final List<Float> floats) {
+        if (floats == null) {
+            throw new IllegalArgumentException();
+        }
+
+        final FloatBuffer fb = BufferUtils.createFloatBuffer(floats.size());
+        for (final Float aFloat : floats) {
+            fb.put(aFloat);
+        }
+        fb.flip();
+
+        return fb;
+    }
+
     public static void fromRotationTranslationScale(final Matrix4f out, final Quaternionf rotation,
                                                     final Vector3f translation, final Vector3f scale) {
         final TempVars tempVars = TempVars.get();

@@ -490,6 +490,7 @@ public class Main {
             tempVars.release();
 
             this.physicsDebugger.updateDebugEntities();
+            this.ragdollDebugger.updateDebug();
         }
         this.meshEntity.getAnimationController().stepAnimation(this.deltaTime);
         this.skeletonMeshEntity.applyAnimation(this.meshEntity.getMeshRenderer().getBoneMatrices());
@@ -559,7 +560,7 @@ public class Main {
         //  Draw the physics debug.
         if (this.physicsDebug) {
             this.ragdollDebugger.drawDebug(this.camera);
-            this.physicsDebugger.debugDrawWorld(this.camera);
+//            this.physicsDebugger.debugDrawWorld(this.camera);
         }
 
         if (this.displayHelp) {

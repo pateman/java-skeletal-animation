@@ -75,6 +75,7 @@ public final class AnimationController {
         for (BoneAnimationChannel channel : this.animationChannels.values()) {
             channel.stepAnimation(deltaTime);
         }
+        this.ragdoll.updateRagdoll();
     }
 
     public void switchToAnimation(final String animation) {

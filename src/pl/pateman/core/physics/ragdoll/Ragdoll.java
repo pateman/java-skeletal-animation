@@ -5,6 +5,7 @@ import com.bulletphysics.collision.shapes.BoxShape;
 import com.bulletphysics.dynamics.DiscreteDynamicsWorld;
 import com.bulletphysics.dynamics.RigidBody;
 import com.bulletphysics.dynamics.constraintsolver.Generic6DofConstraint;
+import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import pl.pateman.core.TempVars;
 import pl.pateman.core.Utils;
@@ -12,9 +13,9 @@ import pl.pateman.core.entity.EntityData;
 import pl.pateman.core.mesh.Bone;
 import pl.pateman.core.mesh.Mesh;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
+
+import static pl.pateman.core.physics.ragdoll.RagdollUtils.getMatrixForBone;
 
 /**
  * Created by pateman.
@@ -26,6 +27,7 @@ public final class Ragdoll {
     private boolean enabled;
     private RagdollStructure ragdollStructure;
     private final Map<BodyPartType, RigidBody> partRigidBodies;
+    private final Map<Integer, Matrix4f> boneMatrices;
 
     public Ragdoll(Mesh mesh) {
         if (mesh == null) {
@@ -35,6 +37,8 @@ public final class Ragdoll {
         this.enabled = false;
         this.random = new Random();
         this.partRigidBodies = new HashMap<>();
+
+        this.boneMatrices = new TreeMap<>();
     }
 
     private void createColliderForBodyPart(final BodyPart bodyPart) {
@@ -73,8 +77,8 @@ public final class Ragdoll {
             //  Prepare bone matrices for calculating the rigid body's transformation. At the end of the operations:
             //  a)  vars.vect3d1 - will hold the rigid body's translation
             //  b)  vars.quat1 - will hold the rigid body's rotation.
-            RagdollUtils.getMatrixForBone(vars.tempMat4x41, firstBone);
-            RagdollUtils.getMatrixForBone(vars.tempMat4x42, lastBone);
+            getMatrixForBone(vars.tempMat4x41, firstBone);
+            getMatrixForBone(vars.tempMat4x42, lastBone);
             vars.tempMat4x41.getTranslation(vars.vect3d1);
             vars.tempMat4x42.getTranslation(vars.vect3d2);
 
@@ -107,6 +111,8 @@ public final class Ragdoll {
             this.dynamicsWorld.addRigidBody(rigidBody);
 
             this.partRigidBodies.put(bodyPart.getPartType(), rigidBody);
+        } else {
+            throw new UnsupportedOperationException("Unsupported collider type");
         }
 
         vars.release();
@@ -149,8 +155,10 @@ public final class Ragdoll {
         }
 
         for (Map.Entry<BodyPartType, BodyPart> partEntry : this.ragdollStructure.getBodyParts().entrySet()) {
-            if (partEntry.getValue().isConfigured()) {
-                this.createColliderForBodyPart(partEntry.getValue());
+            final BodyPart bodyPart = partEntry.getValue();
+            if (bodyPart.isConfigured()) {
+                this.createColliderForBodyPart(bodyPart);
+                bodyPart.getBones().forEach(bone -> this.boneMatrices.put(bone.getIndex(), new Matrix4f()));
             } else {
                 System.out.println("Ragdoll part '" + partEntry.getKey() + "' is not configured");
             }
@@ -160,6 +168,46 @@ public final class Ragdoll {
             this.createConstraintForLink(ragdollLink);
         }
         this.setEnabled(false);
+    }
+
+    public void updateRagdoll() {
+        final TempVars vars = TempVars.get();
+
+        for (final Map.Entry<BodyPartType, RigidBody> entry : this.partRigidBodies.entrySet()) {
+            //  Get bones linked to the rigidbody.
+            final List<Bone> bodyPartBones = this.ragdollStructure.getBodyPartBones(entry.getKey());
+
+            //  Get the rigid body's transformation.
+            entry.getValue().getCenterOfMassTransform(vars.vecmathTransform);
+            Utils.transformToMatrix(vars.tempMat4x41, vars.vecmathTransform);
+
+            for (int i = 0; i < bodyPartBones.size(); i++) {
+                final Bone bone = bodyPartBones.get(i);
+                final Matrix4f boneMatrix = this.boneMatrices.get(bone.getIndex());
+                RagdollUtils.getMatrixForBone(vars.tempMat4x42, bone);
+                vars.tempMat4x41.mul(vars.tempMat4x42, vars.tempMat4x43);
+
+                vars.tempMat4x41.getTranslation(vars.vect3d1);
+                vars.tempMat4x41.getNormalizedRotation(vars.quat1);
+//                vars.vect3d1.mul(0.5f);
+
+                Utils.fromRotationTranslationScale(boneMatrix, vars.quat1, vars.vect3d1, Utils.IDENTITY_VECTOR);
+                //
+//                boneBindPos.lerp(destPos, 0.5f, destPos);
+//                boneBindRot.slerp(destRot, 0.5f, destRot);
+//
+//                final Vector3f resultPos = boneBindPos.add(destPos, vars.vect3d1);
+//                final Quaternionf resultRot = boneBindRot.mul(destRot, vars.quat1);
+//
+//                Utils.fromRotationTranslationScale(boneMatrix, resultRot, resultPos, Utils.IDENTITY_VECTOR);
+            }
+        }
+
+        vars.release();
+    }
+
+    Map<BodyPartType, RigidBody> getPartRigidBodies() {
+        return partRigidBodies;
     }
 
     public boolean isEnabled() {
@@ -183,5 +231,9 @@ public final class Ragdoll {
 
     public void setRagdollStructure(RagdollStructure ragdollStructure) {
         this.ragdollStructure = ragdollStructure;
+    }
+
+    public Map<Integer, Matrix4f> getBoneMatrices() {
+        return this.boneMatrices;
     }
 }

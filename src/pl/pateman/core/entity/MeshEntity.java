@@ -46,7 +46,7 @@ public class MeshEntity extends AbstractEntity {
         this.meshFilter.setShaderProgram(this.shaderProgram);
         this.meshFilter.buildMeshFilter();
 
-        this.animationController = new AnimationController(this.mesh);
+        this.animationController = new AnimationController(this.mesh, this);
         this.meshRenderer = new MeshRenderer(this.meshFilter, this.shaderProgram, this.animationController);
     }
 

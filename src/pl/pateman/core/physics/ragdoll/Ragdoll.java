@@ -6,9 +6,11 @@ import com.bulletphysics.dynamics.DiscreteDynamicsWorld;
 import com.bulletphysics.dynamics.RigidBody;
 import com.bulletphysics.dynamics.constraintsolver.Generic6DofConstraint;
 import org.joml.Matrix4f;
+import org.joml.Quaternionf;
 import org.joml.Vector3f;
 import pl.pateman.core.TempVars;
 import pl.pateman.core.Utils;
+import pl.pateman.core.entity.AbstractEntity;
 import pl.pateman.core.entity.EntityData;
 import pl.pateman.core.mesh.Bone;
 import pl.pateman.core.mesh.Mesh;
@@ -26,13 +28,15 @@ public final class Ragdoll {
     private DiscreteDynamicsWorld dynamicsWorld;
     private boolean enabled;
     private RagdollStructure ragdollStructure;
-    private final Map<BodyPartType, RigidBody> partRigidBodies;
+    private final Map<BodyPartType, RagdollBody> partRigidBodies;
     private final Map<Integer, Matrix4f> boneMatrices;
+    private final AbstractEntity entity;
 
-    public Ragdoll(Mesh mesh) {
-        if (mesh == null) {
+    public Ragdoll(Mesh mesh, AbstractEntity entity) {
+        if (mesh == null || entity == null) {
             throw new IllegalArgumentException();
         }
+        this.entity = entity;
         this.mesh = mesh;
         this.enabled = false;
         this.random = new Random();
@@ -110,7 +114,7 @@ public final class Ragdoll {
             rigidBody.setSleepingThresholds(1.6f, 2.5f);
             this.dynamicsWorld.addRigidBody(rigidBody);
 
-            this.partRigidBodies.put(bodyPart.getPartType(), rigidBody);
+            this.partRigidBodies.put(bodyPart.getPartType(), new RagdollBody(rigidBody, vars.quat1, vars.vect3d1));
         } else {
             throw new UnsupportedOperationException("Unsupported collider type");
         }
@@ -119,8 +123,8 @@ public final class Ragdoll {
     }
 
     private void createConstraintForLink(RagdollLink ragdollLink) {
-        final RigidBody rigidBodyA = this.partRigidBodies.get(ragdollLink.getPartA().getPartType());
-        final RigidBody rigidBodyB = this.partRigidBodies.get(ragdollLink.getPartB().getPartType());
+        final RigidBody rigidBodyA = this.partRigidBodies.get(ragdollLink.getPartA().getPartType()).getRigidBody();
+        final RigidBody rigidBodyB = this.partRigidBodies.get(ragdollLink.getPartB().getPartType()).getRigidBody();
 
         if (rigidBodyA == null || rigidBodyB == null) {
             throw new IllegalStateException("One of the body parts does not have a collider");
@@ -173,40 +177,42 @@ public final class Ragdoll {
     public void updateRagdoll() {
         final TempVars vars = TempVars.get();
 
-        for (final Map.Entry<BodyPartType, RigidBody> entry : this.partRigidBodies.entrySet()) {
+        for (final Map.Entry<BodyPartType, RagdollBody> entry : this.partRigidBodies.entrySet()) {
+            final RagdollBody ragdollBody = entry.getValue();
+
             //  Get bones linked to the rigidbody.
             final List<Bone> bodyPartBones = this.ragdollStructure.getBodyPartBones(entry.getKey());
 
             //  Get the rigid body's transformation.
-            entry.getValue().getCenterOfMassTransform(vars.vecmathTransform);
-            Utils.transformToMatrix(vars.tempMat4x41, vars.vecmathTransform);
+            final Matrix4f rigidBodyTransformMatrix = vars.tempMat4x41;
+            ragdollBody.getRigidBody().getCenterOfMassTransform(vars.vecmathTransform);
+            Utils.transformToMatrix(rigidBodyTransformMatrix, vars.vecmathTransform);
+            final Vector3f rigidBodyTranslation = rigidBodyTransformMatrix.getTranslation(vars.vect3d1);
+            final Quaternionf rigidBodyRotation = rigidBodyTransformMatrix.getNormalizedRotation(vars.quat1);
 
+            //  Iterate over the list of bones that belong to the given body part.
             for (int i = 0; i < bodyPartBones.size(); i++) {
                 final Bone bone = bodyPartBones.get(i);
-                final Matrix4f boneMatrix = this.boneMatrices.get(bone.getIndex());
-                RagdollUtils.getMatrixForBone(vars.tempMat4x42, bone);
-                vars.tempMat4x41.mul(vars.tempMat4x42, vars.tempMat4x43);
 
-                vars.tempMat4x41.getTranslation(vars.vect3d1);
-                vars.tempMat4x41.getNormalizedRotation(vars.quat1);
-//                vars.vect3d1.mul(0.5f);
+                //  Calculate the translation of the bone.
+                final Vector3f pos = rigidBodyTranslation.sub(this.entity.getTranslation(), vars.vect3d2);
+                this.entity.getRotation().invert(vars.quat2).transform(pos, pos);
+                pos.div(this.entity.getScale(), pos);
 
-                Utils.fromRotationTranslationScale(boneMatrix, vars.quat1, vars.vect3d1, Utils.IDENTITY_VECTOR);
-                //
-//                boneBindPos.lerp(destPos, 0.5f, destPos);
-//                boneBindRot.slerp(destRot, 0.5f, destRot);
-//
-//                final Vector3f resultPos = boneBindPos.add(destPos, vars.vect3d1);
-//                final Quaternionf resultRot = boneBindRot.mul(destRot, vars.quat1);
-//
-//                Utils.fromRotationTranslationScale(boneMatrix, resultRot, resultPos, Utils.IDENTITY_VECTOR);
+                //  Calculate the rotation.
+                final Quaternionf rot = rigidBodyRotation.mul(ragdollBody.getInitialRotation(), vars.quat2);
+                vars.quat3.set(this.entity.getRotation()).invert().mul(rot, rot).normalize();
+
+                //  Create the matrix.
+                Utils.fromRotationTranslationScale(this.boneMatrices.get(bone.getIndex()), rot, pos,
+                        Utils.IDENTITY_VECTOR);
             }
         }
 
         vars.release();
     }
 
-    Map<BodyPartType, RigidBody> getPartRigidBodies() {
+    Map<BodyPartType, RagdollBody> getPartRigidBodies() {
         return partRigidBodies;
     }
 
@@ -218,7 +224,7 @@ public final class Ragdoll {
         this.enabled = enabled;
 
         final int activationState = this.enabled ? CollisionObject.ACTIVE_TAG : CollisionObject.DISABLE_SIMULATION;
-        this.partRigidBodies.values().forEach(rb -> rb.forceActivationState(activationState));
+        this.partRigidBodies.values().forEach(rb -> rb.getRigidBody().forceActivationState(activationState));
     }
 
     public void setDynamicsWorld(DiscreteDynamicsWorld dynamicsWorld) {
@@ -235,5 +241,29 @@ public final class Ragdoll {
 
     public Map<Integer, Matrix4f> getBoneMatrices() {
         return this.boneMatrices;
+    }
+
+    class RagdollBody {
+        private final RigidBody rigidBody;
+        private final Quaternionf initialRotation;
+        private final Vector3f initialTranslation;
+
+        RagdollBody(RigidBody rigidBody, Quaternionf initialRotation, Vector3f initialTranslation) {
+            this.rigidBody = rigidBody;
+            this.initialRotation = new Quaternionf().set(initialRotation);
+            this.initialTranslation = new Vector3f().set(initialTranslation);
+        }
+
+        RigidBody getRigidBody() {
+            return rigidBody;
+        }
+
+        Quaternionf getInitialRotation() {
+            return initialRotation;
+        }
+
+        public Vector3f getInitialTranslation() {
+            return initialTranslation;
+        }
     }
 }

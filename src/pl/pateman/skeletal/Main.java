@@ -560,7 +560,7 @@ public class Main {
         //  Draw the physics debug.
         if (this.physicsDebug) {
             this.ragdollDebugger.drawDebug(this.camera);
-//            this.physicsDebugger.debugDrawWorld(this.camera);
+            this.physicsDebugger.debugDrawWorld(this.camera);
         }
 
         if (this.displayHelp) {

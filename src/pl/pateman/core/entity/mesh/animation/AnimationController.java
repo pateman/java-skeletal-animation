@@ -1,6 +1,7 @@
 package pl.pateman.core.entity.mesh.animation;
 
 import org.joml.Matrix4f;
+import pl.pateman.core.entity.MeshEntity;
 import pl.pateman.core.mesh.Bone;
 import pl.pateman.core.mesh.Mesh;
 import pl.pateman.core.physics.ragdoll.Ragdoll;
@@ -21,9 +22,11 @@ public final class AnimationController {
     private final List<Matrix4f> animationMatrices;
     private final Map<String, BoneAnimationChannel> animationChannels;
     private final Ragdoll ragdoll;
+    private final MeshEntity meshEntity;
 
-    public AnimationController(Mesh mesh) {
+    public AnimationController(Mesh mesh, MeshEntity meshEntity) {
         this.mesh = mesh;
+        this.meshEntity = meshEntity;
 
         //  Initialize animation matrices.
         this.animationMatrices = new ArrayList<>(this.mesh.getSkeleton().getBones().size());
@@ -32,7 +35,7 @@ public final class AnimationController {
         }
 
         this.animationChannels = new HashMap<>();
-        this.ragdoll = new Ragdoll(this.mesh);
+        this.ragdoll = new Ragdoll(this.mesh, this.meshEntity);
     }
 
     private void checkChannelNameValid(final String channelName) throws IllegalArgumentException {

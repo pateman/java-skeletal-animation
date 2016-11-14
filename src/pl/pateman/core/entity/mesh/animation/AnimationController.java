@@ -75,10 +75,13 @@ public final class AnimationController {
     }
 
     public void stepAnimation(float deltaTime) {
-        for (BoneAnimationChannel channel : this.animationChannels.values()) {
-            channel.stepAnimation(deltaTime);
+        if (!this.ragdoll.isEnabled()) {
+            for (BoneAnimationChannel channel : this.animationChannels.values()) {
+                channel.stepAnimation(deltaTime);
+            }
+        } else {
+            this.ragdoll.updateRagdoll();
         }
-        this.ragdoll.updateRagdoll();
     }
 
     public void switchToAnimation(final String animation) {

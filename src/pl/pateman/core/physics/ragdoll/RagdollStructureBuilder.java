@@ -9,6 +9,7 @@ import pl.pateman.core.mesh.Mesh;
 import pl.pateman.core.mesh.Skeleton;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * A builder for ragdolls.
@@ -19,12 +20,14 @@ public final class RagdollStructureBuilder {
     private final RagdollStructure ragdollStructure;
     private final Mesh mesh;
     private final Map<BodyPartType, Part> partMap;
+    private final Map<BodyPartType, Set<String>> pivotedBones;
     private final List<Link> linkList;
 
     public RagdollStructureBuilder(final Mesh mesh) {
         this.ragdollStructure = new RagdollStructure(mesh);
         this.mesh = mesh;
         this.partMap = new HashMap<>();
+        this.pivotedBones = new HashMap<>();
         this.linkList = new ArrayList<>();
     }
 
@@ -54,6 +57,14 @@ public final class RagdollStructureBuilder {
         for (final Link link : this.linkList) {
             this.ragdollStructure.getBodyLinks().add(new RagdollLink(bodyParts.get(link.partA),
                     bodyParts.get(link.partB), link.minLimit, link.maxLimit));
+        }
+
+        for (BodyPartType type : bodyParts.keySet()) {
+            final Set<String> boneNames = this.pivotedBones.get(type);
+            if (boneNames == null) {
+                continue;
+            }
+            this.ragdollStructure.setBodyPartPivotedBones(type, boneNames);
         }
 
         return this.ragdollStructure;
@@ -122,6 +133,49 @@ public final class RagdollStructureBuilder {
 
         this.linkList.add(newLink);
         return newLink;
+    }
+
+    /**
+     * Allows to bind bones to a particular body part without considering them as bones that make the part up. Useful
+     * for attaching dummy or redundant bones to a part (for example, one could attach finger bones to a lower arm,
+     * but the finger bones won't be considered when building the lower arm's physical representation).
+     *
+     * @param bodyPartType Part of the body to attach the bones to.
+     * @param boneNames Bones that should be attached.
+     * @return This builder.
+     */
+    public RagdollStructureBuilder pivotBonesTo(final BodyPartType bodyPartType, final String... boneNames) {
+        if (bodyPartType == null || boneNames == null || boneNames.length == 0) {
+            throw new IllegalArgumentException();
+        }
+
+        Set<String> boneNameSet = this.pivotedBones.get(bodyPartType);
+        if (boneNameSet == null) {
+            boneNameSet = new HashSet<>();
+        }
+        boneNameSet.addAll(Arrays.asList(boneNames));
+        this.pivotedBones.put(bodyPartType, boneNameSet);
+
+        return this;
+    }
+
+    /**
+     * Small utility method which returns the names of the bones which haven't been assigned to any body part.
+     *
+     * @return {@code List<String>}.
+     */
+    public List<String> getUnassignedBones() {
+        final List<String> boneNames = this.mesh.getSkeleton().getBones().
+                stream().
+                map(Bone::getName).
+                collect(Collectors.toList());
+        final Set<String> assignedBones = this.partMap.values().
+                stream().
+                flatMap(part -> part.boneNames.stream()).
+                collect(Collectors.toSet());
+
+        boneNames.removeAll(assignedBones);
+        return boneNames;
     }
 
     public final class Part {

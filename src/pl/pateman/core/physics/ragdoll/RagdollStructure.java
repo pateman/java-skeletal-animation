@@ -94,4 +94,19 @@ public final class RagdollStructure {
         this.bodyParts.get(bodyPartType).setCustomTransform(matrix4f, transformFlag);
     }
 
+    void setBodyPartPivotedBones(final BodyPartType bodyPartType, final Collection<String> boneNames) {
+        if (bodyPartType == null || boneNames == null || boneNames.isEmpty()) {
+            throw new IllegalArgumentException();
+        }
+
+        final BodyPart bodyPart = this.bodyParts.get(bodyPartType);
+        for (String boneName : boneNames) {
+            final Bone boneByName = this.mesh.getSkeleton().getBoneByName(boneName);
+            if (boneByName == null) {
+                throw new IllegalArgumentException("Unknown bone '" + boneName + "'");
+            }
+
+            bodyPart.getPivotBones().add(boneByName);
+        }
+    }
 }

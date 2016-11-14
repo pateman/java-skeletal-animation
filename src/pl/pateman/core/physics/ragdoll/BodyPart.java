@@ -15,10 +15,12 @@ final class BodyPart {
     private BodyPartCollider colliderType;
     private Matrix4f customTransform;
     private byte customTransformFlag;
+    private final List<Bone> pivotBones;
 
     BodyPart(BodyPartType partType) {
         this.partType = partType;
         this.bones = new ArrayList<>();
+        this.pivotBones = new ArrayList<>();
         this.colliderType = BodyPartCollider.BOX;
     }
 
@@ -61,6 +63,10 @@ final class BodyPart {
     void setCustomTransform(Matrix4f customTransform, byte customTransformFlag) {
         this.customTransform = customTransform;
         this.customTransformFlag = customTransformFlag;
+    }
+
+    List<Bone> getPivotBones() {
+        return pivotBones;
     }
 
     @Override

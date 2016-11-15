@@ -160,6 +160,19 @@ public final class RagdollStructureBuilder {
     }
 
     /**
+     * Makes all existing links rigid.
+     *
+     * @return This builder.
+     */
+    public RagdollStructureBuilder makeLinksRigid() {
+        this.linkList.forEach(link -> {
+            link.setMinLimit(-Utils.EPSILON, -Utils.EPSILON, -Utils.EPSILON);
+            link.setMaxLimit(Utils.EPSILON, Utils.EPSILON, Utils.EPSILON);
+        });
+        return this;
+    }
+
+    /**
      * Small utility method which returns the names of the bones which haven't been assigned to any body part.
      *
      * @return {@code List<String>}.

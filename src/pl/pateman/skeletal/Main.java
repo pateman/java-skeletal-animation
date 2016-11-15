@@ -439,6 +439,7 @@ public class Main {
                         .setMaxLimit(Utils.HALF_PI * 0.8f, Utils.EPSILON, Utils.HALF_PI * 0.6f).endLink()
                     .startLink(RIGHT_UPPER_LEG, RIGHT_LOWER_LEG)
                         .setMaxLimit(Utils.PI * 0.7f, Utils.EPSILON, Utils.EPSILON).endLink()
+                    .makeLinksRigid()
                     .build();
             ragdoll.setRagdollStructure(ragdollStructure);
             ragdoll.buildRagdoll();

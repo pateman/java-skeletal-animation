@@ -40,6 +40,11 @@ final class RagdollUtils {
         vars.release();
     }
 
+    static void getBoneOffsetComponents(final Bone bone, final Vector3f outVec, final Quaternionf outQuat) {
+        bone.getOffsetMatrix().getTranslation(outVec);
+        bone.getOffsetMatrix().getNormalizedRotation(outQuat);
+    }
+
     /**
      * Returns a {@code Collection} of all unique vertices that are influenced by the given bone.
      *

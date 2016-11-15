@@ -407,13 +407,13 @@ public class Main {
                         .setRotation(Utils.IDENTITY_QUATERNION).endPart()
                     .pivotBonesTo(LEFT_LOWER_LEG, "Bip01 L Toe0", "Bip01 L Toe0Nub")
                     .pivotBonesTo(RIGHT_LOWER_LEG, "Bip01 R Toe0", "Bip01 R Toe0Nub")
-                    .pivotBonesTo(LEFT_LOWER_ARM, "Bip01 L Finger0", "Bip01 L Finger01", "Bip01 L Finger0Nub", 
-                            "Bip01 L Finger1", "Bip01 L Finger11", "Bip01 L Finger1Nub", "Bip01 L Finger2", 
-                            "Bip01 L Finger21", "Bip01 L Finger2Nub", "Bip01 L Finger31", "Bip01 L Finger3Nub", 
-                            "Bip01 L Finger4", "Bip01 L Finger41", "Bip01 L Finger4Nub")                    
-                    .pivotBonesTo(RIGHT_LOWER_ARM, "Bip01 R Finger0", "Bip01 R Finger01", "Bip01 R Finger0Nub", 
-                            "Bip01 R Finger1", "Bip01 R Finger11", "Bip01 R Finger1Nub", "Bip01 R Finger2", 
-                            "Bip01 R Finger21", "Bip01 R Finger2Nub", "Bip01 R Finger31", "Bip01 R Finger3Nub", 
+                    .pivotBonesTo(LEFT_LOWER_ARM, "Bip01 L Finger0", "Bip01 L Finger01", "Bip01 L Finger0Nub",
+                            "Bip01 L Finger1", "Bip01 L Finger11", "Bip01 L Finger1Nub", "Bip01 L Finger2",
+                            "Bip01 L Finger21", "Bip01 L Finger2Nub", "Bip01 L Finger31", "Bip01 L Finger3Nub",
+                            "Bip01 L Finger4", "Bip01 L Finger41", "Bip01 L Finger4Nub")
+                    .pivotBonesTo(RIGHT_LOWER_ARM, "Bip01 R Finger0", "Bip01 R Finger01", "Bip01 R Finger0Nub",
+                            "Bip01 R Finger1", "Bip01 R Finger11", "Bip01 R Finger1Nub", "Bip01 R Finger2",
+                            "Bip01 R Finger21", "Bip01 R Finger2Nub", "Bip01 R Finger31", "Bip01 R Finger3Nub",
                             "Bip01 R Finger4", "Bip01 R Finger41", "Bip01 R Finger4Nub")
                     .pivotBonesTo(CHEST, "Bip01")
                     .startLink(HEAD, CHEST)

@@ -542,7 +542,10 @@ public class Main {
                 final Bone bone = meshEntity.getMesh().getSkeleton().getBone(i);
                 final Matrix4f boneMatrix = tempVars.boneMatricesList.get(i).set(boneMatrices.get(i));
 
-                boneMatrix.mul(bone.getInverseBindMatrix(), boneMatrix);
+                //  If we're running ragdoll, don't multiply the bone matrix by the inverse bind matrix.
+                if (!meshEntity.getAnimationController().getRagdoll().isEnabled()) {
+                    boneMatrix.mul(bone.getInverseBindMatrix(), boneMatrix);
+                }
             }
             program.setUniformMatrix4Array(Utils.BONES_UNIFORM, tempVars.boneMatricesList.size(),
                     Utils.matrices4fToBuffer(tempVars.boneMatricesList));

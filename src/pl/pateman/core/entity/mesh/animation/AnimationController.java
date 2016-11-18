@@ -99,10 +99,6 @@ public final class AnimationController {
     }
 
     public List<Matrix4f> getAnimationMatrices() {
-        if (!this.ragdoll.isEnabled()) {
-            return this.animationMatrices;
-        }
-
-        return new ArrayList<>(this.ragdoll.getBoneMatrices().values());
+        return this.animationMatrices;
     }
 }

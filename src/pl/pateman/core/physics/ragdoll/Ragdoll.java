@@ -199,7 +199,7 @@ public final class Ragdoll {
         }
 
         this.mesh.getSkeleton().getBones().forEach(bone -> this.boneMatrices.put(bone.getIndex(),
-                new Matrix4f().set(bone.getWorldBindMatrix())));
+                bone.getOffsetMatrix()));
 
         for (final RagdollLink ragdollLink : this.ragdollStructure.getBodyLinks()) {
             this.createConstraintForLink(ragdollLink);
@@ -210,30 +210,14 @@ public final class Ragdoll {
     public void updateRagdoll() {
         final TempVars vars = TempVars.get();
 
+        final Matrix4f invEntityTM = this.entity.getTransformation().invert(vars.tempMat4x41);
         for (final RagdollBody ragdollBody : this.partRigidBodies.values()) {
-//            ragdollBody.getRigidBody().getCenterOfMassTransform(vars.vecmathTransform);
-//            final Quaternionf bodyRot = Utils.convert(new Quaternionf(), vars.vecmathTransform.getRotation(vars.vecmathQuat));
-//
-//            final Vector3f bodyPos = Utils.convert(new Vector3f(), vars.vecmathTransform.origin);
-//            bodyPos.sub(this.offset, bodyPos);
-//
-//            ragdollBody.getInitialRotation().invert(vars.quat3);
-
-            for (Bone bone : ragdollBody.getAssignedBones()) {
+            for (final Bone bone : ragdollBody.getAssignedBones()) {
                 ragdollBody.getTransformedBone(bone, vars.vect3d1, vars.quat1);
 
                 final Matrix4f boneMatrix = this.boneMatrices.get(bone.getIndex());
-//                if (ragdollBody.bodyPartType.equals(BodyPartType.LEFT_LOWER_ARM)) {
                 Utils.fromRotationTranslationScale(boneMatrix, vars.quat1, vars.vect3d1, bone.getBindScale());
-//
-//                    this.entity.getRotation().invert(vars.quat2).mul(bodyRot, vars.quat1).mul(vars.quat3, vars.quat1).
-//                            mul(ragdollBody.getInitialBoneRotation(bone, vars.quat2), vars.quat1);
-//
-//                    Utils.fromRotationTranslationScale(vars.tempMat4x41, vars.quat1, bodyPos, Utils.IDENTITY_VECTOR);
-//                    boneMatrix.mul(vars.tempMat4x41);
-//                } else {
-//                    boneMatrix.set(bone.getWorldBindMatrix());
-//                }
+                invEntityTM.mul(boneMatrix, boneMatrix);
             }
         }
 
@@ -242,6 +226,10 @@ public final class Ragdoll {
 
     Map<Integer, RagdollBody> getPartRigidBodies() {
         return partRigidBodies;
+    }
+
+    AbstractEntity getEntity() {
+        return this.entity;
     }
 
     public boolean isEnabled() {
@@ -267,7 +255,7 @@ public final class Ragdoll {
         this.dynamicsWorld = dynamicsWorld;
     }
 
-    public RagdollStructure getRagdollStructure() {
+    RagdollStructure getRagdollStructure() {
         return ragdollStructure;
     }
 

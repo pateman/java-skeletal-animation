@@ -62,10 +62,15 @@ public final class RagdollDebugger implements Clearable {
     }
 
     public void updateDebug() {
+        final TempVars vars = TempVars.get();
+
+        final Matrix4f invEntityTM = this.ragdoll.getEntity().getTransformation().invert(vars.tempMat4x41);
         for (Map.Entry<Integer, Matrix4f> entry : this.ragdoll.getBoneMatrices().entrySet()) {
             final Point3D point = this.point3DRenderer.getPoint(this.boneToPointMap.get(entry.getKey()));
-            entry.getValue().getTranslation(point.getPosition());
+            invEntityTM.mul(entry.getValue(), vars.tempMat4x42).getTranslation(point.getPosition());
         }
+
+        vars.release();
         this.point3DRenderer.forceDirty();
     }
 

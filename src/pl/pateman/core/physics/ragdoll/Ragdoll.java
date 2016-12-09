@@ -31,7 +31,6 @@ public final class Ragdoll {
     private final Map<Integer, RagdollBody> partRigidBodies;
     private final Map<Integer, Matrix4f> boneMatrices;
     private final AbstractEntity entity;
-    private final Vector3f offset;
 
     public Ragdoll(Mesh mesh, AbstractEntity entity) {
         if (mesh == null || entity == null) {
@@ -44,7 +43,6 @@ public final class Ragdoll {
         this.partRigidBodies = new TreeMap<>();
 
         this.boneMatrices = new TreeMap<>();
-        this.offset = new Vector3f();
     }
 
     private void createColliderForBodyPart(final BodyPart bodyPart) {
@@ -241,11 +239,6 @@ public final class Ragdoll {
 
         final int activationState = this.enabled ? CollisionObject.ACTIVE_TAG : CollisionObject.DISABLE_SIMULATION;
         if (this.enabled) {
-            final Vector3f outVec = new Vector3f();
-            final Quaternionf outQuat = new Quaternionf();
-            RagdollUtils.getBoneOffsetComponents(this.mesh.getSkeleton().getRootBone(), outVec, outQuat);
-
-            this.entity.getRotation().transform(outVec, this.offset).mul(this.entity.getScale(), this.offset);
             this.alignRagdollToModel();
         }
         this.partRigidBodies.values().forEach(rb -> rb.getRigidBody().forceActivationState(activationState));
@@ -293,8 +286,8 @@ public final class Ragdoll {
 
             RagdollUtils.getMatrixForBone(vars.tempMat4x41, bone);
 
-            final Vector3f boneTranslation = vars.tempMat4x41.getTranslation(vars.vect3d1);
-            invRigidBodyTransform.transformPosition(boneTranslation, transformComponents.getTranslation());
+            invRigidBodyTransform.mul(vars.tempMat4x41, vars.tempMat4x41);
+            vars.tempMat4x41.getTranslation(transformComponents.getTranslation());
             vars.tempMat4x41.getNormalizedRotation(transformComponents.getRotation());
 
             this.initialBoneTransforms.put(bone.getIndex(), transformComponents);
@@ -318,11 +311,11 @@ public final class Ragdoll {
             final TransformComponents initialTrans = this.initialBoneTransforms.get(bone.getIndex());
 
             Utils.transformToMatrix(vars.tempMat4x41, this.rigidBody.getCenterOfMassTransform(vars.vecmathTransform));
-            Utils.convert(vars.quat1, vars.vecmathTransform.getRotation(vars.vecmathQuat));
+            vars.tempMat4x41.getNormalizedRotation(vars.quat1);
             vars.tempMat4x41.transformPosition(initialTrans.getTranslation(), outVec);
 
-            final Quaternionf rot = this.initialRotation.invert(vars.quat2).mul(vars.quat1, vars.quat1);
-            initialTrans.getRotation().mul(rot, outQuat);
+            final Quaternionf diff = this.initialRotation.difference(vars.quat1, vars.quat1);
+            initialTrans.getRotation().mul(diff, outQuat);
 
             vars.release();
         }

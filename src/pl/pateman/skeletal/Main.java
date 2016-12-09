@@ -545,8 +545,28 @@ public class Main {
                 //  If we're running ragdoll, don't multiply the bone matrix by the inverse bind matrix.
                 if (!meshEntity.getAnimationController().getRagdoll().isEnabled()) {
                     boneMatrix.mul(bone.getInverseBindMatrix(), boneMatrix);
+                    boneMatrix.getNormalizedRotation(tempVars.quat1);
+                    tempVars.quat1.getEulerAnglesXYZ(tempVars.vect3d1);
+                    tempVars.vect3d1.set(
+                            (float) Math.toDegrees(tempVars.vect3d1.x),
+                            (float) Math.toDegrees(tempVars.vect3d1.y),
+                            (float) Math.toDegrees(tempVars.vect3d1.z));
+//                    System.out.printf("Bone %s - %s\n", bone.getName(),
+//                            tempVars.vect3d1.toString(new DecimalFormat("0.00000000")));
+
+                } else {
+                    boneMatrix.getNormalizedRotation(tempVars.quat1);
+                    tempVars.quat1.getEulerAnglesXYZ(tempVars.vect3d1);
+                    tempVars.vect3d1.set(
+                            (float) Math.toDegrees(tempVars.vect3d1.x),
+                            (float) Math.toDegrees(tempVars.vect3d1.y),
+                            (float) Math.toDegrees(tempVars.vect3d1.z));
+//                    System.out.printf("RagdollBone %s - %s\n", bone.getName(),
+//                            tempVars.vect3d1.toString(new DecimalFormat("0.00000000")));
                 }
             }
+
+//            System.out.println(" ");
             program.setUniformMatrix4Array(Utils.BONES_UNIFORM, tempVars.boneMatricesList.size(),
                     Utils.matrices4fToBuffer(tempVars.boneMatricesList));
         } else {

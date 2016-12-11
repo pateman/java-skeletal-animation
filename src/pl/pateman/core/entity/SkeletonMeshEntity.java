@@ -3,6 +3,7 @@ package pl.pateman.core.entity;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
+import org.joml.Vector4f;
 import org.lwjgl.opengl.GL20;
 import pl.pateman.core.TempVars;
 import pl.pateman.core.Utils;
@@ -20,15 +21,15 @@ import java.util.List;
  * Created by pateman.
  */
 public class SkeletonMeshEntity extends AbstractEntity {
-    public static final Vector3f BONE_SCALING = new Vector3f(0.1f, 0.1f, 0.1f);
-
     private final Skeleton skeleton;
-    private final List<CubeMeshEntity> joints;
+    private final List<SkeletonJoint> joints;
     private Program meshProgram;
+    private final Vector3f boneScaling;
 
     public SkeletonMeshEntity(Skeleton skeleton) {
         this.skeleton = skeleton;
         this.joints = new ArrayList<>(this.skeleton.getBones().size());
+        this.boneScaling = new Vector3f(0.1f, 0.1f, 0.1f);
         this.buildJointMeshes();
     }
 
@@ -74,14 +75,32 @@ public class SkeletonMeshEntity extends AbstractEntity {
             jointMeshEntity.buildMesh();
 
             this.getQuaternionAndTranslationFromMatrix(bone.getWorldBindMatrix(), rotation, translation);
-            jointMeshEntity.setTransformation(rotation, translation, BONE_SCALING);
+            jointMeshEntity.setTransformation(rotation, translation, this.boneScaling);
 
-            this.joints.add(jointMeshEntity);
+            final SkeletonJoint skeletonJoint = new SkeletonJoint(jointMeshEntity, bone);
+            this.joints.add(skeletonJoint);
         }
     }
 
     public Skeleton getSkeleton() {
         return skeleton;
+    }
+
+    public Vector3f getBoneScaling() {
+        return boneScaling;
+    }
+
+    public void setJointColor(final String boneName, final Vector4f newColor) {
+        if (boneName == null || boneName.isEmpty() || newColor == null) {
+            throw new IllegalArgumentException();
+        }
+
+        for (SkeletonJoint joint : this.joints) {
+            if (joint.getRelatedBone().getName().equals(boneName)) {
+                joint.getJointColor().set(newColor);
+                return;
+            }
+        }
     }
 
     public void applyAnimation(final List<Matrix4f> animationMatrices) {
@@ -90,10 +109,10 @@ public class SkeletonMeshEntity extends AbstractEntity {
         final Quaternionf rotation = tempVars.quat1;
 
         for (int i = 0; i < this.joints.size(); i++) {
-            final CubeMeshEntity joint = this.joints.get(i);
+            final CubeMeshEntity joint = this.joints.get(i).getCubeMeshEntity();
 
             this.getQuaternionAndTranslationFromMatrix(animationMatrices.get(i), rotation, translation);
-            joint.setTransformation(rotation, translation, BONE_SCALING);
+            joint.setTransformation(rotation, translation, this.boneScaling);
         }
 
         tempVars.release();
@@ -105,11 +124,11 @@ public class SkeletonMeshEntity extends AbstractEntity {
         final Matrix4f worldTrans = tempVars.tempMat4x41;
         final Matrix4f modelViewMatrix = tempVars.tempMat4x42;
 
-        for (CubeMeshEntity joint : this.joints) {
-            final MeshRenderer meshRenderer = joint.getMeshRenderer();
+        for (SkeletonJoint joint : this.joints) {
+            final MeshRenderer meshRenderer = joint.getCubeMeshEntity().getMeshRenderer();
             meshRenderer.initializeRendering();
 
-            this.getTransformation().mul(joint.getTransformation(), worldTrans);
+            this.getTransformation().mul(joint.getCubeMeshEntity().getTransformation(), worldTrans);
 
             //  Prepare the model-view matrix.
             camera.getViewMatrix().mul(worldTrans, modelViewMatrix);
@@ -119,7 +138,8 @@ public class SkeletonMeshEntity extends AbstractEntity {
                     getProjectionMatrix()));
             this.meshProgram.setUniform3(Utils.CAMERADIRECTION_UNIFORM, camera.getDirection().x,
                     camera.getDirection().y, camera.getDirection().z);
-            this.meshProgram.setUniform4(Utils.DIFFUSECOLOR_UNIFORM, 0.8f, 0.8f, 0.8f, 1.0f);
+            this.meshProgram.setUniform4(Utils.DIFFUSECOLOR_UNIFORM, joint.getJointColor().x, joint.getJointColor().y,
+                    joint.getJointColor().z, joint.getJointColor().w);
             this.meshProgram.setUniform1(Utils.USESKINNING_UNIFORM, 0);
             this.meshProgram.setUniform1(Utils.USETEXTURING_UNIFORM, 0);
             this.meshProgram.setUniform1(Utils.USELIGHTING_UNIFORM, 1);
@@ -131,4 +151,27 @@ public class SkeletonMeshEntity extends AbstractEntity {
         tempVars.release();
     }
 
+    private class SkeletonJoint {
+        private final CubeMeshEntity cubeMeshEntity;
+        private final Bone relatedBone;
+        private final Vector4f jointColor;
+
+        SkeletonJoint(CubeMeshEntity cubeMeshEntity, Bone relatedBone) {
+            this.cubeMeshEntity = cubeMeshEntity;
+            this.relatedBone = relatedBone;
+            this.jointColor = new Vector4f(0.8f, 0.8f, 0.8f, 1.0f);
+        }
+
+        CubeMeshEntity getCubeMeshEntity() {
+            return cubeMeshEntity;
+        }
+
+        Bone getRelatedBone() {
+            return relatedBone;
+        }
+
+        Vector4f getJointColor() {
+            return jointColor;
+        }
+    }
 }

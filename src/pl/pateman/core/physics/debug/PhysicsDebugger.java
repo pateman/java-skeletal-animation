@@ -17,6 +17,7 @@ import pl.pateman.core.entity.MeshEntity;
 import pl.pateman.core.entity.mesh.MeshRenderer;
 import pl.pateman.core.mesh.Mesh;
 import pl.pateman.core.entity.EntityData;
+import pl.pateman.core.point.Point3DRenderer;
 import pl.pateman.core.shader.Program;
 import pl.pateman.core.shader.Shader;
 
@@ -33,12 +34,15 @@ public final class PhysicsDebugger implements Clearable {
     private final DynamicsWorld dynamicsWorld;
     private final Map<Long, MeshEntity> debugEntities;
     private Program debugShaderProgram;
+    private final Point3DRenderer point3DRenderer;
+    private final Map<Long, Integer> debugEntityToPoint;
 
     private final Vector4f activeColor = new Vector4f(1.0f, 1.0f, 1.0f, 1.0f);
     private final Vector4f sleepingColor = new Vector4f(0.0f, 1.0f, 0.0f, 1.0f);
     private final Vector4f wantsDeactivationColor = new Vector4f(0.0f, 1.0f, 1.0f, 1.0f);
     private final Vector4f disableDeactivationColor = new Vector4f(1.0f, 0.0f, 0.0f, 1.0f);
     private final Vector4f disableSimulationColor = new Vector4f(1.0f, 1.0f, 0.0f, 1.0f);
+    private final Vector4f centerOfMassColor = new Vector4f(0.61f, 0.54f, 0.9f, 1.0f);
 
     public PhysicsDebugger(final DynamicsWorld dynamicsWorld) {
         this.dynamicsWorld = dynamicsWorld;
@@ -46,6 +50,8 @@ public final class PhysicsDebugger implements Clearable {
             throw new IllegalArgumentException();
         }
         this.debugEntities = new HashMap<>();
+        this.point3DRenderer = new Point3DRenderer();
+        this.debugEntityToPoint = new HashMap<>();
         this.createDebugProgram();
     }
 
@@ -80,7 +86,11 @@ public final class PhysicsDebugger implements Clearable {
             //  entities.
             if (!remainingDebugEntityIDs.contains(entityId)) {
                 debugMeshFromRigidBody = this.createDebugMeshFromEntityData(entityData, rigidBody);
+                final int pointIdx = this.point3DRenderer.addPoint(Utils.IDENTITY_VECTOR, this.centerOfMassColor,
+                        10.0f);
+
                 this.debugEntities.put(entityId, debugMeshFromRigidBody);
+                this.debugEntityToPoint.put(entityId, pointIdx);
             } else {
                 debugMeshFromRigidBody = this.debugEntities.get(entityId);
                 remainingDebugEntityIDs.remove(entityId);
@@ -96,19 +106,32 @@ public final class PhysicsDebugger implements Clearable {
             final Vector3f scale = Utils.convert(tempVars.vect3d2, tempVars.vecmathVect3d1);
 
             debugMeshFromRigidBody.setTransformation(rotation, position, scale);
+
+            //  Update the center of mass point's transformation.
+            final Integer pointIdx = this.debugEntityToPoint.get(entityId);
+            this.point3DRenderer.getPoint(pointIdx).getPosition().set(position);
         }
         tempVars.release();
 
         //  If the set is not empty, remove the obsolete debug entities.
         if (!remainingDebugEntityIDs.isEmpty()) {
-            remainingDebugEntityIDs.forEach(this.debugEntities::remove);
+            remainingDebugEntityIDs.forEach(x -> {
+                this.debugEntities.remove(x);
+                final Integer removedPoint = this.debugEntityToPoint.remove(x);
+                this.point3DRenderer.removePoint(removedPoint);
+            });
         }
+
+        this.point3DRenderer.forceDirty();
     }
 
     public void debugDrawWorld(final CameraEntity camera) {
         if (camera == null) {
             throw new IllegalArgumentException("A valid camera needs to be provided");
         }
+
+        //  Draw the center of masses.
+        this.point3DRenderer.drawPoints(camera);
 
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
@@ -174,6 +197,10 @@ public final class PhysicsDebugger implements Clearable {
 
     public Vector4f getDisableSimulationColor() {
         return disableSimulationColor;
+    }
+
+    public Vector4f getCenterOfMassColor() {
+        return centerOfMassColor;
     }
 
     private List<CollisionObject> getCollisionObjects() {

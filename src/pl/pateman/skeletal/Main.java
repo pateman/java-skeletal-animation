@@ -350,6 +350,16 @@ public class Main {
             this.skeletonMeshEntity = new SkeletonMeshEntity(this.meshEntity.getMesh().getSkeleton());
             this.skeletonMeshEntity.translate(-0.25f, 0.0f, 0.0f);
             this.skeletonMeshEntity.rotate(0.0f, (float) Math.toRadians(180.0f), 0.0f);
+            this.skeletonMeshEntity.setJointColor("Bip01 L Thigh", new Vector4f(0.78f, 0.98f, 1.0f, 1.0f));
+            this.skeletonMeshEntity.setJointColor("Bip01 L Calf", new Vector4f(0.74f, 0.53f, 0.37f, 1.0f));
+            this.skeletonMeshEntity.setJointColor("Bip01 R Thigh", new Vector4f(0.58f, 0.27f, 0.64f, 1.0f));
+            this.skeletonMeshEntity.setJointColor("Bip01 R Calf", new Vector4f(0.53f, 0.18f, 0.36f, 1.0f));
+            this.skeletonMeshEntity.setJointColor("Bip01 Neck", new Vector4f(0.88f, 0.78f, 0.88f, 1.0f));
+            this.skeletonMeshEntity.setJointColor("Bip01 HeadNub", new Vector4f(0.47f, 0.83f, 0.22f, 1.0f));
+            this.skeletonMeshEntity.setJointColor("Bip01 L Clavicle", new Vector4f(0.93f, 0.15f, 0.95f, 1.0f));
+            this.skeletonMeshEntity.setJointColor("Bip01 L Forearm", new Vector4f(0.95f, 0.03f, 0.63f, 1.0f));
+            this.skeletonMeshEntity.setJointColor("Bip01 R Clavicle", new Vector4f(0.59f, 0.68f, 0.56f, 1.0f));
+            this.skeletonMeshEntity.setJointColor("Bip01 R Forearm", new Vector4f(0.85f, 0.69f, 0.19f, 1.0f));
 
             //  Setup the camera.
             this.camera = new CameraEntity();
@@ -542,31 +552,9 @@ public class Main {
                 final Bone bone = meshEntity.getMesh().getSkeleton().getBone(i);
                 final Matrix4f boneMatrix = tempVars.boneMatricesList.get(i).set(boneMatrices.get(i));
 
-                //  If we're running ragdoll, don't multiply the bone matrix by the inverse bind matrix.
-                if (!meshEntity.getAnimationController().getRagdoll().isEnabled()) {
-                    boneMatrix.mul(bone.getInverseBindMatrix(), boneMatrix);
-                    boneMatrix.getNormalizedRotation(tempVars.quat1);
-                    tempVars.quat1.getEulerAnglesXYZ(tempVars.vect3d1);
-                    tempVars.vect3d1.set(
-                            (float) Math.toDegrees(tempVars.vect3d1.x),
-                            (float) Math.toDegrees(tempVars.vect3d1.y),
-                            (float) Math.toDegrees(tempVars.vect3d1.z));
-//                    System.out.printf("Bone %s - %s\n", bone.getName(),
-//                            tempVars.vect3d1.toString(new DecimalFormat("0.00000000")));
-
-                } else {
-                    boneMatrix.getNormalizedRotation(tempVars.quat1);
-                    tempVars.quat1.getEulerAnglesXYZ(tempVars.vect3d1);
-                    tempVars.vect3d1.set(
-                            (float) Math.toDegrees(tempVars.vect3d1.x),
-                            (float) Math.toDegrees(tempVars.vect3d1.y),
-                            (float) Math.toDegrees(tempVars.vect3d1.z));
-//                    System.out.printf("RagdollBone %s - %s\n", bone.getName(),
-//                            tempVars.vect3d1.toString(new DecimalFormat("0.00000000")));
-                }
+                boneMatrix.mul(bone.getInverseBindMatrix(), boneMatrix);
             }
 
-//            System.out.println(" ");
             program.setUniformMatrix4Array(Utils.BONES_UNIFORM, tempVars.boneMatricesList.size(),
                     Utils.matrices4fToBuffer(tempVars.boneMatricesList));
         } else {

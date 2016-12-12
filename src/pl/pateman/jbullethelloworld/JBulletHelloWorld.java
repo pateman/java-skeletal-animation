@@ -43,6 +43,7 @@ public class JBulletHelloWorld {
     private static final float SPHERE_RADIUS = 1.0f;
     private static final String GROUND_ENTITY_NAME = "ground";
     private static final String BANANA_ENTITY_NAME = "banana";
+    private static final String CUBE_1_ENTITY_NAME = "Cube1";
 
     private GLFWErrorCallback errorCallback;
     private GLFWKeyCallback keyCallback;
@@ -94,9 +95,22 @@ public class JBulletHelloWorld {
         }
 
         glfwSetKeyCallback(this.window, this.keyCallback = new GLFWKeyCallback() {
+            private void getMovementVector(final Vector3f direction, final AbstractEntity entity,
+                                           final javax.vecmath.Vector3f out) {
+                final TempVars vars = TempVars.get();
+
+                direction.mul(entity.getTransformation().get3x3(vars.tempMat3x3), vars.vect3d1);
+                vars.vect3d1.normalize().mul(2f);
+                Utils.convert(out, vars.vect3d1);
+
+                vars.release();
+            }
+
             @Override
             public void invoke(long window, int key, int scancode, int action, int mods) {
                 if (action == GLFW_RELEASE) {
+                    final TempVars vars = TempVars.get();
+                    AbstractEntity entity;
                     switch (key) {
                         //  Escape key.
                         case GLFW_KEY_ESCAPE:
@@ -122,7 +136,36 @@ public class JBulletHelloWorld {
                             sphereBody.applyImpulse(new javax.vecmath.Vector3f(0.0f, SPHERE_RADIUS * 3.0f, 0.0f),
                                     new javax.vecmath.Vector3f(0.0f, -SPHERE_RADIUS, 0.0f));
                             break;
+                        //  Up arrow.
+                        case GLFW_KEY_UP:
+                            entity = JBulletHelloWorld.this.scene.getEntity(CUBE_1_ENTITY_NAME);
+                            this.getMovementVector(Utils.AXIS_Z, entity, vars.vecmathVect3d1);
+                            entity.getRigidBody().applyCentralImpulse(vars.vecmathVect3d1);
+
+                            break;
+                        //  Down arrow.
+                        case GLFW_KEY_DOWN:
+                            entity = JBulletHelloWorld.this.scene.getEntity(CUBE_1_ENTITY_NAME);
+                            this.getMovementVector(Utils.NEG_AXIS_Z, entity, vars.vecmathVect3d1);
+                            entity.getRigidBody().applyCentralImpulse(vars.vecmathVect3d1);
+
+                            break;
+                        //  Left arrow.
+                        case GLFW_KEY_LEFT:
+                            entity = JBulletHelloWorld.this.scene.getEntity(CUBE_1_ENTITY_NAME);
+                            this.getMovementVector(Utils.AXIS_X, entity, vars.vecmathVect3d1);
+                            entity.getRigidBody().applyCentralImpulse(vars.vecmathVect3d1);
+
+                            break;
+                        //  Down arrow.
+                        case GLFW_KEY_RIGHT:
+                            entity = JBulletHelloWorld.this.scene.getEntity(CUBE_1_ENTITY_NAME);
+                            this.getMovementVector(Utils.NEG_AXIS_X, entity, vars.vecmathVect3d1);
+                            entity.getRigidBody().applyCentralImpulse(vars.vecmathVect3d1);
+
+                            break;
                     }
+                    vars.release();
                 }
             }
         });
@@ -210,6 +253,19 @@ public class JBulletHelloWorld {
         this.scene.updateScene(this.deltaTime);
     }
 
+    private MeshEntity createCube(final String cubeName, final Vector3f translation, final Vector4f color) {
+        final CubeMeshEntity cube1 = this.scene.addEntity(new CubeMeshEntity(cubeName, 1.0f));
+        cube1.setTranslation(translation);
+        cube1.setShaderProgram(this.program);
+        cube1.buildMesh();
+
+        final BoxShape boxShape = new BoxShape(new javax.vecmath.Vector3f(1.0f, 1f, 1.0f));
+        cube1.createRigidBody(boxShape, 1.0f);
+        this.setEntityLightingParams(cube1, color);
+
+        return cube1;
+    }
+
     private void initScene() {
         try {
             final Shader vertexShader = new Shader(GL20.GL_VERTEX_SHADER);
@@ -276,15 +332,22 @@ public class JBulletHelloWorld {
             this.scene.addEntity(bananaMesh);
             this.setEntityLightingParams(bananaMesh, new Vector4f(1.0f, 1.0f, 0.2f, 1.0f));
 
+            final MeshEntity cube1 = this.createCube(CUBE_1_ENTITY_NAME, new Vector3f(-5.0f, -1.0f, -3.0f), new Vector4f(1.0f, 0.0f, 0.0f, 1.0f));
+            final MeshEntity cube2 = this.createCube("Cube2", new Vector3f(-8.0f, -1.0f, -3.0f), new Vector4f(1.0f, 0.0f, 1.0f, 1.0f));
+
             //  Add the objects to the physics world.
             this.scene.addEntityToPhysicsWorld(GROUND_ENTITY_NAME);
             this.scene.addEntityToPhysicsWorld(SPHERE_ENTITY_NAME);
             this.scene.addEntityToPhysicsWorld(BANANA_ENTITY_NAME);
+            this.scene.addEntityToPhysicsWorld(CUBE_1_ENTITY_NAME);
+            this.scene.addEntityToPhysicsWorld("Cube2");
 
             //  Set collision groups and mask. Note that setting groups/masks is possible AFTER an entity has been
             //  added to the physics world.
             sphere.setCollisionGroup(COLLISION_GROUP_02);
             bananaMesh.setCollisionGroup(COLLISION_GROUP_02);
+            cube1.setCollisionGroup(COLLISION_GROUP_02);
+            cube2.setCollisionGroup(COLLISION_GROUP_02);
             ground.setCollisionMask(COLLISION_GROUP_02);
 
             //  Setup the camera.

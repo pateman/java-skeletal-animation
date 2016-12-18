@@ -394,24 +394,22 @@ public class Main {
                     .startPart(HEAD)
                         .addBones("Bip01 HeadNub", "Bip01 Head", "Bip01 Neck").endPart()
                     .startPart(CHEST)
-                        .addBones("Bip01 Neck", "Bip01 Spine", "Bip01 R Clavicle", "Bip01 L Clavicle",
-                            "Bip01 R UpperArm", "Bip01 L UpperArm", "Bip01 Spine1", "Bip01 R Thigh", "Bip01 L Thigh",
-                            "Bip01 Pelvis").endPart()
+                        .addBones("Bip01 Spine", "Bip01 Spine1", "Bip01 Pelvis").endPart()
                     .startPart(LEFT_UPPER_ARM)
-                        .addBones("Bip01 L Clavicle", "Bip01 L UpperArm", "Bip01 L Forearm").endPart()
+                        .addBones("Bip01 L UpperArm").endPart()
                     .startPart(LEFT_LOWER_ARM)
                         .addBones("Bip01 L Forearm", "Bip01 L Hand", "Bip01 L Finger3").endPart()
                     .startPart(RIGHT_UPPER_ARM)
-                        .addBones("Bip01 R Clavicle", "Bip01 R UpperArm", "Bip01 R Forearm").endPart()
+                        .addBones("Bip01 R UpperArm").endPart()
                     .startPart(RIGHT_LOWER_ARM)
                         .addBones("Bip01 R Forearm", "Bip01 R Hand", "Bip01 R Finger3").endPart()
                     .startPart(LEFT_UPPER_LEG)
-                        .addBones("Bip01 L Thigh", "Bip01 L Calf").endPart()
+                        .addBones("Bip01 L Thigh").endPart()
                     .startPart(LEFT_LOWER_LEG)
                         .addBones("Bip01 L Calf", "Bip01 L Foot")
                         .setRotation(Utils.IDENTITY_QUATERNION).endPart()
                     .startPart(RIGHT_UPPER_LEG)
-                        .addBones("Bip01 R Thigh", "Bip01 R Calf").endPart()
+                        .addBones("Bip01 R Thigh").endPart()
                     .startPart(RIGHT_LOWER_LEG)
                         .addBones("Bip01 R Calf", "Bip01 R Foot")
                         .setRotation(Utils.IDENTITY_QUATERNION).endPart()
@@ -425,8 +423,8 @@ public class Main {
                             "Bip01 R Finger1", "Bip01 R Finger11", "Bip01 R Finger1Nub", "Bip01 R Finger2",
                             "Bip01 R Finger21", "Bip01 R Finger2Nub", "Bip01 R Finger31", "Bip01 R Finger3Nub",
                             "Bip01 R Finger4", "Bip01 R Finger41", "Bip01 R Finger4Nub")
-                    .pivotBonesTo(CHEST, "Bip01")
-                    .startLink(HEAD, CHEST)
+                    .pivotBonesTo(CHEST, "Bip01", "Bip01 R Clavicle", "Bip01 L Clavicle")
+                    .startLink(CHEST, HEAD)
                         .setMinLimit(-Utils.QUARTER_PI, -Utils.QUARTER_PI, -Utils.QUARTER_PI)
                         .setMaxLimit(Utils.QUARTER_PI, Utils.QUARTER_PI, Utils.QUARTER_PI).endLink()
                     .startLink(CHEST, LEFT_UPPER_ARM)
@@ -485,7 +483,7 @@ public class Main {
         this.lastTime = currentTime;
 
         if (this.physicsSimulation) {
-            this.dynamicsWorld.stepSimulation(this.deltaTime, 4);
+            this.dynamicsWorld.stepSimulation(this.deltaTime, 10);
 
             //  After stepping the physics simulation, update graphical representations of objects.
             final TempVars tempVars = TempVars.get();
@@ -543,7 +541,7 @@ public class Main {
         program.setUniformMatrix4(Utils.PROJECTION_UNIFORM, Utils.matrix4fToBuffer(camera.getProjectionMatrix()));
         program.setUniform1(Utils.TEXTURE_UNIFORM, 0);
         program.setUniform1(Utils.USETEXTURING_UNIFORM, useTexturing);
-        program.setUniform1(Utils.USELIGHTING_UNIFORM, 1);
+        program.setUniform1(Utils.USELIGHTING_UNIFORM, 0);
         program.setUniform4(Utils.DIFFUSECOLOR_UNIFORM, diffuseColor.x, diffuseColor.y, diffuseColor.z, diffuseColor.w);
         program.setUniform3(Utils.CAMERADIRECTION_UNIFORM, 0.0f, 0.0f, 1.0f);
         if (meshEntity.getMesh().hasSkeleton()) {

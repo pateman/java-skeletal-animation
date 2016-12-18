@@ -7,6 +7,7 @@ import com.bulletphysics.collision.dispatch.DefaultCollisionConfiguration;
 import com.bulletphysics.dynamics.DiscreteDynamicsWorld;
 import com.bulletphysics.dynamics.DynamicsWorld;
 import com.bulletphysics.dynamics.constraintsolver.SequentialImpulseConstraintSolver;
+import com.bulletphysics.dynamics.constraintsolver.TypedConstraint;
 import com.bulletphysics.linearmath.Transform;
 import pl.pateman.core.Clearable;
 import pl.pateman.core.TempVars;
@@ -79,6 +80,19 @@ public final class JBulletHelloWorldScene implements Iterable<AbstractEntity>, C
 
     public <T> T getEntityParameter(final String entity, final String parameter) {
         return (T) this.parameters.get(entity).get(parameter);
+    }
+
+    public int addConstraint(final TypedConstraint constraint, boolean disableCollisionsBetweenBodies) {
+        if (constraint == null) {
+            throw new IllegalArgumentException();
+        }
+
+        this.dynamicsWorld.addConstraint(constraint, disableCollisionsBetweenBodies);
+        return this.dynamicsWorld.getNumConstraints() - 1;
+    }
+
+    public <T extends TypedConstraint> T getConstraint(final int idx) {
+        return (T) this.dynamicsWorld.getConstraint(idx);
     }
 
     public void updateScene(float deltaTime) {

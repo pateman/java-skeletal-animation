@@ -45,6 +45,8 @@ public final class Utils {
     public static final Quaternionf IDENTITY_QUATERNION = new Quaternionf();
     public static final Vector3f IDENTITY_VECTOR = new Vector3f(1.0f, 1.0f, 1.0f);
     public static final Vector3f ZERO_VECTOR = new Vector3f(0.0f, 0.0f, 0.0f);
+    public static final float RAD2DEG = 180.0f / PI;
+    public static final float DEG2RAD = PI / 180.0f;
 
     private Utils() {
     }

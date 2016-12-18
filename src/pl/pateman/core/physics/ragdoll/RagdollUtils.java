@@ -106,6 +106,21 @@ final class RagdollUtils {
         return body;
     }
 
+    static Vector3f getRigidBodyExtents(final RigidBody rigidBody, final Vector3f outVector) {
+        final TempVars vars = TempVars.get();
+
+        rigidBody.getCenterOfMassTransform(vars.vecmathTransform);
+        rigidBody.getCollisionShape().getAabb(vars.vecmathTransform, vars.vecmathVect3d1, vars.vecmathVect3d2);
+
+        final SimpleAABB simpleAABB = new SimpleAABB();
+        Utils.convert(simpleAABB.min, vars.vecmathVect3d1);
+        Utils.convert(simpleAABB.max, vars.vecmathVect3d2);
+        simpleAABB.getExtents(outVector);
+
+        vars.release();
+        return outVector;
+    }
+
     static class SimpleAABB {
         private final Vector3f min;
         private final Vector3f max;

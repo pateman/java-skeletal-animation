@@ -203,35 +203,7 @@ public final class Ragdoll {
         vars.release();
     }
 
-    private void createConstraintForLink(RagdollLink ragdollLink) {
-        final RigidBody rigidBodyA = this.partRigidBodies.get(ragdollLink.getPartA().getFirstBone().getIndex()).getRigidBody();
-        final RigidBody rigidBodyB = this.partRigidBodies.get(ragdollLink.getPartB().getFirstBone().getIndex()).getRigidBody();
-
-        if (rigidBodyA == null || rigidBodyB == null) {
-            throw new IllegalStateException("One of the body parts does not have a collider");
-        }
-
-        final TempVars vars = TempVars.get();
-
-        Utils.convert(vars.vect3d1, rigidBodyA.getCenterOfMassTransform(vars.vecmathTransform).origin);
-        Utils.convert(vars.vect3d2, rigidBodyB.getCenterOfMassTransform(vars.vecmathTransform).origin);
-        vars.vect3d2.sub(vars.vect3d1, vars.vect3d3);
-
-        vars.vecmathTransform.setIdentity();
-        vars.vecmathTransform2.setIdentity();
-        Utils.convert(vars.vecmathTransform.origin, vars.vect3d3);
-        Utils.convert(vars.vecmathTransform2.origin, Utils.ZERO_VECTOR);
-
-        final Generic6DofConstraint constraint = new Generic6DofConstraint(rigidBodyA, rigidBodyB,
-                vars.vecmathTransform, vars.vecmathTransform2, true);
-        constraint.setAngularUpperLimit(Utils.convert(vars.vecmathVect3d1, ragdollLink.getMaxLimit()));
-        constraint.setAngularLowerLimit(Utils.convert(vars.vecmathVect3d1, ragdollLink.getMinLimit()));
-        this.dynamicsWorld.addConstraint(constraint, true);
-
-        vars.release();
-    }
-
-    private void alignRagdollToModel() {
+     private void alignRagdollToModel() {
         final TempVars vars = TempVars.get();
 
         for (final Map.Entry<Integer, RagdollBody> entry : this.partRigidBodies.entrySet()) {
@@ -286,19 +258,23 @@ public final class Ragdoll {
                 (rbAExtents, rbBExtents, outPivot) -> outPivot.set(0.0f, rbAExtents.y + rbBExtents.y, 0.0f));
         this.configureBody(BodyPartType.LEFT_UPPER_ARM, colliders.get(BodyPartType.LEFT_UPPER_ARM), BodyPartType.CHEST,
                 (rbAExtents, rbBExtents, outPivot) -> outPivot.set(rbAExtents.x + rbBExtents.x, rbAExtents.y - rbBExtents.y, 0.0f));
+        this.configureBody(BodyPartType.LEFT_LOWER_ARM, colliders.get(BodyPartType.LEFT_LOWER_ARM), BodyPartType.LEFT_UPPER_ARM,
+                (rbAExtents, rbBExtents, outPivot) -> outPivot.set(0.0f, -rbAExtents.y - rbBExtents.y, 0.0f));
         this.configureBody(BodyPartType.RIGHT_UPPER_ARM, colliders.get(BodyPartType.RIGHT_UPPER_ARM), BodyPartType.CHEST,
                 (rbAExtents, rbBExtents, outPivot) -> outPivot.set(-rbAExtents.x - rbBExtents.x, rbAExtents.y - rbBExtents.y, 0.0f));
+        this.configureBody(BodyPartType.RIGHT_LOWER_ARM, colliders.get(BodyPartType.RIGHT_LOWER_ARM), BodyPartType.RIGHT_UPPER_ARM,
+                (rbAExtents, rbBExtents, outPivot) -> outPivot.set(0.0f, -rbAExtents.y - rbBExtents.y, 0.0f));
         this.configureBody(BodyPartType.LEFT_UPPER_LEG, colliders.get(BodyPartType.LEFT_UPPER_LEG), BodyPartType.CHEST,
                 (rbAExtents, rbBExtents, outPivot) -> outPivot.set(rbAExtents.x, -rbAExtents.y - rbBExtents.y, 0.0f));
+        this.configureBody(BodyPartType.LEFT_LOWER_LEG, colliders.get(BodyPartType.LEFT_LOWER_LEG), BodyPartType.LEFT_UPPER_LEG,
+                (rbAExtents, rbBExtents, outPivot) -> outPivot.set(0.0f, -rbAExtents.y - rbBExtents.y, 0.0f));
         this.configureBody(BodyPartType.RIGHT_UPPER_LEG, colliders.get(BodyPartType.RIGHT_UPPER_LEG), BodyPartType.CHEST,
                 (rbAExtents, rbBExtents, outPivot) -> outPivot.set(-rbAExtents.x, -rbAExtents.y - rbBExtents.y, 0.0f));
+        this.configureBody(BodyPartType.RIGHT_LOWER_LEG, colliders.get(BodyPartType.RIGHT_LOWER_LEG), BodyPartType.RIGHT_UPPER_LEG,
+                (rbAExtents, rbBExtents, outPivot) -> outPivot.set(0.0f, -rbAExtents.y - rbBExtents.y, 0.0f));
 
         this.mesh.getSkeleton().getBones().forEach(bone -> this.boneMatrices.put(bone.getIndex(),
                 bone.getOffsetMatrix()));
-
-//        for (final RagdollLink ragdollLink : this.ragdollStructure.getBodyLinks()) {
-//            this.createConstraintForLink(ragdollLink);
-//        }
 
         this.partRigidBodies.values().forEach(RagdollBody::initializeBody);
 

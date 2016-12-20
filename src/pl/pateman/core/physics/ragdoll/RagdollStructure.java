@@ -1,6 +1,5 @@
 package pl.pateman.core.physics.ragdoll;
 
-import org.joml.Matrix4f;
 import pl.pateman.core.mesh.Bone;
 import pl.pateman.core.mesh.Mesh;
 
@@ -77,21 +76,6 @@ public final class RagdollStructure {
             throw new IllegalArgumentException();
         }
         this.bodyParts.get(bodyPartType).setColliderType(bodyPartCollider);
-    }
-
-    public Matrix4f getBodyPartCustomTransform(final BodyPartType bodyPartType) {
-        if (bodyPartType == null) {
-            throw new IllegalArgumentException();
-        }
-        return this.bodyParts.get(bodyPartType).getCustomTransform();
-    }
-
-    void setBodyPartCustomTransform(final BodyPartType bodyPartType, final Matrix4f matrix4f, byte transformFlag) {
-        if (bodyPartType == null || matrix4f == null) {
-            throw new IllegalArgumentException();
-        }
-
-        this.bodyParts.get(bodyPartType).setCustomTransform(matrix4f, transformFlag);
     }
 
     void setBodyPartPivotedBones(final BodyPartType bodyPartType, final Collection<String> boneNames) {

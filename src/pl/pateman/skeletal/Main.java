@@ -34,10 +34,7 @@ import pl.pateman.core.mesh.Animation;
 import pl.pateman.core.mesh.Bone;
 import pl.pateman.core.mesh.BoneManualControlType;
 import pl.pateman.core.physics.debug.PhysicsDebugger;
-import pl.pateman.core.physics.ragdoll.Ragdoll;
-import pl.pateman.core.physics.ragdoll.RagdollDebugger;
-import pl.pateman.core.physics.ragdoll.RagdollStructure;
-import pl.pateman.core.physics.ragdoll.RagdollStructureBuilder;
+import pl.pateman.core.physics.ragdoll.*;
 import pl.pateman.core.shader.Program;
 import pl.pateman.core.shader.Shader;
 import pl.pateman.core.text.Text2DRenderer;
@@ -406,13 +403,11 @@ public class Main {
                     .startPart(LEFT_UPPER_LEG)
                         .addBones("Bip01 L Thigh").endPart()
                     .startPart(LEFT_LOWER_LEG)
-                        .addBones("Bip01 L Calf", "Bip01 L Foot")
-                        .setRotation(Utils.IDENTITY_QUATERNION).endPart()
+                        .addBones("Bip01 L Calf", "Bip01 L Foot").endPart()
                     .startPart(RIGHT_UPPER_LEG)
                         .addBones("Bip01 R Thigh").endPart()
                     .startPart(RIGHT_LOWER_LEG)
-                        .addBones("Bip01 R Calf", "Bip01 R Foot")
-                        .setRotation(Utils.IDENTITY_QUATERNION).endPart()
+                        .addBones("Bip01 R Calf", "Bip01 R Foot").endPart()
                     .pivotBonesTo(LEFT_LOWER_LEG, "Bip01 L Toe0", "Bip01 L Toe0Nub")
                     .pivotBonesTo(RIGHT_LOWER_LEG, "Bip01 R Toe0", "Bip01 R Toe0Nub")
                     .pivotBonesTo(LEFT_LOWER_ARM, "Bip01 L Finger0", "Bip01 L Finger01", "Bip01 L Finger0Nub",
@@ -425,32 +420,27 @@ public class Main {
                             "Bip01 R Finger4", "Bip01 R Finger41", "Bip01 R Finger4Nub")
                     .pivotBonesTo(CHEST, "Bip01", "Bip01 R Clavicle", "Bip01 L Clavicle")
                     .startLink(CHEST, HEAD)
-                        .setMinLimit(-Utils.QUARTER_PI, -Utils.QUARTER_PI, -Utils.QUARTER_PI)
-                        .setMaxLimit(Utils.QUARTER_PI, Utils.QUARTER_PI, Utils.QUARTER_PI).endLink()
+                        .coneTwist(Utils.PI * 0.15f, Utils.PI * 0.15f, 0.05f).endLink()
                     .startLink(CHEST, LEFT_UPPER_ARM)
-                        .setMinLimit(-Utils.QUARTER_PI, 0.0f, -Utils.QUARTER_PI)
-                        .setMaxLimit(Utils.HALF_PI, 0.0f, Utils.HALF_PI).endLink()
+                        .coneTwist(Utils.PI * 0.6f, Utils.PI * 0.6f, 0.05f).endLink()
                     .startLink(LEFT_UPPER_ARM, LEFT_LOWER_ARM)
-                        .setMinLimit(0.0f, 0.0f, 0.0f)
-                        .setMaxLimit(Utils.HALF_PI, 0.0f, 0.0f).endLink()
+                        .hinge(0.0f, 2.0f, new Vector3f(0.0f, 0.0f, Utils.HALF_PI),
+                                new Vector3f(0.0f, 0.0f, Utils.HALF_PI)).endLink()
                     .startLink(CHEST, RIGHT_UPPER_ARM)
-                        .setMinLimit(-Utils.QUARTER_PI, 0.0f, -Utils.QUARTER_PI)
-                        .setMaxLimit(Utils.HALF_PI, 0.0f, Utils.HALF_PI).endLink()
+                        .coneTwist(Utils.PI * 0.6f, Utils.PI * 0.6f, 0.05f).endLink()
                     .startLink(RIGHT_UPPER_ARM, RIGHT_LOWER_ARM)
-                        .setMinLimit(0.0f, 0.0f, 0.0f)
-                        .setMaxLimit(Utils.HALF_PI, 0.0f, 0.0f).endLink()
+                        .hinge(0.0f, 2.0f, new Vector3f(0.0f, 0.0f, -Utils.HALF_PI),
+                                new Vector3f(0.0f, 0.0f, -Utils.HALF_PI)).endLink()
                     .startLink(CHEST, LEFT_UPPER_LEG)
-                        .setMinLimit(-Utils.QUARTER_PI, -Utils.QUARTER_PI / 2.0f, -Utils.QUARTER_PI)
-                        .setMaxLimit(Utils.PI, Utils.QUARTER_PI / 2.0f, Utils.QUARTER_PI).endLink()
+                        .coneTwist(Utils.HALF_PI, Utils.HALF_PI, 0.05f).endLink()
                     .startLink(LEFT_UPPER_LEG, LEFT_LOWER_LEG)
-                        .setMinLimit(-Utils.PI, 0.0f, 0.0f)
-                        .setMaxLimit(0.0f, 0.0f, 0.0f).endLink()
+                        .hinge(-2.0f, 0.0f, new Vector3f(0.0f, 0.0f, Utils.HALF_PI),
+                                new Vector3f(0.0f, 0.0f, Utils.HALF_PI)).endLink()
                     .startLink(CHEST, RIGHT_UPPER_LEG)
-                        .setMinLimit(-Utils.QUARTER_PI, -Utils.QUARTER_PI / 2.0f, -Utils.QUARTER_PI)
-                        .setMaxLimit(Utils.PI, Utils.QUARTER_PI / 2.0f, Utils.QUARTER_PI).endLink()
+                        .coneTwist(Utils.HALF_PI, Utils.HALF_PI, 0.05f).endLink()
                     .startLink(RIGHT_UPPER_LEG, RIGHT_LOWER_LEG)
-                        .setMinLimit(-Utils.PI, 0.0f, 0.0f)
-                        .setMaxLimit(0.0f, 0.0f, 0.0f).endLink()
+                        .hinge(-2.0f, 0.0f, new Vector3f(0.0f, 0.0f, Utils.HALF_PI),
+                            new Vector3f(0.0f, 0.0f, Utils.HALF_PI)).endLink()
                     .build();
             ragdoll.setRagdollStructure(ragdollStructure);
             ragdoll.buildRagdoll();

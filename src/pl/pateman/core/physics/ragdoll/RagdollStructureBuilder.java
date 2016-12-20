@@ -1,9 +1,6 @@
 package pl.pateman.core.physics.ragdoll;
 
-import org.joml.Matrix4f;
-import org.joml.Quaternionf;
 import org.joml.Vector3f;
-import pl.pateman.core.Utils;
 import pl.pateman.core.mesh.Bone;
 import pl.pateman.core.mesh.Mesh;
 import pl.pateman.core.mesh.Skeleton;
@@ -45,18 +42,12 @@ public final class RagdollStructureBuilder {
             this.ragdollStructure.setBodyPartBones(partType, part.boneNames.toArray(
                     new String[part.boneNames.size()]));
             this.ragdollStructure.setBodyPartColliderType(partType, part.collider);
-
-            //  Handle custom transformation.
-            final Matrix4f customTransform = new Matrix4f();
-            Utils.fromRotationTranslationScale(customTransform, part.customRotation, part.customTranslation,
-                    Utils.IDENTITY_VECTOR);
-            this.ragdollStructure.setBodyPartCustomTransform(partType, customTransform, part.customTransformFlag);
         }
 
         final Map<BodyPartType, BodyPart> bodyParts = this.ragdollStructure.getBodyParts();
         for (final Link link : this.linkList) {
             this.ragdollStructure.getBodyLinks().add(new RagdollLink(bodyParts.get(link.partA),
-                    bodyParts.get(link.partB), link.minLimit, link.maxLimit));
+                    bodyParts.get(link.partB), link.limits, link.linkType));
         }
 
         for (BodyPartType type : bodyParts.keySet()) {
@@ -160,19 +151,6 @@ public final class RagdollStructureBuilder {
     }
 
     /**
-     * Makes all existing links rigid.
-     *
-     * @return This builder.
-     */
-    public RagdollStructureBuilder makeLinksRigid() {
-        this.linkList.forEach(link -> {
-            link.setMinLimit(-Utils.EPSILON, -Utils.EPSILON, -Utils.EPSILON);
-            link.setMaxLimit(Utils.EPSILON, Utils.EPSILON, Utils.EPSILON);
-        });
-        return this;
-    }
-
-    /**
      * Small utility method which returns the names of the bones which haven't been assigned to any body part.
      *
      * @return {@code List<String>}.
@@ -197,9 +175,6 @@ public final class RagdollStructureBuilder {
         private BodyPartCollider collider;
         private final Skeleton skeleton;
         private final RagdollStructureBuilder builder;
-        private final Quaternionf customRotation;
-        private final Vector3f customTranslation;
-        private byte customTransformFlag;
 
         Part(BodyPartType type, Skeleton skeleton, RagdollStructureBuilder builder) {
             this.type = type;
@@ -207,8 +182,6 @@ public final class RagdollStructureBuilder {
             this.skeleton = skeleton;
             this.builder = builder;
             this.boneNames = new LinkedHashSet<>();
-            this.customRotation = new Quaternionf();
-            this.customTranslation = new Vector3f();
         }
 
         public Part addBone(final String boneName) {
@@ -249,25 +222,6 @@ public final class RagdollStructureBuilder {
             return this;
         }
 
-        public Part setTranslation(final Vector3f translation) {
-            if (translation == null) {
-                throw new IllegalArgumentException();
-            }
-            this.customTransformFlag |= RagdollStructure.CUSTOM_TRANSFORM_TRANSLATION;
-            this.customTranslation.set(translation);
-            return this;
-        }
-
-        public Part setRotation(final Quaternionf rotation) {
-            if (rotation == null) {
-                throw new IllegalArgumentException();
-            }
-
-            this.customTransformFlag |= RagdollStructure.CUSTOM_TRANSFORM_ROTATION;
-            this.customRotation.set(rotation);
-            return this;
-        }
-
         public RagdollStructureBuilder endPart() {
             return this.builder;
         }
@@ -277,24 +231,69 @@ public final class RagdollStructureBuilder {
         private final BodyPartType partA;
         private final BodyPartType partB;
         private final RagdollStructureBuilder builder;
-        private final Vector3f minLimit;
-        private final Vector3f maxLimit;
+        private final float[] limits;
+        private RagdollLinkType linkType;
 
         Link(BodyPartType partA, BodyPartType partB, RagdollStructureBuilder builder) {
             this.partA = partA;
             this.partB = partB;
             this.builder = builder;
-            this.minLimit = new Vector3f(-Utils.EPSILON);
-            this.maxLimit = new Vector3f(Utils.EPSILON);
+            this.limits = new float[11];
+            this.linkType = null;
         }
 
-        public Link setMinLimit(final float x, final float y, final float z) {
-            this.minLimit.set(x, y, z);
+        public Link coneTwist(final float swingSpan1, final float swingSpan2, final float twistSpan) {
+            //  Defaults taken from
+            //  com.bulletphysics.dynamics.constraintsolver.ConeTwistConstraint.setLimit(float, float, float)
+            return this.coneTwist(swingSpan1, swingSpan2, twistSpan, 0.8f, 0.3f, 1.0f);
+        }
+
+        public Link coneTwist(final float swingSpan1, final float swingSpan2, final float twistSpan,
+                              final float softness, final float biasFactor, final float relaxationFactor) {
+            if (this.linkType != null) {
+                throw new IllegalStateException("The link is already configured as " + this.linkType);
+            }
+            this.linkType = RagdollLinkType.CONE_TWIST;
+
+            this.limits[0] = swingSpan1;
+            this.limits[1] = swingSpan2;
+            this.limits[2] = twistSpan;
+            this.limits[3] = softness;
+            this.limits[4] = biasFactor;
+            this.limits[5] = relaxationFactor;
+
             return this;
         }
 
-        public Link setMaxLimit(final float x, final float y, final float z) {
-            this.maxLimit.set(x, y, z);
+        public Link hinge(final float lowerLimit, final float upperLimit, final Vector3f hingeAxisA,
+                          final Vector3f hingeAxisB) {
+            //  Defaults taken from
+            //  com.bulletphysics.dynamics.constraintsolver.HingeConstraint.setLimit(float, float)
+            return this.hinge(lowerLimit, upperLimit, 0.9f, 0.3f, 1.0f, hingeAxisA, hingeAxisB);
+        }
+
+        public Link hinge(final float lowerLimit, final float upperLimit, final float softness, final float biasFactor,
+                          final float relaxationFactor, final Vector3f hingeAxisA, final Vector3f hingeAxisB) {
+            if (hingeAxisA == null || hingeAxisB == null) {
+                throw new IllegalArgumentException("Hinge axes need to be provided");
+            }
+            if (this.linkType != null) {
+                throw new IllegalStateException("The link is already configured as " + this.linkType);
+            }
+            this.linkType = RagdollLinkType.HINGE;
+
+            this.limits[0] = lowerLimit;
+            this.limits[1] = upperLimit;
+            this.limits[2] = softness;
+            this.limits[3] = biasFactor;
+            this.limits[4] = relaxationFactor;
+            this.limits[5] = hingeAxisA.x;
+            this.limits[6] = hingeAxisA.y;
+            this.limits[7] = hingeAxisA.z;
+            this.limits[8] = hingeAxisB.x;
+            this.limits[9] = hingeAxisB.y;
+            this.limits[10] = hingeAxisB.z;
+
             return this;
         }
 

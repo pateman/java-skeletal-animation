@@ -1,6 +1,5 @@
 package pl.pateman.core.physics.ragdoll;
 
-import org.joml.Matrix4f;
 import pl.pateman.core.mesh.Bone;
 
 import java.util.ArrayList;
@@ -13,8 +12,6 @@ final class BodyPart {
     private final BodyPartType partType;
     private final List<Bone> bones;
     private BodyPartCollider colliderType;
-    private Matrix4f customTransform;
-    private byte customTransformFlag;
     private final List<Bone> pivotBones;
 
     BodyPart(BodyPartType partType) {
@@ -50,19 +47,6 @@ final class BodyPart {
 
     void setColliderType(BodyPartCollider colliderType) {
         this.colliderType = colliderType;
-    }
-
-    Matrix4f getCustomTransform() {
-        return customTransform;
-    }
-
-    byte getCustomTransformFlag() {
-        return customTransformFlag;
-    }
-
-    void setCustomTransform(Matrix4f customTransform, byte customTransformFlag) {
-        this.customTransform = customTransform;
-        this.customTransformFlag = customTransformFlag;
     }
 
     List<Bone> getPivotBones() {

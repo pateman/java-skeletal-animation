@@ -2,7 +2,10 @@ package pl.pateman.core.physics.ragdoll;
 
 import com.bulletphysics.collision.shapes.CollisionShape;
 import com.bulletphysics.dynamics.RigidBody;
+import com.bulletphysics.dynamics.constraintsolver.ConeTwistConstraint;
+import com.bulletphysics.dynamics.constraintsolver.HingeConstraint;
 import com.bulletphysics.linearmath.DefaultMotionState;
+import com.bulletphysics.linearmath.Transform;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
@@ -119,6 +122,30 @@ final class RagdollUtils {
 
         vars.release();
         return outVector;
+    }
+
+    static ConeTwistConstraint createConeTwistConstraint(final RigidBody rbA, final RigidBody rbB,
+                                                         final Transform transformA, final Transform transformB,
+                                                         final float[] limits) {
+        final ConeTwistConstraint coneTwistConstraint = new ConeTwistConstraint(rbA, rbB, transformA, transformB);
+        coneTwistConstraint.setLimit(limits[0], limits[1], limits[2], limits[3], limits[4], limits[5]);
+        return coneTwistConstraint;
+    }
+
+    static HingeConstraint createHingeConstraint(final RigidBody rbA, final RigidBody rbB,
+                                                 final Transform transformA, final Transform transformB,
+                                                 final float[] limits) {
+        final TempVars vars = TempVars.get();
+
+        //  Set the hinge axes.
+        vars.vecmathVect3d1.set(limits[5], limits[6], limits[7]);
+        vars.vecmathVect3d2.set(limits[8], limits[9], limits[10]);
+
+        final HingeConstraint hingeConstraint = new HingeConstraint(rbB, rbA, transformB, transformA);
+        hingeConstraint.setLimit(limits[0], limits[1], limits[2], limits[3], limits[4]);
+
+        vars.release();
+        return hingeConstraint;
     }
 
     static class SimpleAABB {

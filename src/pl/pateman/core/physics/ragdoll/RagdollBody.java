@@ -20,6 +20,7 @@ import java.util.TreeMap;
 class RagdollBody {
     private final RigidBody rigidBody;
     private final Quaternionf initialRotation;
+    private final Quaternionf inverseInitialRotation;
     private final Vector3f initialTranslation;
     private final Map<Integer, TransformComponents> initialBoneTransforms;
     private final List<Bone> assignedBones;
@@ -27,6 +28,7 @@ class RagdollBody {
     RagdollBody(RigidBody rigidBody, List<Bone> bones, Quaternionf initialRotation, Vector3f initialTranslation) {
         this.rigidBody = rigidBody;
         this.initialRotation = new Quaternionf().set(initialRotation);
+        this.inverseInitialRotation = initialRotation.invert(new Quaternionf());
         this.initialTranslation = new Vector3f().set(initialTranslation);
 
         this.initialBoneTransforms = new TreeMap<>();
@@ -84,7 +86,7 @@ class RagdollBody {
         //  ** rigid body's ** initial rotation and its current rotation, and then multiply it by the ** bone's **
         //  initial rotation.
         vars.tempMat4x41.getUnnormalizedRotation(vars.quat1);
-        final Quaternionf diff = this.initialRotation.invert(vars.quat2).mul(vars.quat1, vars.quat3);
+        final Quaternionf diff = this.inverseInitialRotation.mul(vars.quat1, vars.quat3);
         diff.mul(initialTrans.getRotation(), outRot);
 
         //  Scale doesn't change.

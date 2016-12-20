@@ -5,8 +5,9 @@ import com.bulletphysics.collision.shapes.BoxShape;
 import com.bulletphysics.collision.shapes.CollisionShape;
 import com.bulletphysics.dynamics.DiscreteDynamicsWorld;
 import com.bulletphysics.dynamics.RigidBody;
-import com.bulletphysics.dynamics.constraintsolver.ConeTwistConstraint;
+import com.bulletphysics.dynamics.constraintsolver.TypedConstraint;
 import org.joml.Matrix4f;
+import org.joml.Quaternionf;
 import org.joml.Vector3f;
 import pl.pateman.core.TempVars;
 import pl.pateman.core.Utils;
@@ -138,18 +139,11 @@ public final class Ragdoll {
         vars.tempMat4x41.getTranslation(vars.vect3d1);
         vars.tempMat4x42.getTranslation(vars.vect3d2);
 
-        //  If the user has set a custom rotation, use it. Otherwise, compute the rotation.
-        if ((bodyPart.getCustomTransformFlag() & RagdollStructure.CUSTOM_TRANSFORM_ROTATION) == RagdollStructure.CUSTOM_TRANSFORM_ROTATION) {
-            bodyPart.getCustomTransform().getUnnormalizedRotation(vars.quat1);
-        } else {
-            Utils.rotationBetweenVectors(vars.quat1, vars.vect3d1, vars.vect3d2);
-        }
+        //  Compute the rotation between the two bones.
+        Utils.rotationBetweenVectors(vars.quat1, vars.vect3d1, vars.vect3d2);
+
         //  Similar story with the translation.
-        if ((bodyPart.getCustomTransformFlag() & RagdollStructure.CUSTOM_TRANSFORM_TRANSLATION) == RagdollStructure.CUSTOM_TRANSFORM_TRANSLATION) {
-            bodyPart.getCustomTransform().getTranslation(vars.vect3d1);
-        } else {
-            vars.vect3d1.add(vars.vect3d2).mul(0.5f);
-        }
+        vars.vect3d1.add(vars.vect3d2).mul(0.5f);
 
         //  Finally, create the rigid body's transformation matrix.
         Utils.fromRotationTranslationScale(vars.tempMat4x41, vars.quat1, vars.vect3d1, Utils.IDENTITY_VECTOR);
@@ -185,24 +179,48 @@ public final class Ragdoll {
         Utils.convert(vars.vecmathTransform.origin, vars.vect3d3);
         Utils.convert(vars.vecmathTransform2.origin, Utils.ZERO_VECTOR);
 
-        final ConeTwistConstraint constraint = new ConeTwistConstraint(rigidBodyA, rigidBodyB, vars.vecmathTransform, vars.vecmathTransform2);
-        constraint.setLimit(Utils.PI * 0.15f, Utils.PI * 0.15f, 0.05f);
-        this.dynamicsWorld.addConstraint(constraint, true);
+        for (RagdollLink ragdollLink : this.ragdollStructure.getBodyLinks()) {
+            if (ragdollLink.getPartA().getPartType().equals(relativeTo) &&
+                ragdollLink.getPartB().getPartType().equals(bodyPartType)) {
 
-//        final Generic6DofConstraint generic6DofConstraint = new Generic6DofConstraint(rigidBodyA, rigidBodyB,
-//                vars.vecmathTransform, vars.vecmathTransform2, true);
-//        for (RagdollLink ragdollLink : this.ragdollStructure.getBodyLinks()) {
-//            if (ragdollLink.getPartA().getPartType().equals(relativeTo) && ragdollLink.getPartB().getPartType().equals(bodyPartType)) {
-//                Utils.convert(vars.vecmathVect3d1, ragdollLink.getMinLimit());
-//                Utils.convert(vars.vecmathVect3d2, ragdollLink.getMaxLimit());
-//                generic6DofConstraint.setAngularLowerLimit(vars.vecmathVect3d1);
-//                generic6DofConstraint.setAngularUpperLimit(vars.vecmathVect3d2);
-//                break;
-//            }
-//        }
-//
-//        this.dynamicsWorld.addConstraint(generic6DofConstraint, true);
+                TypedConstraint constraint;
+                if (ragdollLink.getLinkType().equals(RagdollLinkType.CONE_TWIST)) {
+                    constraint = RagdollUtils.createConeTwistConstraint(rigidBodyA, rigidBodyB, vars.vecmathTransform,
+                            vars.vecmathTransform2, ragdollLink.getLimits());
+                } else {
+                    constraint = RagdollUtils.createHingeConstraint(rigidBodyA, rigidBodyB, vars.vecmathTransform,
+                            vars.vecmathTransform2, ragdollLink.getLimits());
+                }
+                this.dynamicsWorld.addConstraint(constraint, true);
+
+                break;
+            }
+        }
         this.addBodyToSimulation(bodyPartType, rigidBodyB, vars.tempMat4x41, vars.vect3d3);
+
+        vars.release();
+    }
+
+    private void alignBodyPart(final BodyPartType bodyPartType, final Quaternionf inverseEntityRotation,
+                               final Matrix4f parentTM, final Matrix4f outBodyTM) {
+        final TempVars vars = TempVars.get();
+
+        final BodyPart bodyPart = this.ragdollStructure.getBodyParts().get(bodyPartType);
+        final RagdollBody ragdollBody = this.partRigidBodies.get(bodyPart.getFirstBone().getIndex());
+        vars.vect3d1.set(ragdollBody.getInitialTranslation());
+        parentTM.transformPosition(vars.vect3d1, vars.vect3d1);
+
+        bodyPart.getFirstBone().getOffsetMatrix().getUnnormalizedRotation(vars.quat1);
+        vars.quat1.mul(bodyPart.getFirstBone().getInverseBindMatrix().getUnnormalizedRotation(vars.quat3));
+        inverseEntityRotation.mul(vars.quat1, vars.quat1);
+
+        Utils.fromRotationTranslationScale(vars.tempMat4x41, vars.quat1, vars.vect3d1, Utils.IDENTITY_VECTOR);
+        Utils.matrixToTransform(vars.vecmathTransform, vars.tempMat4x41);
+        ragdollBody.getRigidBody().setCenterOfMassTransform(vars.vecmathTransform);
+
+        if (outBodyTM != null) {
+            outBodyTM.set(vars.tempMat4x41);
+        }
 
         vars.release();
     }
@@ -210,17 +228,20 @@ public final class Ragdoll {
     public void alignRagdollToModel() {
         final TempVars vars = TempVars.get();
 
+        final Quaternionf invEntityRot = this.entity.getTransformation().getUnnormalizedRotation(vars.quat2).invert();
+
         //  Start by transforming the chest.
         final BodyPart bodyPart = this.ragdollStructure.getBodyParts().get(BodyPartType.CHEST);
 
-        final Matrix4f lastHeadBoneMat = this.ragdollStructure.getBodyParts().get(BodyPartType.HEAD).getLastBone().getOffsetMatrix();
+        final Matrix4f lastHeadBoneMat = this.ragdollStructure.getBodyParts().get(BodyPartType.HEAD).getLastBone().
+                getOffsetMatrix();
         final Matrix4f lastChestBoneMat = bodyPart.getLastBone().getOffsetMatrix();
 
         lastHeadBoneMat.getTranslation(vars.vect3d1);
         lastChestBoneMat.getTranslation(vars.vect3d2);
 
         Utils.rotationBetweenVectors(vars.quat1, vars.vect3d1, vars.vect3d2);
-        this.entity.getTransformation().getUnnormalizedRotation(vars.quat2).invert().mul(vars.quat1, vars.quat1);
+        invEntityRot.mul(vars.quat1, vars.quat1);
 
         this.entity.getTransformation().transformPosition(vars.vect3d1);
         this.entity.getTransformation().transformPosition(vars.vect3d2);
@@ -231,16 +252,16 @@ public final class Ragdoll {
         this.partRigidBodies.get(bodyPart.getFirstBone().getIndex()).getRigidBody().
                 setCenterOfMassTransform(vars.vecmathTransform);
 
-        //  Transform the other parts.
-        final BodyPart headBodyPart = this.ragdollStructure.getBodyParts().get(BodyPartType.HEAD);
-        final RagdollBody ragdollBody = this.partRigidBodies.get(headBodyPart.getFirstBone().getIndex());
-        vars.vect3d1.set(ragdollBody.getInitialTranslation());
-        vars.tempMat4x41.transformPosition(vars.vect3d1, vars.vect3d1);
-
-        vars.quat1.identity();
-        Utils.fromRotationTranslationScale(vars.tempMat4x42, vars.quat1, vars.vect3d1, Utils.IDENTITY_VECTOR);
-        Utils.matrixToTransform(vars.vecmathTransform, vars.tempMat4x42);
-        ragdollBody.getRigidBody().setCenterOfMassTransform(vars.vecmathTransform);
+        //  Transform the other body parts.
+        this.alignBodyPart(BodyPartType.HEAD, invEntityRot, vars.tempMat4x41, null);
+        this.alignBodyPart(BodyPartType.LEFT_UPPER_ARM, invEntityRot, vars.tempMat4x41, vars.tempMat4x42);
+        this.alignBodyPart(BodyPartType.LEFT_LOWER_ARM, invEntityRot, vars.tempMat4x42, null);
+        this.alignBodyPart(BodyPartType.RIGHT_UPPER_ARM, invEntityRot, vars.tempMat4x41, vars.tempMat4x42);
+        this.alignBodyPart(BodyPartType.RIGHT_LOWER_ARM, invEntityRot, vars.tempMat4x42, null);
+        this.alignBodyPart(BodyPartType.LEFT_UPPER_LEG, invEntityRot, vars.tempMat4x41, vars.tempMat4x42);
+        this.alignBodyPart(BodyPartType.LEFT_LOWER_LEG, invEntityRot, vars.tempMat4x42, null);
+        this.alignBodyPart(BodyPartType.RIGHT_UPPER_LEG, invEntityRot, vars.tempMat4x41, vars.tempMat4x42);
+        this.alignBodyPart(BodyPartType.RIGHT_LOWER_LEG, invEntityRot, vars.tempMat4x42, null);
 
         vars.release();
     }
@@ -273,22 +294,22 @@ public final class Ragdoll {
 
         this.configureBody(BodyPartType.HEAD, colliders.get(BodyPartType.HEAD), BodyPartType.CHEST,
                 (rbAExtents, rbBExtents, outPivot) -> outPivot.set(0.0f, rbAExtents.y + rbBExtents.y, 0.0f));
-//        this.configureBody(BodyPartType.LEFT_UPPER_ARM, colliders.get(BodyPartType.LEFT_UPPER_ARM), BodyPartType.CHEST,
-//                (rbAExtents, rbBExtents, outPivot) -> outPivot.set(rbAExtents.x + rbBExtents.x, rbAExtents.y - rbBExtents.y, 0.0f));
-//        this.configureBody(BodyPartType.LEFT_LOWER_ARM, colliders.get(BodyPartType.LEFT_LOWER_ARM), BodyPartType.LEFT_UPPER_ARM,
-//                (rbAExtents, rbBExtents, outPivot) -> outPivot.set(0.0f, -rbAExtents.y - rbBExtents.y, 0.0f));
-//        this.configureBody(BodyPartType.RIGHT_UPPER_ARM, colliders.get(BodyPartType.RIGHT_UPPER_ARM), BodyPartType.CHEST,
-//                (rbAExtents, rbBExtents, outPivot) -> outPivot.set(-rbAExtents.x - rbBExtents.x, rbAExtents.y - rbBExtents.y, 0.0f));
-//        this.configureBody(BodyPartType.RIGHT_LOWER_ARM, colliders.get(BodyPartType.RIGHT_LOWER_ARM), BodyPartType.RIGHT_UPPER_ARM,
-//                (rbAExtents, rbBExtents, outPivot) -> outPivot.set(0.0f, -rbAExtents.y - rbBExtents.y, 0.0f));
-//        this.configureBody(BodyPartType.LEFT_UPPER_LEG, colliders.get(BodyPartType.LEFT_UPPER_LEG), BodyPartType.CHEST,
-//                (rbAExtents, rbBExtents, outPivot) -> outPivot.set(rbAExtents.x, -rbAExtents.y - rbBExtents.y, 0.0f));
-//        this.configureBody(BodyPartType.LEFT_LOWER_LEG, colliders.get(BodyPartType.LEFT_LOWER_LEG), BodyPartType.LEFT_UPPER_LEG,
-//                (rbAExtents, rbBExtents, outPivot) -> outPivot.set(0.0f, -rbAExtents.y - rbBExtents.y, 0.0f));
-//        this.configureBody(BodyPartType.RIGHT_UPPER_LEG, colliders.get(BodyPartType.RIGHT_UPPER_LEG), BodyPartType.CHEST,
-//                (rbAExtents, rbBExtents, outPivot) -> outPivot.set(-rbAExtents.x, -rbAExtents.y - rbBExtents.y, 0.0f));
-//        this.configureBody(BodyPartType.RIGHT_LOWER_LEG, colliders.get(BodyPartType.RIGHT_LOWER_LEG), BodyPartType.RIGHT_UPPER_LEG,
-//                (rbAExtents, rbBExtents, outPivot) -> outPivot.set(0.0f, -rbAExtents.y - rbBExtents.y, 0.0f));
+        this.configureBody(BodyPartType.LEFT_UPPER_ARM, colliders.get(BodyPartType.LEFT_UPPER_ARM), BodyPartType.CHEST,
+                (rbAExtents, rbBExtents, outPivot) -> outPivot.set(rbAExtents.x + rbBExtents.x, rbAExtents.y - rbBExtents.y, 0.0f));
+        this.configureBody(BodyPartType.LEFT_LOWER_ARM, colliders.get(BodyPartType.LEFT_LOWER_ARM), BodyPartType.LEFT_UPPER_ARM,
+                (rbAExtents, rbBExtents, outPivot) -> outPivot.set(0.0f, -rbAExtents.y - rbBExtents.y, 0.0f));
+        this.configureBody(BodyPartType.RIGHT_UPPER_ARM, colliders.get(BodyPartType.RIGHT_UPPER_ARM), BodyPartType.CHEST,
+                (rbAExtents, rbBExtents, outPivot) -> outPivot.set(-rbAExtents.x - rbBExtents.x, rbAExtents.y - rbBExtents.y, 0.0f));
+        this.configureBody(BodyPartType.RIGHT_LOWER_ARM, colliders.get(BodyPartType.RIGHT_LOWER_ARM), BodyPartType.RIGHT_UPPER_ARM,
+                (rbAExtents, rbBExtents, outPivot) -> outPivot.set(0.0f, -rbAExtents.y - rbBExtents.y, 0.0f));
+        this.configureBody(BodyPartType.LEFT_UPPER_LEG, colliders.get(BodyPartType.LEFT_UPPER_LEG), BodyPartType.CHEST,
+                (rbAExtents, rbBExtents, outPivot) -> outPivot.set(rbAExtents.x, -rbAExtents.y - rbBExtents.y, 0.0f));
+        this.configureBody(BodyPartType.LEFT_LOWER_LEG, colliders.get(BodyPartType.LEFT_LOWER_LEG), BodyPartType.LEFT_UPPER_LEG,
+                (rbAExtents, rbBExtents, outPivot) -> outPivot.set(0.0f, -rbAExtents.y - rbBExtents.y, 0.0f));
+        this.configureBody(BodyPartType.RIGHT_UPPER_LEG, colliders.get(BodyPartType.RIGHT_UPPER_LEG), BodyPartType.CHEST,
+                (rbAExtents, rbBExtents, outPivot) -> outPivot.set(-rbAExtents.x, -rbAExtents.y - rbBExtents.y, 0.0f));
+        this.configureBody(BodyPartType.RIGHT_LOWER_LEG, colliders.get(BodyPartType.RIGHT_LOWER_LEG), BodyPartType.RIGHT_UPPER_LEG,
+                (rbAExtents, rbBExtents, outPivot) -> outPivot.set(0.0f, -rbAExtents.y - rbBExtents.y, 0.0f));
 
         this.mesh.getSkeleton().getBones().forEach(bone -> this.boneMatrices.put(bone.getIndex(),
                 bone.getOffsetMatrix()));
@@ -341,9 +362,9 @@ public final class Ragdoll {
             rb.getRigidBody().getCenterOfMassTransform(vars.vecmathTransform);
             Utils.convert(vars.vecmathVect3d1, Utils.ZERO_VECTOR);
 
-//            rb.getRigidBody().setInterpolationWorldTransform(vars.vecmathTransform);
-//            rb.getRigidBody().setInterpolationAngularVelocity(vars.vecmathVect3d1);
-//            rb.getRigidBody().setInterpolationLinearVelocity(vars.vecmathVect3d1);
+            rb.getRigidBody().setInterpolationWorldTransform(vars.vecmathTransform);
+            rb.getRigidBody().setInterpolationAngularVelocity(vars.vecmathVect3d1);
+            rb.getRigidBody().setInterpolationLinearVelocity(vars.vecmathVect3d1);
 
             rb.getRigidBody().forceActivationState(activationState);
             vars.release();

@@ -98,7 +98,7 @@ public class Main {
     private PhysicsDebugger physicsDebugger;
     private RagdollDebugger ragdollDebugger;
     private boolean physicsDebug;
-    private boolean physicsSimulation;
+    private boolean physicsSimulation = true;
 
     private boolean displayHelp;
     private Text2DRenderer text2DRenderer;
@@ -389,7 +389,7 @@ public class Main {
             ragdoll.setDynamicsWorld(this.dynamicsWorld);
             final RagdollStructure ragdollStructure = new RagdollStructureBuilder(this.meshEntity.getMesh())
                     .startPart(HEAD)
-                        .addBones("Bip01 HeadNub", "Bip01 Head", "Bip01 Neck").endPart()
+                        .addBones("Bip01 HeadNub", "Bip01 Head").endPart()
                     .startPart(CHEST)
                         .addBones("Bip01 Spine", "Bip01 Spine1", "Bip01 Pelvis").endPart()
                     .startPart(LEFT_UPPER_ARM)
@@ -418,29 +418,29 @@ public class Main {
                             "Bip01 R Finger1", "Bip01 R Finger11", "Bip01 R Finger1Nub", "Bip01 R Finger2",
                             "Bip01 R Finger21", "Bip01 R Finger2Nub", "Bip01 R Finger31", "Bip01 R Finger3Nub",
                             "Bip01 R Finger4", "Bip01 R Finger41", "Bip01 R Finger4Nub")
-                    .pivotBonesTo(CHEST, "Bip01", "Bip01 R Clavicle", "Bip01 L Clavicle")
-                    .startLink(CHEST, HEAD)
+                    .pivotBonesTo(CHEST, "Bip01", "Bip01 Neck", "Bip01 R Clavicle", "Bip01 L Clavicle")
+                    .startLink(CHEST, HEAD, "Bip01 Neck")
                         .coneTwist(Utils.PI * 0.15f, Utils.PI * 0.15f, 0.05f).endLink()
-                    .startLink(CHEST, LEFT_UPPER_ARM)
+                    .startLink(CHEST, LEFT_UPPER_ARM, "Bip01 L UpperArm")
                         .coneTwist(Utils.PI * 0.6f, Utils.PI * 0.6f, 0.05f).endLink()
-                    .startLink(LEFT_UPPER_ARM, LEFT_LOWER_ARM)
-                        .hinge(0.0f, 2.0f, new Vector3f(0.0f, 0.0f, Utils.HALF_PI),
-                                new Vector3f(0.0f, 0.0f, Utils.HALF_PI)).endLink()
-                    .startLink(CHEST, RIGHT_UPPER_ARM)
+                    .startLink(LEFT_UPPER_ARM, LEFT_LOWER_ARM, "Bip01 L Forearm")
+                        .hinge(0.0f, 2.0f, new Vector3f(0.0f, 1.0f, 0.0f),
+                                new Vector3f(0.0f, 1.0f, 0.0f)).endLink()
+                    .startLink(CHEST, RIGHT_UPPER_ARM, "Bip01 R UpperArm")
                         .coneTwist(Utils.PI * 0.6f, Utils.PI * 0.6f, 0.05f).endLink()
-                    .startLink(RIGHT_UPPER_ARM, RIGHT_LOWER_ARM)
-                        .hinge(0.0f, 2.0f, new Vector3f(0.0f, 0.0f, -Utils.HALF_PI),
-                                new Vector3f(0.0f, 0.0f, -Utils.HALF_PI)).endLink()
-                    .startLink(CHEST, LEFT_UPPER_LEG)
-                        .coneTwist(Utils.HALF_PI, Utils.HALF_PI, 0.05f).endLink()
-                    .startLink(LEFT_UPPER_LEG, LEFT_LOWER_LEG)
-                        .hinge(-2.0f, 0.0f, new Vector3f(0.0f, 0.0f, Utils.HALF_PI),
-                                new Vector3f(0.0f, 0.0f, Utils.HALF_PI)).endLink()
-                    .startLink(CHEST, RIGHT_UPPER_LEG)
-                        .coneTwist(Utils.HALF_PI, Utils.HALF_PI, 0.05f).endLink()
-                    .startLink(RIGHT_UPPER_LEG, RIGHT_LOWER_LEG)
-                        .hinge(-2.0f, 0.0f, new Vector3f(0.0f, 0.0f, Utils.HALF_PI),
-                            new Vector3f(0.0f, 0.0f, Utils.HALF_PI)).endLink()
+                    .startLink(RIGHT_UPPER_ARM, RIGHT_LOWER_ARM, "Bip01 R Forearm")
+                        .hinge(0.0f, 2.0f, new Vector3f(0.0f, 1.0f, 0.0f),
+                                new Vector3f(0.0f, 1.0f, 0.0f)).endLink()
+                    .startLink(CHEST, LEFT_UPPER_LEG, "Bip01 Pelvis")
+                        .coneTwist(Utils.PI * 0.2f, Utils.PI * 0.2f, 0.05f).endLink()
+                    .startLink(LEFT_UPPER_LEG, LEFT_LOWER_LEG, "Bip01 L Calf")
+                        .hinge(-2.0f, 0.0f, new Vector3f(0.0f, 1.0f, 0.0f),
+                                new Vector3f(0.0f, 1.0f, 0.0f)).endLink()
+                    .startLink(CHEST, RIGHT_UPPER_LEG, "Bip01 Pelvis")
+                        .coneTwist(Utils.PI * 0.2f, Utils.PI * 0.2f, 0.05f).endLink()
+                    .startLink(RIGHT_UPPER_LEG, RIGHT_LOWER_LEG, "Bip01 R Calf")
+                        .hinge(-2.0f, 0.0f, new Vector3f(0.0f, 1.0f, 0.0f),
+                            new Vector3f(0.0f, 1.0f, 0.0f)).endLink()
                     .build();
             ragdoll.setRagdollStructure(ragdollStructure);
             ragdoll.buildRagdoll();

@@ -4,6 +4,7 @@ import com.bulletphysics.collision.dispatch.CollisionObject;
 import com.bulletphysics.collision.shapes.*;
 import com.bulletphysics.dynamics.RigidBody;
 import com.bulletphysics.dynamics.constraintsolver.Generic6DofConstraint;
+import com.bulletphysics.linearmath.MatrixUtil;
 import com.bulletphysics.linearmath.Transform;
 import com.bulletphysics.util.ObjectArrayList;
 import org.joml.Matrix4f;
@@ -23,6 +24,8 @@ import pl.pateman.core.physics.raycast.PhysicsRaycastResult;
 import pl.pateman.core.shader.Program;
 import pl.pateman.core.shader.Shader;
 import pl.pateman.importer.json.JSONImporter;
+
+import java.util.concurrent.ThreadLocalRandom;
 
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.opengl.GL11.*;
@@ -163,6 +166,12 @@ public class JBulletHelloWorld {
                             entity.getRigidBody().applyCentralImpulse(vars.vecmathVect3d1);
 
                             break;
+                        case GLFW_KEY_Q:
+                            entity = JBulletHelloWorld.this.scene.getEntity(CUBE_1_ENTITY_NAME);
+                            vars.vecmathVect3d1.set(0.0f, 10.0f, 0.0f);
+                            vars.vecmathVect3d2.set(0.0f, -1.0f, 0.0f);
+                            entity.getRigidBody().applyImpulse(vars.vecmathVect3d1, vars.vecmathVect3d2);
+                            break;
                     }
                     vars.release();
                 }
@@ -259,7 +268,7 @@ public class JBulletHelloWorld {
         cube1.buildMesh();
 
         final BoxShape boxShape = new BoxShape(new javax.vecmath.Vector3f(cubeSize, cubeSize, cubeSize));
-        cube1.createRigidBody(boxShape, cubeSize * cubeSize * cubeSize);
+        cube1.createRigidBody(boxShape, 1.0f);
         cube1.getRigidBody().setActivationState(CollisionObject.DISABLE_DEACTIVATION);
         this.setEntityLightingParams(cube1, color);
         cube1.setTranslation(translation);
@@ -333,26 +342,62 @@ public class JBulletHelloWorld {
             this.scene.addEntity(bananaMesh);
             this.setEntityLightingParams(bananaMesh, new Vector4f(1.0f, 1.0f, 0.2f, 1.0f));
 
-            final MeshEntity cube1 = this.createCube(CUBE_1_ENTITY_NAME, 1.0f,
-                    new Vector3f(-5.0f, -1.0f, -3.0f), new Vector4f(1.0f, 0.0f, 0.0f, 1.0f));
-            final MeshEntity cube2 = this.createCube("Cube2", 0.5f,
-                    new Vector3f(-5.0f, 1.0f, -3.0f), new Vector4f(1.0f, 0.0f, 1.0f, 1.0f));
+//            final MeshEntity cube1 = this.createCube(CUBE_1_ENTITY_NAME, 1.0f,
+//                    new Vector3f(-5.0f, -1.0f, -3.0f), new Vector4f(1.0f, 0.0f, 0.0f, 1.0f));
+//            final MeshEntity cube2 = this.createCube("Cube2", 0.5f,
+//                    new Vector3f(-5.0f, 0.5f, -3.0f), new Vector4f(1.0f, 0.0f, 1.0f, 1.0f));
+//
+//            this.createConstraintBetweenEntities(cube1, cube2);
 
-            this.createConstraintBetweenEntities(cube1, cube2);
+            final TempVars vars = TempVars.get();
+            final Vector4f redColor = new Vector4f(1.0f, 0.0f, 0.0f, 1.0f);
+            for (int i = 0; i < 10; i++) {
+                final String entityName = "Cube" + (i + 1);
+                final MeshEntity cube = this.createCube(entityName, 0.5f,
+                        new Vector3f(-5.0f, i + 0.5f, -3.0f),
+                        i == 0 ? redColor : this.randColor());
+                this.scene.addEntityToPhysicsWorld(entityName);
+                cube.setCollisionGroup(COLLISION_GROUP_02);
+
+                if (i == 0) {
+                    continue;
+                }
+
+                final RigidBody rbA = cube.getRigidBody();
+                final RigidBody rbB = this.scene.getEntity("Cube" + i).getRigidBody();
+
+                vars.vecmathTransform.setIdentity();
+                MatrixUtil.setEulerZYX(vars.vecmathTransform.basis, 0.0f, 0.0f, 0.0f);
+                vars.vecmathTransform.origin.set(0.0f, -0.5f, 0.0f);
+                vars.vecmathTransform2.setIdentity();
+                MatrixUtil.setEulerZYX(vars.vecmathTransform2.basis, 0.0f, 0.0f, 0.0f);
+                vars.vecmathTransform2.origin.set(0.0f, 0.5f, 0.0f);
+
+                final Generic6DofConstraint constraint = new Generic6DofConstraint(rbA, rbB, vars.vecmathTransform,
+                        vars.vecmathTransform2, true);
+                constraint.setLimit(0, 0.0f, 0.0f);
+                constraint.setLimit(1, 0.0f, 0.0f);
+                constraint.setLimit(2, 0.0f, 0.0f);
+                constraint.setLimit(3, -30.0f * Utils.DEG2RAD, 30.0f * Utils.DEG2RAD);
+                constraint.setLimit(4, 0.0f, 0.0f);
+                constraint.setLimit(5, 0.0f, 0.0f);
+                this.scene.addConstraint(constraint, true);
+            }
+            vars.release();
 
             //  Add the objects to the physics world.
             this.scene.addEntityToPhysicsWorld(GROUND_ENTITY_NAME);
             this.scene.addEntityToPhysicsWorld(SPHERE_ENTITY_NAME);
             this.scene.addEntityToPhysicsWorld(BANANA_ENTITY_NAME);
-            this.scene.addEntityToPhysicsWorld(CUBE_1_ENTITY_NAME);
-            this.scene.addEntityToPhysicsWorld("Cube2");
+//            this.scene.addEntityToPhysicsWorld(CUBE_1_ENTITY_NAME);
+//            this.scene.addEntityToPhysicsWorld("Cube2");
 
             //  Set collision groups and mask. Note that setting groups/masks is possible AFTER an entity has been
             //  added to the physics world.
             sphere.setCollisionGroup(COLLISION_GROUP_02);
             bananaMesh.setCollisionGroup(COLLISION_GROUP_02);
-            cube1.setCollisionGroup(COLLISION_GROUP_02);
-            cube2.setCollisionGroup(COLLISION_GROUP_02);
+//            cube1.setCollisionGroup(COLLISION_GROUP_02);
+//            cube2.setCollisionGroup(COLLISION_GROUP_02);
             ground.setCollisionMask(COLLISION_GROUP_02);
 
             //  Setup the camera.
@@ -379,39 +424,10 @@ public class JBulletHelloWorld {
         vars.release();
     }
 
-    private void createConstraintBetweenEntities(AbstractEntity a, AbstractEntity b) {
-        final TempVars vars = TempVars.get();
+    private Vector4f randColor() {
+        final ThreadLocalRandom random = ThreadLocalRandom.current();
 
-        final RigidBody rbA = a.getRigidBody();
-        final RigidBody rbB = b.getRigidBody();
-
-        //  Get the transforms.
-        final Transform rbATransform = vars.vecmathTransform;
-        final Transform rbBTransform = vars.vecmathTransform2;
-        rbA.getCenterOfMassTransform(rbATransform);
-        rbB.getCenterOfMassTransform(rbBTransform);
-
-        //  Get the bodies' dimensions.
-        this.getExtents(rbA.getCollisionShape(), rbATransform, vars.vect3d1);
-        this.getExtents(rbB.getCollisionShape(), rbBTransform, vars.vect3d2);
-
-        //  Calculate pivot points.
-        rbATransform.origin.set(0.0f, -vars.vect3d2.y - vars.vect3d1.y, 0.0f);
-        rbBTransform.origin.set(0.0f, 0.0f, 0.0f);
-
-        final Generic6DofConstraint constraint = new Generic6DofConstraint(rbA, rbB, rbATransform,
-                rbBTransform, true);
-
-        //  Limits.
-        vars.vect3d1.set(-Utils.QUARTER_PI, 0.0f, -Utils.QUARTER_PI);
-        vars.vect3d2.set(Utils.HALF_PI, 0.0f, Utils.HALF_PI);
-        Utils.convert(vars.vecmathVect3d1, vars.vect3d1);
-        Utils.convert(vars.vecmathVect3d2, vars.vect3d2);
-        constraint.setAngularLowerLimit(vars.vecmathVect3d1);
-        constraint.setAngularUpperLimit(vars.vecmathVect3d2);
-
-        this.scene.addConstraint(constraint, true);
-        vars.release();
+        return new Vector4f(random.nextFloat(), random.nextFloat(), random.nextFloat(), 1.0f);
     }
 
     private void setEntityLightingParams(final AbstractEntity entity, final Vector4f diffuseColor) {

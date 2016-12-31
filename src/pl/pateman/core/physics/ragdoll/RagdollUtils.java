@@ -4,7 +4,9 @@ import com.bulletphysics.collision.shapes.CollisionShape;
 import com.bulletphysics.dynamics.RigidBody;
 import com.bulletphysics.dynamics.constraintsolver.ConeTwistConstraint;
 import com.bulletphysics.dynamics.constraintsolver.HingeConstraint;
+import com.bulletphysics.dynamics.constraintsolver.TypedConstraint;
 import com.bulletphysics.linearmath.DefaultMotionState;
+import com.bulletphysics.linearmath.MatrixUtil;
 import com.bulletphysics.linearmath.Transform;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
@@ -41,11 +43,6 @@ final class RagdollUtils {
 
         Utils.fromRotationTranslationScale(out, boneRot, bonePos, Utils.IDENTITY_VECTOR);
         vars.release();
-    }
-
-    static void getBoneOffsetComponents(final Bone bone, final Vector3f outVec, final Quaternionf outQuat) {
-        bone.getOffsetMatrix().getTranslation(outVec);
-        bone.getOffsetMatrix().getNormalizedRotation(outQuat);
     }
 
     /**
@@ -104,11 +101,17 @@ final class RagdollUtils {
 
         final RigidBody body = new RigidBody(mass, new DefaultMotionState(vars.vecmathTransform), collisionShape,
                 vars.vecmathVect3d1);
-        body.setCenterOfMassTransform(vars.vecmathTransform);
         vars.release();
         return body;
     }
 
+    /**
+     * Returns the extents of the given rigid body.
+     *
+     * @param rigidBody Rigid body.
+     * @param outVector Rigid body's extents.
+     * @return {@code Vector3f}.
+     */
     static Vector3f getRigidBodyExtents(final RigidBody rigidBody, final Vector3f outVector) {
         final TempVars vars = TempVars.get();
 
@@ -124,28 +127,49 @@ final class RagdollUtils {
         return outVector;
     }
 
-    static ConeTwistConstraint createConeTwistConstraint(final RigidBody rbA, final RigidBody rbB,
-                                                         final Transform transformA, final Transform transformB,
-                                                         final float[] limits) {
-        final ConeTwistConstraint coneTwistConstraint = new ConeTwistConstraint(rbA, rbB, transformA, transformB);
-        coneTwistConstraint.setLimit(limits[0], limits[1], limits[2], limits[3], limits[4], limits[5]);
-        return coneTwistConstraint;
-    }
-
-    static HingeConstraint createHingeConstraint(final RigidBody rbA, final RigidBody rbB,
-                                                 final Transform transformA, final Transform transformB,
-                                                 final float[] limits) {
+    static TypedConstraint createConstraint(final Bone parent, final RigidBody rbA,
+                                            final RigidBody rbB, final Vector3f pivotA, final Vector3f pivotB,
+                                            final RagdollLinkType constraintType, final float[] limits) {
         final TempVars vars = TempVars.get();
 
-        //  Set the hinge axes.
-        vars.vecmathVect3d1.set(limits[5], limits[6], limits[7]);
-        vars.vecmathVect3d2.set(limits[8], limits[9], limits[10]);
+        final Vector3f hingePos = parent.getWorldBindMatrix().getTranslation(vars.vect3d1);
 
-        final HingeConstraint hingeConstraint = new HingeConstraint(rbB, rbA, transformB, transformA);
-        hingeConstraint.setLimit(limits[0], limits[1], limits[2], limits[3], limits[4]);
+        final Matrix4f worldA = vars.tempMat4x41;
+        final Matrix4f worldB = vars.tempMat4x42;
+        Utils.transformToMatrix(worldA, rbA.getCenterOfMassTransform(vars.vecmathTransform));
+        Utils.transformToMatrix(worldB, rbB.getCenterOfMassTransform(vars.vecmathTransform));
+
+        worldA.invert();
+        worldB.invert();
+
+        final Vector3f offA = vars.vect3d2;
+        final Vector3f offB = vars.vect3d3;
+        worldA.transformPosition(hingePos, offA);
+        worldB.transformPosition(hingePos, offB);
+
+        final Transform transA = vars.vecmathTransform;
+        final Transform transB = vars.vecmathTransform2;
+        transA.setIdentity();
+        transB.setIdentity();
+        Utils.convert(transA.origin, offA);
+        Utils.convert(transB.origin, offB);
+        MatrixUtil.setEulerZYX(transA.basis, pivotA.x, pivotA.y, pivotA.z);
+        MatrixUtil.setEulerZYX(transB.basis, pivotB.x, pivotB.y, pivotB.z);
+
+        TypedConstraint constraint = null;
+        switch (constraintType) {
+            case CONE_TWIST:
+                constraint = new ConeTwistConstraint(rbA, rbB, transA, transB);
+                ((ConeTwistConstraint) constraint).setLimit(limits[0], limits[1], limits[2], limits[3], limits[4], limits[5]);
+                break;
+            case HINGE:
+                constraint = new HingeConstraint(rbA, rbB, transA, transB);
+                ((HingeConstraint) constraint).setLimit(limits[0], limits[1], limits[2], limits[3], limits[4]);
+                break;
+        }
 
         vars.release();
-        return hingeConstraint;
+        return constraint;
     }
 
     static class SimpleAABB {

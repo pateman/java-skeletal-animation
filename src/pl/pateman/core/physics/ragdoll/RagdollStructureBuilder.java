@@ -6,7 +6,6 @@ import pl.pateman.core.mesh.Mesh;
 import pl.pateman.core.mesh.Skeleton;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * A builder for ragdolls.
@@ -46,8 +45,9 @@ public final class RagdollStructureBuilder {
 
         final Map<BodyPartType, BodyPart> bodyParts = this.ragdollStructure.getBodyParts();
         for (final Link link : this.linkList) {
+            final Bone linkBone = this.mesh.getSkeleton().getBoneByName(link.linkBone);
             this.ragdollStructure.getBodyLinks().add(new RagdollLink(bodyParts.get(link.partA),
-                    bodyParts.get(link.partB), link.limits, link.linkType));
+                    bodyParts.get(link.partB), link.limits, link.linkType, linkBone));
         }
 
         for (BodyPartType type : bodyParts.keySet()) {
@@ -105,10 +105,11 @@ public final class RagdollStructureBuilder {
      *
      * @param partA Body part type of the first part to link.
      * @param partB Body part type of the second part to link.
+     * @param linkBoneName Name of the bone that the constraint should be parented at.
      * @return Body part link builder.
      */
-    public Link startLink(final BodyPartType partA, final BodyPartType partB) {
-        if (partA == null || partB == null) {
+    public Link startLink(final BodyPartType partA, final BodyPartType partB, final String linkBoneName) {
+        if (partA == null || partB == null || linkBoneName == null || linkBoneName.isEmpty()) {
             throw new IllegalArgumentException();
         }
 
@@ -116,7 +117,11 @@ public final class RagdollStructureBuilder {
             throw new IllegalStateException("One of parts is not configured, hence cannot be linked");
         }
 
-        final Link newLink = new Link(partA, partB, this);
+        if (this.mesh.getSkeleton().getBoneByName(linkBoneName) == null) {
+            throw new IllegalStateException("Unknown bone " + linkBoneName);
+        }
+
+        final Link newLink = new Link(partA, partB, linkBoneName, this);
         final int indexOf = this.linkList.indexOf(newLink);
         if (indexOf != -1) {
             return this.linkList.get(indexOf);
@@ -148,25 +153,6 @@ public final class RagdollStructureBuilder {
         this.pivotedBones.put(bodyPartType, boneNameSet);
 
         return this;
-    }
-
-    /**
-     * Small utility method which returns the names of the bones which haven't been assigned to any body part.
-     *
-     * @return {@code List<String>}.
-     */
-    public List<String> getUnassignedBones() {
-        final List<String> boneNames = this.mesh.getSkeleton().getBones().
-                stream().
-                map(Bone::getName).
-                collect(Collectors.toList());
-        final Set<String> assignedBones = this.partMap.values().
-                stream().
-                flatMap(part -> part.boneNames.stream()).
-                collect(Collectors.toSet());
-
-        boneNames.removeAll(assignedBones);
-        return boneNames;
     }
 
     public final class Part {
@@ -233,10 +219,12 @@ public final class RagdollStructureBuilder {
         private final RagdollStructureBuilder builder;
         private final float[] limits;
         private RagdollLinkType linkType;
+        private final String linkBone;
 
-        Link(BodyPartType partA, BodyPartType partB, RagdollStructureBuilder builder) {
+        Link(BodyPartType partA, BodyPartType partB, String linkBone, RagdollStructureBuilder builder) {
             this.partA = partA;
             this.partB = partB;
+            this.linkBone = linkBone;
             this.builder = builder;
             this.limits = new float[11];
             this.linkType = null;

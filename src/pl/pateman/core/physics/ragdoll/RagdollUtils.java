@@ -16,10 +16,7 @@ import pl.pateman.core.Utils;
 import pl.pateman.core.mesh.Bone;
 import pl.pateman.core.mesh.Mesh;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Created by pateman.
@@ -43,6 +40,17 @@ final class RagdollUtils {
 
         Utils.fromRotationTranslationScale(out, boneRot, bonePos, Utils.IDENTITY_VECTOR);
         vars.release();
+    }
+
+    static Matrix4f getOffsetMatrixForBone(final Matrix4f out, final Bone bone) {
+        final TempVars vars = TempVars.get();
+
+        final Vector3f bonePos = bone.getOffsetMatrix().getTranslation(vars.vect3d2);
+        final Quaternionf boneRot = bone.getOffsetMatrix().getNormalizedRotation(vars.quat1);
+
+        Utils.fromRotationTranslationScale(out, boneRot, bonePos, Utils.IDENTITY_VECTOR);
+        vars.release();
+        return out;
     }
 
     /**
@@ -129,7 +137,7 @@ final class RagdollUtils {
 
     static TypedConstraint createConstraint(final Bone parent, final RigidBody rbA,
                                             final RigidBody rbB, final Vector3f pivotA, final Vector3f pivotB,
-                                            final RagdollLinkType constraintType, final float[] limits) {
+                                            final RagdollLinkType constraintType, final List<Float> limits) {
         final TempVars vars = TempVars.get();
 
         final Vector3f hingePos = parent.getWorldBindMatrix().getTranslation(vars.vect3d1);
@@ -146,6 +154,8 @@ final class RagdollUtils {
         final Vector3f offB = vars.vect3d3;
         worldA.transformPosition(hingePos, offA);
         worldB.transformPosition(hingePos, offB);
+        offA.mul(0.5f);
+        offB.mul(0.5f);
 
         final Transform transA = vars.vecmathTransform;
         final Transform transB = vars.vecmathTransform2;
@@ -160,11 +170,21 @@ final class RagdollUtils {
         switch (constraintType) {
             case CONE_TWIST:
                 constraint = new ConeTwistConstraint(rbA, rbB, transA, transB);
-                ((ConeTwistConstraint) constraint).setLimit(limits[0], limits[1], limits[2], limits[3], limits[4], limits[5]);
+                if (limits.size() > 3) {
+                    ((ConeTwistConstraint) constraint).setLimit(limits.get(0), limits.get(1), limits.get(2),
+                            limits.get(3), limits.get(4), limits.get(5));
+                } else {
+                    ((ConeTwistConstraint) constraint).setLimit(limits.get(0), limits.get(1), limits.get(2));
+                }
                 break;
             case HINGE:
                 constraint = new HingeConstraint(rbA, rbB, transA, transB);
-                ((HingeConstraint) constraint).setLimit(limits[0], limits[1], limits[2], limits[3], limits[4]);
+                if (limits.size() > 2) {
+                    ((HingeConstraint) constraint).setLimit(limits.get(0), limits.get(1), limits.get(2), limits.get(3),
+                            limits.get(4));
+                } else {
+                    ((HingeConstraint) constraint).setLimit(limits.get(0), limits.get(1));
+                }
                 break;
         }
 

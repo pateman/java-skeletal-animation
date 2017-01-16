@@ -1,0 +1,67 @@
+{
+  "parts": {
+    "head": {
+      "colliderType": "BOX",
+      "colliderBones": ["Bip01 HeadNub", "Bip01 Head"],
+      "attachedBones": [],
+      "parentBone": "Bip01 Head",
+      "bone": "Bip01 HeadNub",
+      "offsetRotation": [0.0, 0.0, 0.0, 1.0],
+      "physicalProperties": {
+        "linearDamping": 0.05,
+        "angularDamping": 0.85,
+        "deactivationTime": 0.8,
+        "linearSleepingThreshold": 1.6,
+        "angularSleepingThreshold": 2.5
+      }
+    },
+    "chest": {
+      "colliderType": "BOX",
+      "colliderBones": ["Bip01 Spine", "Bip01 Spine1", "Bip01 Pelvis"],
+      "attachedBones": ["Bip01", "Bip01 Neck", "Bip01 R Clavicle", "Bip01 L Clavicle"],
+      "parentBone": "Bip01 Spine",
+      "bone": "Bip01 Neck",
+      "offsetRotation": [0.0, 0.0, 0.0, 1.0],
+      "physicalProperties": {
+        "linearDamping": 0.05,
+        "angularDamping": 0.85,
+        "deactivationTime": 0.8,
+        "linearSleepingThreshold": 1.6,
+        "angularSleepingThreshold": 2.5
+      }
+    },
+    "left upper arm": {
+      "colliderType": "BOX",
+      "colliderBones": ["Bip01 L UpperArm"],
+      "attachedBones": [],
+      "parentBone": "Bip01 L UpperArm",
+      "bone": "Bip01 L Forearm",
+      "offsetRotation": [0.0, 0.0, 0.0, 1.0],
+      "physicalProperties": {
+        "linearDamping": 0.05,
+        "angularDamping": 0.85,
+        "deactivationTime": 0.8,
+        "linearSleepingThreshold": 1.6,
+        "angularSleepingThreshold": 2.5
+      }
+    }
+  },
+  "links": {
+    "chest->head": {
+      "linkBone": "Bip01 Neck",
+      "constraintType": "CONE_TWIST",
+      "limits": [0.4712385, 0.4712385, 0.05],
+      "pivotA": [0.0, 0.0, 1.570795],
+      "pivotB": [0.0, 0.0, 1.570795],
+      "flipAWithB": false
+    },
+    "chest->left upper arm": {
+      "linkBone": "Bip01 L UpperArm",
+      "constraintType": "CONE_TWIST",
+      "limits": [1.884954, 1.884954, 0.05],
+      "pivotA": [0.0, 2.3561925, 0.0],
+      "pivotB": [0.0, 0.0, 0.0],
+      "flipAWithB": false
+    }
+  }
+}

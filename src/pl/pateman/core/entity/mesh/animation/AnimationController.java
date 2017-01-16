@@ -79,7 +79,7 @@ public final class AnimationController {
             for (BoneAnimationChannel channel : this.animationChannels.values()) {
                 channel.stepAnimation(deltaTime);
             }
-//            this.ragdoll.alignRagdollToModel();
+            this.ragdoll.alignRagdollToModel();
         } else {
             this.ragdoll.updateRagdoll();
         }

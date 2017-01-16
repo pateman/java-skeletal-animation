@@ -49,9 +49,11 @@ class RagdollBody {
         vars.tempMat4x41.getScale(transformComponents.getScale());
 
         //  In order to get the translation of the bone, we need to convert the world bind matrix into the
-        //  rigid body's sppace and get the translation then.
+        //  rigid body's space and get the translation then. We need to multiply by 0.5 to make up for the offset
+        //  between bones.
         invRigidBodyTransform.mul(vars.tempMat4x41, vars.tempMat4x41);
         vars.tempMat4x41.getTranslation(transformComponents.getTranslation());
+        transformComponents.getTranslation().mul(0.5f);
 
         this.initialBoneTransforms.put(bone.getIndex(), transformComponents);
 

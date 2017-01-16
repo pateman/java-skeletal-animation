@@ -155,6 +155,24 @@ public final class Utils {
         return fb;
     }
 
+    public static Quaternionf floatsToQuat(final List<Float> floats, final Quaternionf outQuat) {
+        if (floats == null || floats.size() < 4 || outQuat == null) {
+            throw new IllegalArgumentException();
+        }
+
+        outQuat.set(floats.get(0), floats.get(1), floats.get(2), floats.get(3));
+        return outQuat;
+    }
+
+    public static Vector3f floatsToVec3f(final List<Float> floats, final Vector3f outVec) {
+        if (floats == null || floats.size() < 3 || outVec == null) {
+            throw new IllegalArgumentException();
+        }
+
+        outVec.set(floats.get(0), floats.get(1), floats.get(2));
+        return outVec;
+    }
+
     public static void fromRotationTranslationScale(final Matrix4f out, final Quaternionf rotation,
                                                     final Vector3f translation, final Vector3f scale) {
         final TempVars tempVars = TempVars.get();

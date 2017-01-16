@@ -68,6 +68,7 @@ public class Main {
             "P - toggle physics simulation\n" +
             "R - toggle ragdoll\n" +
             "M - toggle manual bone control mode (off, blend_with_anim, full)\n" +
+            "L - toggle lighting\n" +
             "Left arrow - rotate the controlled bone left\n" +
             "Right arrow - rotate the controlled bone right\n" +
             "W,S,A,D - camera movement\n" +
@@ -99,6 +100,7 @@ public class Main {
     private PhysicsDebugger physicsDebugger;
     private RagdollDebugger ragdollDebugger;
     private boolean physicsDebug;
+    private boolean lightingEnabled = true;
     private boolean physicsSimulation = true;
 
     private boolean displayHelp;
@@ -224,6 +226,10 @@ public class Main {
                                 Main.this.manualBone.getManualControlRotation().rotate(
                                     (float) Math.toRadians(120.0f * Main.this.deltaTime), 0.0f, 0.0f);
                             }
+                            break;
+                        //  'L' key
+                        case GLFW_KEY_L:
+                            Main.this.lightingEnabled = !Main.this.lightingEnabled;
                             break;
                     }
                 } else if (action == GLFW_PRESS || action == GLFW_REPEAT) {
@@ -477,7 +483,7 @@ public class Main {
         program.setUniformMatrix4(Utils.PROJECTION_UNIFORM, Utils.matrix4fToBuffer(camera.getProjectionMatrix()));
         program.setUniform1(Utils.TEXTURE_UNIFORM, 0);
         program.setUniform1(Utils.USETEXTURING_UNIFORM, useTexturing);
-        program.setUniform1(Utils.USELIGHTING_UNIFORM, 0);
+        program.setUniform1(Utils.USELIGHTING_UNIFORM, this.lightingEnabled ? 1 : 0);
         program.setUniform4(Utils.DIFFUSECOLOR_UNIFORM, diffuseColor.x, diffuseColor.y, diffuseColor.z, diffuseColor.w);
         program.setUniform3(Utils.CAMERADIRECTION_UNIFORM, 0.0f, 0.0f, 1.0f);
         if (meshEntity.getMesh().hasSkeleton()) {

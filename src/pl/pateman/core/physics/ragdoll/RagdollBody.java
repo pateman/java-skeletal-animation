@@ -21,15 +21,13 @@ class RagdollBody {
     private final RigidBody rigidBody;
     private final Quaternionf initialRotation;
     private final Quaternionf inverseInitialRotation;
-    private final Vector3f initialTranslation;
     private final Map<Integer, TransformComponents> initialBoneTransforms;
     private final List<Bone> assignedBones;
 
-    RagdollBody(RigidBody rigidBody, List<Bone> bones, Quaternionf initialRotation, Vector3f initialTranslation) {
+    RagdollBody(RigidBody rigidBody, List<Bone> bones, Quaternionf initialRotation) {
         this.rigidBody = rigidBody;
         this.initialRotation = new Quaternionf().set(initialRotation);
         this.inverseInitialRotation = initialRotation.invert(new Quaternionf());
-        this.initialTranslation = new Vector3f().set(initialTranslation);
 
         this.initialBoneTransforms = new TreeMap<>();
         this.assignedBones = bones;
@@ -97,10 +95,6 @@ class RagdollBody {
 
     Quaternionf getInitialRotation() {
         return initialRotation;
-    }
-
-    Vector3f getInitialTranslation() {
-        return initialTranslation;
     }
 
     List<Bone> getAssignedBones() {

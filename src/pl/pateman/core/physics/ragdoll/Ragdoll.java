@@ -43,6 +43,12 @@ public final class Ragdoll {
         this.boneMatrices = new TreeMap<>();
     }
 
+    /**
+     * Creates a collision shape for the given ragdoll part.
+     *
+     * @param part Ragdoll part to create a collision shape from.
+     * @return {@code CollisionShape}.
+     */
     private CollisionShape createColliderForBodyPart(final RagdollStructure.Part part) {
         //  Start by computing AABBs for each bone that the body part consists of. When creating the AABBs, compute
         //  one big AABB which encloses all of them.
@@ -80,6 +86,13 @@ public final class Ragdoll {
         return resultShape;
     }
 
+    /**
+     * Creates a rigid body.
+     *
+     * @param part Ragdoll part.
+     * @param collisionShape Collision shape.
+     * @return {@code RigidBody}.
+     */
     private RigidBody createRigidBody(final RagdollStructure.Part part, final CollisionShape collisionShape) {
         final TempVars vars = TempVars.get();
 
@@ -87,8 +100,8 @@ public final class Ragdoll {
 
         //  Create entity data as well. We don't really need a valid identifier, so a random value will do just
         //  fine.
-        final EntityData entityData = new EntityData(System.currentTimeMillis() + this.random.nextInt() +
-                part.getName().hashCode(),"RagdollBoxCollider-" + part.getName(), null);
+        final EntityData entityData = new EntityData((long) part.getName().hashCode(),
+                "RagdollBoxCollider-" + part.getName(), null);
         final RigidBody rigidBody = RagdollUtils.createRigidBody(part.getColliderBones().size(), collisionShape,
                 vars.tempMat4x41);
         rigidBody.setUserPointer(entityData);
@@ -102,8 +115,15 @@ public final class Ragdoll {
         return rigidBody;
     }
 
+    /**
+     * Adds the given rigid body to the simulation.
+     *
+     * @param part Ragdoll part.
+     * @param rigidBody Rigid body.
+     * @param transform The rigid body's initial transformation matrix.
+     */
     private void addBodyToSimulation(final RagdollStructure.Part part, final RigidBody rigidBody,
-                                     final Matrix4f transform, final Vector3f initialPivot) {
+                                     final Matrix4f transform) {
         final TempVars vars = TempVars.get();
 
         transform.getUnnormalizedRotation(vars.quat1);
@@ -115,12 +135,17 @@ public final class Ragdoll {
         final List<Bone> allBones = new LinkedList<>(part.getColliderBones());
         allBones.addAll(part.getAttachedBones());
 
-        this.partRigidBodies.put(part.getName(), new RagdollBody(rigidBody, allBones, vars.quat1, initialPivot));
+        this.partRigidBodies.put(part.getName(), new RagdollBody(rigidBody, allBones, vars.quat1));
         this.dynamicsWorld.addRigidBody(rigidBody);
 
         vars.release();
     }
 
+    /**
+     * Creates a constraint between two rigid bodies.
+     *
+     * @param ragdollLink Constraint information.
+     */
     private void createConstraint(final RagdollStructure.Link ragdollLink) {
         final TempVars vars = TempVars.get();
 
@@ -147,54 +172,85 @@ public final class Ragdoll {
         vars.release();
     }
 
-    public void alignRagdollToModel() {
-        final TempVars vars = TempVars.get();
-
-        this.entity.getTransformation().invert(vars.tempMat4x42);
-
-        for (final Map.Entry<String, RagdollBody> entry : this.partRigidBodies.entrySet()) {
-            final RagdollStructure.Part part = this.ragdollStructure.getPart(entry.getKey());
-
-            this.computeTransform(part.getParentBone(), part.getBone(), part.getOffsetRotation(), false, vars.tempMat4x41);
-            vars.tempMat4x42.mul(vars.tempMat4x41, vars.tempMat4x41);
-            Utils.matrixToTransform(vars.vecmathTransform, vars.tempMat4x41);
-            entry.getValue().getRigidBody().setCenterOfMassTransform(vars.vecmathTransform);
-        }
-
-        vars.release();
-    }
-
+    /**
+     * Computes the transformation of a rigid body by using the parent and the ending bone. When {@code useBindMatrix}
+     * is set to {@code true}, the bones' world bind matrices are used, otherwise their offset matrices.
+     *
+     * @param parent Parent bone.
+     * @param bone Ending bone.
+     * @param rot Rotation offset.
+     * @param useBindMatrix Whether the world bind matrix should be used or not.
+     * @param outMatrix Computed transformation.
+     */
     private void computeTransform(final Bone parent, final Bone bone, final Quaternionf rot, boolean useBindMatrix,
                                   final Matrix4f outMatrix) {
         final TempVars vars = TempVars.get();
 
-        final Matrix4f parentMat = useBindMatrix ? RagdollUtils.getMatrixForBone(vars.tempMat4x41, parent) :
+        final Matrix4f parentMat = useBindMatrix ? RagdollUtils.getWorldBindMatrixForBone(vars.tempMat4x41, parent) :
                 RagdollUtils.getOffsetMatrixForBone(vars.tempMat4x41, parent);
-        final Matrix4f boneMat = useBindMatrix ? RagdollUtils.getMatrixForBone(vars.tempMat4x42, bone) :
+        final Matrix4f boneMat = useBindMatrix ? RagdollUtils.getWorldBindMatrixForBone(vars.tempMat4x42, bone) :
                 RagdollUtils.getOffsetMatrixForBone(vars.tempMat4x42, bone);
 
         final Vector3f parentPos = parentMat.getTranslation(vars.vect3d1);
         final Vector3f bonePos = boneMat.getTranslation(vars.vect3d2);
 
+        //  Multiply the parent's rotation by the given offset.
         final Quaternionf parentRot = parentMat.getNormalizedRotation(vars.quat1);
         final Quaternionf q = parentRot.mul(rot, vars.quat2);
 
+        //  Finally, compute the translation by finding the middle point between the bones.
         final Vector3f p = parentPos.add(bonePos, vars.vect3d3).mul(0.5f);
         Utils.fromRotationTranslationScale(outMatrix, q, p, Utils.IDENTITY_VECTOR);
 
         vars.release();
     }
 
+    /**
+     * Creates the given ragdoll part.
+     *
+     * @param bodyPart Ragdoll part to create.
+     */
     private void createBodyPart(final RagdollStructure.Part bodyPart) {
         final TempVars vars = TempVars.get();
 
-        this.computeTransform(bodyPart.getParentBone(), bodyPart.getBone(), bodyPart.getOffsetRotation(), true, vars.tempMat4x41);
-        final Vector3f p = vars.tempMat4x41.getTranslation(vars.vect3d1);
+        //  Compute the initial transformation of the rigid body.
+        this.computeTransform(bodyPart.getParentBone(), bodyPart.getBone(), bodyPart.getOffsetRotation(),
+                true, vars.tempMat4x41);
 
+        //  Create the rigid body.
         final CollisionShape collisionShape = this.createColliderForBodyPart(bodyPart);
         final RigidBody rigidBody = this.createRigidBody(bodyPart, collisionShape);
 
-        this.addBodyToSimulation(bodyPart, rigidBody, vars.tempMat4x41, p);
+        //  Add it to the simulation.
+        this.addBodyToSimulation(bodyPart, rigidBody, vars.tempMat4x41);
+
+        vars.release();
+    }
+
+    /**
+     * Aligns the ragdoll to the entity.
+     */
+    public void alignRagdollToModel() {
+        final TempVars vars = TempVars.get();
+
+        this.entity.getTransformation().invert(vars.tempMat4x42);
+
+        //  Iterate through the rigid bodies...
+        for (final Map.Entry<String, RagdollBody> entry : this.partRigidBodies.entrySet()) {
+            final RagdollStructure.Part part = this.ragdollStructure.getPart(entry.getKey());
+
+            //  Compute the new transformation using the bones' offset matrix.
+            this.computeTransform(part.getParentBone(), part.getBone(), part.getOffsetRotation(),
+                    false, vars.tempMat4x41);
+
+            //  Multiply the computed transformation by the inverse transformation matrix of the entity to position
+            //  everything correctly.
+            vars.tempMat4x42.mul(vars.tempMat4x41, vars.tempMat4x41);
+
+            //  Set the rigid body's transform.
+            Utils.matrixToTransform(vars.vecmathTransform, vars.tempMat4x41);
+            entry.getValue().getRigidBody().setCenterOfMassTransform(vars.vecmathTransform);
+        }
 
         vars.release();
     }
@@ -219,9 +275,11 @@ public final class Ragdoll {
             this.createConstraint(link);
         }
 
+        //  Compose an ordered map of bone offset matrices.
         this.mesh.getSkeleton().getBones().forEach(bone -> this.boneMatrices.put(bone.getIndex(),
                 bone.getOffsetMatrix()));
 
+        //  Initialize the created ragdoll bodies.
         this.partRigidBodies.values().forEach(RagdollBody::initializeBody);
 
         this.setEnabled(false);
@@ -234,7 +292,9 @@ public final class Ragdoll {
 
         //  Transform each assigned bone.
         for (final RagdollBody ragdollBody : this.partRigidBodies.values()) {
-            for (final Bone bone : ragdollBody.getAssignedBones()) {
+            for (int i = 0; i < ragdollBody.getAssignedBones().size(); i++) {
+                final Bone bone = ragdollBody.getAssignedBones().get(i);
+
                 ragdollBody.getTransformedBone(bone, vars.vect3d1, vars.quat1, vars.vect3d2);
 
                 final Matrix4f boneMatrix = this.boneMatrices.get(bone.getIndex());

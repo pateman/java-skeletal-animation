@@ -33,7 +33,7 @@ final class RagdollUtils {
      * @param out Final matrix.
      * @param bone Bone.
      */
-    static Matrix4f getMatrixForBone(final Matrix4f out, final Bone bone) {
+    static Matrix4f getWorldBindMatrixForBone(final Matrix4f out, final Bone bone) {
         final TempVars vars = TempVars.get();
 
         final Vector3f bonePos = bone.getWorldBindMatrix().getTranslation(vars.vect3d2);
@@ -44,6 +44,12 @@ final class RagdollUtils {
         return out;
     }
 
+    /**
+     * Returns the bone's offset matrix with its scaling removed.
+     *
+     * @param out Final matrix.
+     * @param bone Bone.
+     */
     static Matrix4f getOffsetMatrixForBone(final Matrix4f out, final Bone bone) {
         final TempVars vars = TempVars.get();
 
@@ -116,27 +122,17 @@ final class RagdollUtils {
     }
 
     /**
-     * Returns the extents of the given rigid body.
+     * Creates a {@code TypedConstraint}.
      *
-     * @param rigidBody Rigid body.
-     * @param outVector Rigid body's extents.
-     * @return {@code Vector3f}.
+     * @param parent Bone that the constraint will be attached to.
+     * @param rbA First rigid body.
+     * @param rbB Second rigid body.
+     * @param pivotA First body's pivot.
+     * @param pivotB Second body's pivot.
+     * @param constraintType Constraint type.
+     * @param limits List of limit values. The exact number of limits depends on the type of the constraint.
+     * @return {@code TypedConstraint}
      */
-    static Vector3f getRigidBodyExtents(final RigidBody rigidBody, final Vector3f outVector) {
-        final TempVars vars = TempVars.get();
-
-        rigidBody.getCenterOfMassTransform(vars.vecmathTransform);
-        rigidBody.getCollisionShape().getAabb(vars.vecmathTransform, vars.vecmathVect3d1, vars.vecmathVect3d2);
-
-        final SimpleAABB simpleAABB = new SimpleAABB();
-        Utils.convert(simpleAABB.min, vars.vecmathVect3d1);
-        Utils.convert(simpleAABB.max, vars.vecmathVect3d2);
-        simpleAABB.getExtents(outVector);
-
-        vars.release();
-        return outVector;
-    }
-
     static TypedConstraint createConstraint(final Bone parent, final RigidBody rbA,
                                             final RigidBody rbB, final Vector3f pivotA, final Vector3f pivotB,
                                             final RagdollLinkType constraintType, final List<Float> limits) {
@@ -197,6 +193,7 @@ final class RagdollUtils {
                 ((Generic6DofConstraint) constraint).setAngularLowerLimit(vars.vecmathVect3d1);
                 ((Generic6DofConstraint) constraint).setAngularUpperLimit(vars.vecmathVect3d2);
 
+                //  Lock the linear axes.
                 vars.vecmathVect3d1.set(0.0f, 0.0f, 0.0f);
                 ((Generic6DofConstraint) constraint).setLinearLowerLimit(vars.vecmathVect3d1);
                 ((Generic6DofConstraint) constraint).setLinearUpperLimit(vars.vecmathVect3d1);

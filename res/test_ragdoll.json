@@ -44,6 +44,117 @@
         "linearSleepingThreshold": 1.6,
         "angularSleepingThreshold": 2.5
       }
+    },
+    "left lower arm": {
+      "colliderType": "BOX",
+      "colliderBones": ["Bip01 L Forearm", "Bip01 L Hand", "Bip01 L Finger3"],
+      "attachedBones": ["Bip01 L Finger0", "Bip01 L Finger01", "Bip01 L Finger0Nub",
+        "Bip01 L Finger1", "Bip01 L Finger11", "Bip01 L Finger1Nub", "Bip01 L Finger2",
+        "Bip01 L Finger21", "Bip01 L Finger2Nub", "Bip01 L Finger31", "Bip01 L Finger3Nub",
+        "Bip01 L Finger4", "Bip01 L Finger41", "Bip01 L Finger4Nub"],
+      "parentBone": "Bip01 L Forearm",
+      "bone": "Bip01 L Hand",
+      "offsetRotation": [0.0, 0.0, 0.0, 1.0],
+      "physicalProperties": {
+        "linearDamping": 0.05,
+        "angularDamping": 0.85,
+        "deactivationTime": 0.8,
+        "linearSleepingThreshold": 1.6,
+        "angularSleepingThreshold": 2.5
+      }
+    },
+    "right upper arm": {
+      "colliderType": "BOX",
+      "colliderBones": ["Bip01 R UpperArm"],
+      "attachedBones": [],
+      "parentBone": "Bip01 R UpperArm",
+      "bone": "Bip01 R Forearm",
+      "offsetRotation": [0.0, 0.0, 0.0, 1.0],
+      "physicalProperties": {
+        "linearDamping": 0.05,
+        "angularDamping": 0.85,
+        "deactivationTime": 0.8,
+        "linearSleepingThreshold": 1.6,
+        "angularSleepingThreshold": 2.5
+      }
+    },
+    "right lower arm": {
+      "colliderType": "BOX",
+      "colliderBones": ["Bip01 R Forearm", "Bip01 R Hand", "Bip01 R Finger3"],
+      "attachedBones": ["Bip01 R Finger0", "Bip01 R Finger01", "Bip01 R Finger0Nub",
+        "Bip01 R Finger1", "Bip01 R Finger11", "Bip01 R Finger1Nub", "Bip01 R Finger2",
+        "Bip01 R Finger21", "Bip01 R Finger2Nub", "Bip01 R Finger31", "Bip01 R Finger3Nub",
+        "Bip01 R Finger4", "Bip01 R Finger41", "Bip01 R Finger4Nub"],
+      "parentBone": "Bip01 R Forearm",
+      "bone": "Bip01 R Hand",
+      "offsetRotation": [0.0, 0.0, 0.0, 1.0],
+      "physicalProperties": {
+        "linearDamping": 0.05,
+        "angularDamping": 0.85,
+        "deactivationTime": 0.8,
+        "linearSleepingThreshold": 1.6,
+        "angularSleepingThreshold": 2.5
+      }
+    },
+    "left upper leg": {
+      "colliderType": "BOX",
+      "colliderBones": ["Bip01 L Thigh"],
+      "attachedBones": [],
+      "parentBone": "Bip01 L Thigh",
+      "bone": "Bip01 L Calf",
+      "offsetRotation": [0.0, 0.0, 0.0, 1.0],
+      "physicalProperties": {
+        "linearDamping": 0.05,
+        "angularDamping": 0.85,
+        "deactivationTime": 0.8,
+        "linearSleepingThreshold": 1.6,
+        "angularSleepingThreshold": 2.5
+      }
+    },
+    "left lower leg": {
+      "colliderType": "BOX",
+      "colliderBones": ["Bip01 L Calf", "Bip01 L Foot"],
+      "attachedBones": ["Bip01 L Toe0", "Bip01 L Toe0Nub"],
+      "parentBone": "Bip01 L Calf",
+      "bone": "Bip01 L Foot",
+      "offsetRotation": [0.0, 0.0, 0.0, 1.0],
+      "physicalProperties": {
+        "linearDamping": 0.05,
+        "angularDamping": 0.85,
+        "deactivationTime": 0.8,
+        "linearSleepingThreshold": 1.6,
+        "angularSleepingThreshold": 2.5
+      }
+    },
+    "right upper leg": {
+      "colliderType": "BOX",
+      "colliderBones": ["Bip01 R Thigh"],
+      "attachedBones": [],
+      "parentBone": "Bip01 R Thigh",
+      "bone": "Bip01 R Calf",
+      "offsetRotation": [0.0, 0.0, 0.0, 1.0],
+      "physicalProperties": {
+        "linearDamping": 0.05,
+        "angularDamping": 0.85,
+        "deactivationTime": 0.8,
+        "linearSleepingThreshold": 1.6,
+        "angularSleepingThreshold": 2.5
+      }
+    },
+    "right lower leg": {
+      "colliderType": "BOX",
+      "colliderBones": ["Bip01 R Calf", "Bip01 R Foot"],
+      "attachedBones": ["Bip01 R Toe0", "Bip01 R Toe0Nub"],
+      "parentBone": "Bip01 R Calf",
+      "bone": "Bip01 R Foot",
+      "offsetRotation": [0.0, 0.0, 0.0, 1.0],
+      "physicalProperties": {
+        "linearDamping": 0.05,
+        "angularDamping": 0.85,
+        "deactivationTime": 0.8,
+        "linearSleepingThreshold": 1.6,
+        "angularSleepingThreshold": 2.5
+      }
     }
   },
   "links": {
@@ -55,13 +166,69 @@
       "pivotB": [0.0, 0.0, 1.570795],
       "flipAWithB": false
     },
-    "chest->left upper arm": {
+    "left upper arm->chest": {
       "linkBone": "Bip01 L UpperArm",
-      "constraintType": "CONE_TWIST",
-      "limits": [1.884954, 1.884954, 0.05],
-      "pivotA": [0.0, 2.3561925, 0.0],
+      "constraintType": "GENERIC",
+      "limits": [-2.513272, -1.19209290e-07, -1.570795, 2.513272, 1.19209290e-07, 1.570795],
+      "pivotA": [0.0, 0.0, 0.0],
       "pivotB": [0.0, 0.0, 0.0],
       "flipAWithB": false
+    },
+    "left upper arm->left lower arm": {
+      "linkBone": "Bip01 L Forearm",
+      "constraintType": "GENERIC",
+      "limits": [-1.19209290e-07, -1.19209290e-07, -1.19209290e-07, 2.3561925, 1.19209290e-07, 1.19209290e-07],
+      "pivotA": [0.0, 0.0, 0.0],
+      "pivotB": [0.0, 0.0, 0.0],
+      "flipAWithB": true
+    },
+    "right upper arm->chest": {
+      "linkBone": "Bip01 R UpperArm",
+      "constraintType": "GENERIC",
+      "limits": [-2.513272, -1.19209290e-07, -1.570795, 2.513272, 1.19209290e-07, 1.570795],
+      "pivotA": [0.0, 0.0, 0.0],
+      "pivotB": [0.0, 0.0, 0.0],
+      "flipAWithB": false
+    },
+    "right upper arm->right lower arm": {
+      "linkBone": "Bip01 R Forearm",
+      "constraintType": "GENERIC",
+      "limits": [-1.19209290e-07, -1.19209290e-07, -1.19209290e-07, 2.3561925, 1.19209290e-07, 1.19209290e-07],
+      "pivotA": [0.0, 0.0, 0.0],
+      "pivotB": [0.0, 0.0, 0.0],
+      "flipAWithB": true
+    },
+    "chest->left upper leg": {
+      "linkBone": "Bip01 Pelvis",
+      "constraintType": "GENERIC",
+      "limits": [-0.7853982, -1.19209290e-07, -1.19209290e-07, 1.2566371, 1.19209290e-07, 0.9424779],
+      "pivotA": [0.0, 0.0, 0.0],
+      "pivotB": [0.0, 0.0, 0.0],
+      "flipAWithB": false
+    },
+    "left upper leg->left lower leg": {
+      "linkBone": "Bip01 L Calf",
+      "constraintType": "GENERIC",
+      "limits": [-1.19209290e-07, -1.19209290e-07, -1.19209290e-07, 2.3561925, 1.19209290e-07, 1.19209290e-07],
+      "pivotA": [0.0, 0.0, 0.0],
+      "pivotB": [0.0, 0.0, 0.0],
+      "flipAWithB": true
+    },
+    "chest->right upper leg": {
+      "linkBone": "Bip01 Pelvis",
+      "constraintType": "GENERIC",
+      "limits": [-0.7853982, -1.19209290e-07, -0.9424779, 1.2566371, 1.19209290e-07, 1.19209290e-07],
+      "pivotA": [0.0, 0.0, 0.0],
+      "pivotB": [0.0, 0.0, 0.0],
+      "flipAWithB": false
+    },
+    "right upper leg->right lower leg": {
+      "linkBone": "Bip01 R Calf",
+      "constraintType": "GENERIC",
+      "limits": [-1.19209290e-07, -1.19209290e-07, -1.19209290e-07, 2.3561925, 1.19209290e-07, 1.19209290e-07],
+      "pivotA": [0.0, 0.0, 0.0],
+      "pivotB": [0.0, 0.0, 0.0],
+      "flipAWithB": true
     }
   }
 }

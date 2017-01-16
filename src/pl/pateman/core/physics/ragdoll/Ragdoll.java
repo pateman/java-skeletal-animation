@@ -89,7 +89,8 @@ public final class Ragdoll {
         //  fine.
         final EntityData entityData = new EntityData(System.currentTimeMillis() + this.random.nextInt() +
                 part.getName().hashCode(),"RagdollBoxCollider-" + part.getName(), null);
-        final RigidBody rigidBody = RagdollUtils.createRigidBody(1.0f, collisionShape, vars.tempMat4x41);
+        final RigidBody rigidBody = RagdollUtils.createRigidBody(part.getColliderBones().size(), collisionShape,
+                vars.tempMat4x41);
         rigidBody.setUserPointer(entityData);
         rigidBody.setDamping(part.getPhysicalProperties().getLinearDamping(), part.getPhysicalProperties().
                 getAngularDamping());
@@ -259,38 +260,18 @@ public final class Ragdoll {
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
 
-//        final int activationState = this.enabled ? CollisionObject.ACTIVE_TAG : CollisionObject.DISABLE_SIMULATION;
-        if (this.enabled) {
-            this.alignRagdollToModel();
-        }
         this.partRigidBodies.values().forEach(rb -> {
-//
-//            final TempVars vars = TempVars.get();
-//            vars.vecmathTransform.setIdentity();
-//            Utils.convert(vars.vecmathVect3d1, Utils.ZERO_VECTOR);
-//
-//            rb.getRigidBody().setInterpolationWorldTransform(vars.vecmathTransform);
-//            rb.getRigidBody().setInterpolationAngularVelocity(vars.vecmathVect3d1);
-//            rb.getRigidBody().setInterpolationLinearVelocity(vars.vecmathVect3d1);
-//            rb.getRigidBody().setAngularVelocity(vars.vecmathVect3d1);
-//
-////            rb.getRigidBody().forceActivationState(activationState);
             if (this.enabled && !rb.getRigidBody().isActive()) {
                 rb.getRigidBody().activate();
             }
             if (!this.enabled && rb.getRigidBody().isActive()) {
                 rb.getRigidBody().setActivationState(CollisionObject.WANTS_DEACTIVATION);
             }
-//            vars.release();
         });
     }
 
     public void setDynamicsWorld(DiscreteDynamicsWorld dynamicsWorld) {
         this.dynamicsWorld = dynamicsWorld;
-    }
-
-    RagdollStructure getRagdollStructure() {
-        return ragdollStructure;
     }
 
     public void setRagdollStructure(RagdollStructure ragdollStructure) {

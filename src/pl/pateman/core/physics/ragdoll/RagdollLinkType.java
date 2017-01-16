@@ -5,5 +5,6 @@ package pl.pateman.core.physics.ragdoll;
  */
 public enum RagdollLinkType {
     CONE_TWIST,
-    HINGE
+    HINGE,
+    GENERIC
 }

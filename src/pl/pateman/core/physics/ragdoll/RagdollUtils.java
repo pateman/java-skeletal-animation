@@ -3,6 +3,7 @@ package pl.pateman.core.physics.ragdoll;
 import com.bulletphysics.collision.shapes.CollisionShape;
 import com.bulletphysics.dynamics.RigidBody;
 import com.bulletphysics.dynamics.constraintsolver.ConeTwistConstraint;
+import com.bulletphysics.dynamics.constraintsolver.Generic6DofConstraint;
 import com.bulletphysics.dynamics.constraintsolver.HingeConstraint;
 import com.bulletphysics.dynamics.constraintsolver.TypedConstraint;
 import com.bulletphysics.linearmath.DefaultMotionState;
@@ -184,6 +185,21 @@ final class RagdollUtils {
                 } else {
                     ((HingeConstraint) constraint).setLimit(limits.get(0), limits.get(1));
                 }
+                break;
+            case GENERIC:
+                constraint = new Generic6DofConstraint(rbA, rbB, transA, transB, true);
+
+                //  Lower limit.
+                vars.vecmathVect3d1.set(limits.get(0), limits.get(1), limits.get(2));
+                //  Upper limit.
+                vars.vecmathVect3d2.set(limits.get(3), limits.get(4), limits.get(5));
+
+                ((Generic6DofConstraint) constraint).setAngularLowerLimit(vars.vecmathVect3d1);
+                ((Generic6DofConstraint) constraint).setAngularUpperLimit(vars.vecmathVect3d2);
+
+                vars.vecmathVect3d1.set(0.0f, 0.0f, 0.0f);
+                ((Generic6DofConstraint) constraint).setLinearLowerLimit(vars.vecmathVect3d1);
+                ((Generic6DofConstraint) constraint).setLinearUpperLimit(vars.vecmathVect3d1);
                 break;
         }
 

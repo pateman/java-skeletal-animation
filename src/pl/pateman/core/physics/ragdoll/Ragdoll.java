@@ -167,10 +167,10 @@ public final class Ragdoll {
                                   final Matrix4f outMatrix) {
         final TempVars vars = TempVars.get();
 
-        final Matrix4f parentMat = vars.tempMat4x41.set(useBindMatrix ? parent.getWorldBindMatrix() :
-                RagdollUtils.getOffsetMatrixForBone(vars.tempMat4x41, parent));
-        final Matrix4f boneMat = vars.tempMat4x42.set(useBindMatrix ? bone.getWorldBindMatrix() :
-                RagdollUtils.getOffsetMatrixForBone(vars.tempMat4x42, bone));
+        final Matrix4f parentMat = useBindMatrix ? RagdollUtils.getMatrixForBone(vars.tempMat4x41, parent) :
+                RagdollUtils.getOffsetMatrixForBone(vars.tempMat4x41, parent);
+        final Matrix4f boneMat = useBindMatrix ? RagdollUtils.getMatrixForBone(vars.tempMat4x42, bone) :
+                RagdollUtils.getOffsetMatrixForBone(vars.tempMat4x42, bone);
 
         final Vector3f parentPos = parentMat.getTranslation(vars.vect3d1);
         final Vector3f bonePos = boneMat.getTranslation(vars.vect3d2);
@@ -300,9 +300,4 @@ public final class Ragdoll {
     Map<Integer, Matrix4f> getBoneMatrices() {
         return this.boneMatrices;
     }
-//
-//    @FunctionalInterface
-//    private interface PivotCallback {
-//        void setPivot(final Vector3f rbAExtents, final Vector3f rbBExtents, final Vector3f outPivot);
-//    }
 }

@@ -32,7 +32,7 @@ final class RagdollUtils {
      * @param out Final matrix.
      * @param bone Bone.
      */
-    static void getMatrixForBone(final Matrix4f out, final Bone bone) {
+    static Matrix4f getMatrixForBone(final Matrix4f out, final Bone bone) {
         final TempVars vars = TempVars.get();
 
         final Vector3f bonePos = bone.getWorldBindMatrix().getTranslation(vars.vect3d2);
@@ -40,6 +40,7 @@ final class RagdollUtils {
 
         Utils.fromRotationTranslationScale(out, boneRot, bonePos, Utils.IDENTITY_VECTOR);
         vars.release();
+        return out;
     }
 
     static Matrix4f getOffsetMatrixForBone(final Matrix4f out, final Bone bone) {
@@ -154,8 +155,6 @@ final class RagdollUtils {
         final Vector3f offB = vars.vect3d3;
         worldA.transformPosition(hingePos, offA);
         worldB.transformPosition(hingePos, offB);
-        offA.mul(0.5f);
-        offB.mul(0.5f);
 
         final Transform transA = vars.vecmathTransform;
         final Transform transB = vars.vecmathTransform2;

@@ -52,21 +52,21 @@ public final class JSONImporter implements MeshImporter {
         mesh.createBoneTracks();
 
         //  Calculate the number of frames for each animation.
-        for (final Animation animation : mesh.getAnimations()) {
-            for (final AnimationTrack track : animation.getTracks()) {
+        for (int i = 0; i < mesh.getAnimations().size(); i++) {
+            final Animation animation = mesh.getAnimations().get(i);
+
+            for (int j = 0; j < animation.getTracks().size(); j++) {
+                final AnimationTrack track = animation.getTracks().get(j);
                 animation.setFrameCount(Math.max(animation.getFrameCount(), track.getKeyframes().size()));
             }
         }
-
-        //  Create the pallete skinning buffer for passing animation matrices to the shader.
-        TempVars.initializeStorageForSkinning(mesh.getSkeleton().getBones().size());
 
         //  Prepare data from transformation.
         final TempVars vars = TempVars.get();
 
         final Vector3f translation = vars.vect3d1;
         final Quaternionf rotation = vars.quat1;
-        final Vector3f scale = vars.vect3d2.set(1.0f, 1.0f, 1.0f);
+        final Vector3f scale = vars.vect3d2.set(Utils.IDENTITY_VECTOR);
         if (sceneData.getTranslation() != null) {
             translation.set(sceneData.getTranslation());
         }

@@ -94,23 +94,10 @@ public final class MeshFilter implements Clearable {
     }
 
     void updateFacesData() {
-        for (MeshFace face : this.faces) {
-            face.rebuild();
+        for (int i = 0; i < this.faces.size(); i++) {
+            this.faces.get(i).rebuild();
         }
     }
-
-//    List<Matrix4f> getBoneMatrices() {
-//        if (this.meshData == null) {
-//            throw new IllegalStateException("Mesh is missing");
-//        }
-//
-//        final List<Matrix4f> matrices = new ArrayList<>(this.meshData.getSkeleton().getBones().size());
-//        for (Bone bone : this.meshData.getSkeleton().getBones()) {
-//            matrices.add(bone.getWorldBindMatrix().mul(bone.getInverseBindMatrix(), new Matrix4f()));
-//        }
-//
-//        return matrices;
-//    }
 
     public Mesh getMeshData() {
         return meshData;
@@ -141,7 +128,7 @@ public final class MeshFilter implements Clearable {
         this.bind();
 
         //  Create mesh faces.
-        for (int i = 0; i < this.meshData.getTriangles().size(); i+=3) {
+        for (int i = 0; i < this.meshData.getTriangles().size(); i += 3) {
             final MeshFace meshFace = new MeshFace(this.meshData.getTriangles().get(i),
                     this.meshData.getTriangles().get(i + 1), this.meshData.getTriangles().get(i + 2));
             this.faces.add(meshFace);
@@ -220,8 +207,8 @@ public final class MeshFilter implements Clearable {
         public MeshFace(int... indicesList) {
             this();
 
-            for (int index : indicesList) {
-                this.indices.add(index);
+            for (int i = 0; i < indicesList.length; i++) {
+                this.indices.add(indicesList[i]);
             }
         }
 
@@ -257,8 +244,8 @@ public final class MeshFilter implements Clearable {
                 this.faceBuffer.clear();
             }
             this.faceBuffer = BufferUtils.createIntBuffer(this.indices.size());
-            for (int index : this.indices) {
-                this.faceBuffer.put(index);
+            for (int i = 0; i < this.indices.size(); i++) {
+                this.faceBuffer.put(this.indices.get(i));
             }
             this.faceBuffer.flip();
 

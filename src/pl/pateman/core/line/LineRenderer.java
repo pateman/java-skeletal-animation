@@ -82,7 +82,9 @@ public class LineRenderer implements Iterable<Line>, Clearable {
         }
 
         //  Flatten the positions and colors.
-        for (final Line line : this.lineList) {
+        for (int i = 0; i < this.lineList.size(); i++) {
+            final Line line = this.lineList.get(i);
+
             this.positions.add(line.getFrom());
             this.positions.add(line.getTo());
 
@@ -183,10 +185,8 @@ public class LineRenderer implements Iterable<Line>, Clearable {
         }
 
         //  Pass the necessary shader uniforms.
-        this.shaderProgram.setUniformMatrix4(Utils.MODELVIEW_UNIFORM, Utils.matrix4fToBuffer(cameraEntity.
-                getViewMatrix()));
-        this.shaderProgram.setUniformMatrix4(Utils.PROJECTION_UNIFORM, Utils.matrix4fToBuffer(cameraEntity.
-                getProjectionMatrix()));
+        this.shaderProgram.setUniformMatrix4(Utils.MODELVIEW_UNIFORM, cameraEntity.getViewMatrix());
+        this.shaderProgram.setUniformMatrix4(Utils.PROJECTION_UNIFORM, cameraEntity.getProjectionMatrix());
 
         //  Draw the lines. We multiply the number of lines by two to get the number of vertices.
         glDrawArrays(this.lineRenderingMode.getOglConstant(), 0, this.lineList.size() * 2);

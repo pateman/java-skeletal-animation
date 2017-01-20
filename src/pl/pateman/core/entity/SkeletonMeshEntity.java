@@ -69,7 +69,9 @@ public class SkeletonMeshEntity extends AbstractEntity {
 
         final Vector3f translation = new Vector3f();
         final Quaternionf rotation = new Quaternionf();
-        for (Bone bone : this.skeleton.getBones()) {
+        for (int i = 0; i < this.skeleton.getBones().size(); i++) {
+            final Bone bone = this.skeleton.getBone(i);
+
             final CubeMeshEntity jointMeshEntity = new CubeMeshEntity(bone.getName(), 0.05f);
             jointMeshEntity.setShaderProgram(this.meshProgram);
             jointMeshEntity.buildMesh();
@@ -95,7 +97,9 @@ public class SkeletonMeshEntity extends AbstractEntity {
             throw new IllegalArgumentException();
         }
 
-        for (SkeletonJoint joint : this.joints) {
+        for (int i = 0; i < this.joints.size(); i++) {
+            final SkeletonJoint joint = this.joints.get(i);
+
             if (joint.getRelatedBone().getName().equals(boneName)) {
                 joint.getJointColor().set(newColor);
                 return;
@@ -124,7 +128,9 @@ public class SkeletonMeshEntity extends AbstractEntity {
         final Matrix4f worldTrans = tempVars.tempMat4x41;
         final Matrix4f modelViewMatrix = tempVars.tempMat4x42;
 
-        for (SkeletonJoint joint : this.joints) {
+        for (int i = 0; i < this.joints.size(); i++) {
+            final SkeletonJoint joint = this.joints.get(i);
+
             final MeshRenderer meshRenderer = joint.getCubeMeshEntity().getMeshRenderer();
             meshRenderer.initializeRendering();
 
@@ -133,9 +139,8 @@ public class SkeletonMeshEntity extends AbstractEntity {
             //  Prepare the model-view matrix.
             camera.getViewMatrix().mul(worldTrans, modelViewMatrix);
 
-            this.meshProgram.setUniformMatrix4(Utils.MODELVIEW_UNIFORM, Utils.matrix4fToBuffer(modelViewMatrix));
-            this.meshProgram.setUniformMatrix4(Utils.PROJECTION_UNIFORM, Utils.matrix4fToBuffer(camera.
-                    getProjectionMatrix()));
+            this.meshProgram.setUniformMatrix4(Utils.MODELVIEW_UNIFORM, modelViewMatrix);
+            this.meshProgram.setUniformMatrix4(Utils.PROJECTION_UNIFORM, camera.getProjectionMatrix());
             this.meshProgram.setUniform3(Utils.CAMERADIRECTION_UNIFORM, camera.getDirection().x,
                     camera.getDirection().y, camera.getDirection().z);
             this.meshProgram.setUniform4(Utils.DIFFUSECOLOR_UNIFORM, joint.getJointColor().x, joint.getJointColor().y,

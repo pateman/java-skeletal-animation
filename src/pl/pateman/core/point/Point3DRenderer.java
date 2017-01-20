@@ -82,11 +82,13 @@ public final class Point3DRenderer implements Clearable {
         final List<Vector4f> colors = new ArrayList<>(this.point3DList.size());
         final List<Float> thicknesses = new ArrayList<>(this.point3DList.size());
 
-        this.point3DList.forEach(point3D -> {
+        for (int i = 0; i < this.point3DList.size(); i++) {
+            final Point3D point3D = this.point3DList.get(i);
+
             positions.add(point3D.getPosition());
             colors.add(point3D.getColor());
             thicknesses.add(point3D.getThickness());
-        });
+        };
 
         this.positionVBO.update(Utils.vertices3fToBuffer(positions));
         this.colorVBO.update(Utils.vertices4fToBuffer(colors));
@@ -150,10 +152,8 @@ public final class Point3DRenderer implements Clearable {
         }
 
         //  Pass the necessary shader uniforms.
-        this.shaderProgram.setUniformMatrix4(Utils.MODELVIEW_UNIFORM, Utils.matrix4fToBuffer(cameraEntity.
-                getViewMatrix()));
-        this.shaderProgram.setUniformMatrix4(Utils.PROJECTION_UNIFORM, Utils.matrix4fToBuffer(cameraEntity.
-                getProjectionMatrix()));
+        this.shaderProgram.setUniformMatrix4(Utils.MODELVIEW_UNIFORM, cameraEntity.getViewMatrix());
+        this.shaderProgram.setUniformMatrix4(Utils.PROJECTION_UNIFORM, cameraEntity.getProjectionMatrix());
 
         //  Draw the points.
         glDrawArrays(GL_POINTS, 0, this.point3DList.size());

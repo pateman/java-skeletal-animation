@@ -153,7 +153,7 @@ public class Text2DRenderer implements Clearable {
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-        this.shaderProgram.setUniformMatrix4(Utils.PROJECTION_UNIFORM, Utils.matrix4fToBuffer(this.projMatrix));
+        this.shaderProgram.setUniformMatrix4(Utils.PROJECTION_UNIFORM, this.projMatrix);
         this.shaderProgram.setUniform1(Utils.TEXTURE_UNIFORM, this.textFont.getFontTexture().getUnit());
         final TempVars tempVars = TempVars.get();
         int totalVertexCount = 0;
@@ -164,7 +164,7 @@ public class Text2DRenderer implements Clearable {
             tempVars.vect3d1.set(textLine.getPosition(), 0.0f);
             tempVars.tempMat4x41.identity().translate(tempVars.vect3d1);
 
-            this.shaderProgram.setUniformMatrix4(Utils.MODELVIEW_UNIFORM, Utils.matrix4fToBuffer(tempVars.tempMat4x41));
+            this.shaderProgram.setUniformMatrix4(Utils.MODELVIEW_UNIFORM, tempVars.tempMat4x41);
             this.shaderProgram.setUniform4(Utils.DIFFUSECOLOR_UNIFORM, textLine.getColor().x, textLine.getColor().y,
                     textLine.getColor().z, textLine.getColor().w);
 

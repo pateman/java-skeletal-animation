@@ -8,7 +8,6 @@ import org.joml.Quaternionf;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 import pl.pateman.core.MeshImporter;
-import pl.pateman.core.TempVars;
 import pl.pateman.core.Utils;
 import pl.pateman.core.entity.MeshEntity;
 import pl.pateman.core.mesh.*;
@@ -157,9 +156,6 @@ public final class OgreXMLImporter implements MeshImporter {
             mesh.getSkeleton().calculateBindMatrices();
             mesh.getSkeleton().arrangeBones();
             mesh.createBoneTracks();
-
-            //  Create the pallete skinning buffer for passing animation matrices to the shader.
-            TempVars.initializeStorageForSkinning(mesh.getSkeleton().getBones().size());
         }
 
         final MeshEntity meshEntity = new MeshEntity();

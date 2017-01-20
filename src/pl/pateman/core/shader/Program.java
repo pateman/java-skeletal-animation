@@ -1,13 +1,14 @@
 package pl.pateman.core.shader;
 
+import org.joml.Matrix3f;
+import org.joml.Matrix4f;
+import org.lwjgl.BufferUtils;
 import org.lwjgl.system.MemoryUtil;
 import pl.pateman.core.Clearable;
+import pl.pateman.core.Utils;
 
 import java.nio.FloatBuffer;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static org.lwjgl.opengl.GL11.GL_FALSE;
 import static org.lwjgl.opengl.GL20.*;
@@ -22,6 +23,7 @@ public class Program implements Clearable {
     private boolean inUse = false;
     private final Map<String, Integer> uniformLocations = new HashMap<>();
     private final Map<String, Integer> attributeLocations = new HashMap<>();
+    private final Map<String, FloatBuffer> uniformBufferCache = new HashMap<>();
 
     public Program() {
         this.shaders = new HashSet<>();
@@ -159,6 +161,11 @@ public class Program implements Clearable {
         return inUse;
     }
 
+    private FloatBuffer getOrCreateBuffer(final String uniformName, final int bufferSize) {
+        return this.uniformBufferCache.computeIfAbsent(uniformName, k ->
+                BufferUtils.createFloatBuffer(bufferSize));
+    }
+
     public void setUniform1(final String uniformName, float arg1) {
         glUniform1f(this.getUniformLocation(uniformName), arg1);
     }
@@ -191,33 +198,51 @@ public class Program implements Clearable {
         glUniform4i(this.getUniformLocation(uniformName), arg1, arg2, arg3, arg4);
     }
 
-    public void setUniformMatrix4(final String uniformName, final FloatBuffer matrix) {
-        glUniformMatrix4fv(this.getUniformLocation(uniformName), false, matrix);
+    public void setUniformMatrix4(final String uniformName, final Matrix4f matrix) {
+        final FloatBuffer floatBuffer = this.getOrCreateBuffer(uniformName, 16);
+        Utils.matrix4fToBuffer(matrix, floatBuffer);
+
+        glUniformMatrix4fv(this.getUniformLocation(uniformName), false, floatBuffer);
     }
 
-    public void setUniformMatrix4Transposed(final String uniformName, final FloatBuffer matrix) {
-        glUniformMatrix4fv(this.getUniformLocation(uniformName), true, matrix);
+    public void setUniformMatrix4Transposed(final String uniformName, final Matrix4f matrix) {
+        final FloatBuffer floatBuffer = this.getOrCreateBuffer(uniformName, 16);
+        Utils.matrix4fToBuffer(matrix, floatBuffer);
+
+        glUniformMatrix4fv(this.getUniformLocation(uniformName), true, floatBuffer);
     }
 
-    public void setUniformMatrix3(final String uniformName, final FloatBuffer matrix) {
-        glUniformMatrix3fv(this.getUniformLocation(uniformName), false, matrix);
+    public void setUniformMatrix3(final String uniformName, final Matrix3f matrix) {
+        final FloatBuffer floatBuffer = this.getOrCreateBuffer(uniformName, 9);
+        Utils.matrix3fToBuffer(matrix, floatBuffer);
+
+        glUniformMatrix3fv(this.getUniformLocation(uniformName), false, floatBuffer);
     }
 
-    public void setUniformMatrix3Transposed(final String uniformName, final FloatBuffer matrix) {
-        glUniformMatrix3fv(this.getUniformLocation(uniformName), true, matrix);
+    public void setUniformMatrix3Transposed(final String uniformName, final Matrix3f matrix) {
+        final FloatBuffer floatBuffer = this.getOrCreateBuffer(uniformName, 9);
+        Utils.matrix3fToBuffer(matrix, floatBuffer);
+
+        glUniformMatrix3fv(this.getUniformLocation(uniformName), true, floatBuffer);
     }
 
-    public void setUniformMatrix4Array(final String uniformName, int matricesCount, final FloatBuffer matrices) {
+    public void setUniformMatrix4Array(final String uniformName, int matricesCount, final List<Matrix4f> matrices) {
+        final FloatBuffer floatBuffer = this.getOrCreateBuffer(uniformName, matricesCount * 16);
+        Utils.matrices4fToBuffer(matrices, floatBuffer);
+
         //  LWJGL 3 is missing one overload...
         nglUniformMatrix4fv(this.getUniformLocation(uniformName), matricesCount, false, MemoryUtil.
-                memAddress(matrices));
+                memAddress(floatBuffer));
     }
 
     public void setUniformMatrix4ArrayTransposed(final String uniformName, int matricesCount,
-                                                 final FloatBuffer matrices) {
+                                                 final List<Matrix4f> matrices) {
+        final FloatBuffer floatBuffer = this.getOrCreateBuffer(uniformName, matricesCount * 16);
+        Utils.matrices4fToBuffer(matrices, floatBuffer);
+
         //  LWJGL 3 is missing one overload...
         nglUniformMatrix4fv(this.getUniformLocation(uniformName), matricesCount, true, MemoryUtil.
-                memAddress(matrices));
+                memAddress(floatBuffer));
     }
 
     public String getInfoLog() {

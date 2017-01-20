@@ -13,7 +13,9 @@ public class Skeleton {
     }
 
     public Bone getBoneByIndex(int index) {
-        for (Bone bone : this.bones) {
+        for (int i = 0; i < this.bones.size(); i++) {
+            final Bone bone = this.bones.get(i);
+
             if (bone.getIndex() == index) {
                 return bone;
             }
@@ -26,7 +28,9 @@ public class Skeleton {
     }
 
     public Bone getBoneByName(final String boneName) {
-        for (Bone bone : bones) {
+        for (int i = 0; i < this.bones.size(); i++) {
+            final Bone bone = this.bones.get(i);
+
             if (bone.getName().equals(boneName)) {
                 return bone;
             }
@@ -35,7 +39,8 @@ public class Skeleton {
     }
 
     public Bone getRootBone() {
-        for (Bone bone : this.bones) {
+        for (int i = 0; i < this.bones.size(); i++) {
+            final Bone bone = this.bones.get(i);
             if (bone.getParent() == null) {
                 return bone;
             }
@@ -46,8 +51,8 @@ public class Skeleton {
     private void calculateBindMatrices(final Bone bone) {
         bone.calculateBindMatrices();
 
-        for (Bone child : bone.getChildren()) {
-            this.calculateBindMatrices(child);
+        for (int i = 0; i < bone.getChildren().size(); i++) {
+            this.calculateBindMatrices(bone.getChildren().get(i));
         }
     }
 
@@ -61,12 +66,7 @@ public class Skeleton {
     }
 
     public void arrangeBones() {
-        Collections.sort(this.bones, new Comparator<Bone>() {
-            @Override
-            public int compare(Bone o1, Bone o2) {
-                return o1.getIndex() - o2.getIndex();
-            }
-        });
+        this.bones.sort(Comparator.comparingInt(Bone::getIndex));
     }
 
     public List<Bone> getBones() {

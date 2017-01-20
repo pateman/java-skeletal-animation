@@ -33,12 +33,8 @@ package pl.pateman.core;
 
 import com.bulletphysics.linearmath.Transform;
 import org.joml.*;
-import org.lwjgl.BufferUtils;
 
 import javax.vecmath.Quat4f;
-import java.nio.FloatBuffer;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Temporary variables assigned to each thread. Engine classes may access
@@ -145,43 +141,6 @@ public final class TempVars {
             throw new IllegalStateException("An instance of TempVars has not been released in a called method!");
         }
     }
-
-    /**
-     * Initializes storage for skinning. Note that this method must be called by each thread separately if it's planned
-     * to use the skinning storage, otherwise {@code paletteSkinningBuffer} and {@code boneMatricesList} will be
-     * {@code NULL}.
-     *
-     * @param numberOfBones Number of bones.
-     */
-    public static void initializeStorageForSkinning(int numberOfBones) {
-        final List<TempVars> tempVarsList = new ArrayList<>(STACK_SIZE);
-        for (int i = 0; i < STACK_SIZE; i++) {
-            final TempVars tempVars = TempVars.get();
-            tempVarsList.add(tempVars);
-
-            tempVars.paletteSkinningBuffer = BufferUtils.createFloatBuffer(16 * numberOfBones);
-
-            tempVars.boneMatricesList = new ArrayList<>(numberOfBones);
-            for (int j = 0; j < numberOfBones; j++) {
-                tempVars.boneMatricesList.add(new Matrix4f());
-            }
-        }
-
-        for (int i = tempVarsList.size() -1; i >= 0; i--) {
-            tempVarsList.get(i).release();
-        }
-    }
-
-    /**
-     * Buffers.
-     */
-    public final FloatBuffer floatBuffer16 = BufferUtils.createFloatBuffer(16);
-    public FloatBuffer paletteSkinningBuffer;
-
-    /**
-     * Lists.
-     */
-    public List<Matrix4f> boneMatricesList;
 
     /**
      * General vectors.

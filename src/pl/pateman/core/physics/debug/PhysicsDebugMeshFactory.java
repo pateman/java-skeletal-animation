@@ -1,7 +1,6 @@
 package pl.pateman.core.physics.debug;
 
 import com.bulletphysics.collision.shapes.*;
-import com.google.gson.reflect.TypeToken;
 import org.joml.Vector3f;
 import pl.pateman.core.Utils;
 
@@ -12,9 +11,6 @@ import java.util.List;
  * Created by pateman.
  */
 final class PhysicsDebugMeshFactory {
-    private static final Class<? super List<Vector3f>> VERTICES_LIST_CLASS = new TypeToken<java.util.List<Vector3f>>() {
-    }.getRawType();
-
     private static final javax.vecmath.Vector3f aabbMin = new javax.vecmath.Vector3f(-1e30f, -1e30f, -1e30f);
     private static final javax.vecmath.Vector3f aabbMax = new javax.vecmath.Vector3f(1e30f, 1e30f, 1e30f);
 

@@ -13,16 +13,15 @@ import pl.pateman.core.Clearable;
 import pl.pateman.core.TempVars;
 import pl.pateman.core.Utils;
 import pl.pateman.core.entity.CameraEntity;
+import pl.pateman.core.entity.EntityData;
 import pl.pateman.core.entity.MeshEntity;
 import pl.pateman.core.entity.mesh.MeshRenderer;
 import pl.pateman.core.mesh.Mesh;
-import pl.pateman.core.entity.EntityData;
 import pl.pateman.core.point.Point3DRenderer;
 import pl.pateman.core.shader.Program;
 import pl.pateman.core.shader.Shader;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static org.lwjgl.opengl.GL11.*;
 
@@ -70,12 +69,18 @@ public final class PhysicsDebugger implements Clearable {
 
     public void updateDebugEntities() {
         //  Filter the available collision objects.
-        final List<CollisionObject> rigidBodies = this.getCollisionObjects();
+        final List<CollisionObject> rigidBodies = this.dynamicsWorld.getCollisionObjectArray();
 
         final Set<Long> remainingDebugEntityIDs = new HashSet<>(this.debugEntities.keySet());
         final TempVars tempVars = TempVars.get();
         for (int bodyIdx = 0; bodyIdx < rigidBodies.size(); bodyIdx++) {
-            final RigidBody rigidBody = (RigidBody) rigidBodies.get(bodyIdx);
+            final CollisionObject colObj = rigidBodies.get(bodyIdx);
+
+            if (!(colObj instanceof RigidBody) || !(colObj.getUserPointer() instanceof EntityData)) {
+                continue;
+            }
+
+            final RigidBody rigidBody = (RigidBody) colObj;
             final EntityData entityData = (EntityData) rigidBody.getUserPointer();
             final Long entityId = entityData.getEntityID();
 
@@ -115,11 +120,11 @@ public final class PhysicsDebugger implements Clearable {
 
         //  If the set is not empty, remove the obsolete debug entities.
         if (!remainingDebugEntityIDs.isEmpty()) {
-            remainingDebugEntityIDs.forEach(x -> {
-                this.debugEntities.remove(x);
-                final Integer removedPoint = this.debugEntityToPoint.remove(x);
+            for (final Long entityID : remainingDebugEntityIDs) {
+                this.debugEntities.remove(entityID);
+                final Integer removedPoint = this.debugEntityToPoint.remove(entityID);
                 this.point3DRenderer.removePoint(removedPoint);
-            });
+            }
         }
 
         this.point3DRenderer.forceDirty();
@@ -136,9 +141,14 @@ public final class PhysicsDebugger implements Clearable {
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
         final TempVars tempVars = TempVars.get();
-        final List<CollisionObject> collisionObjects = this.getCollisionObjects();
+        final List<CollisionObject> collisionObjects = this.dynamicsWorld.getCollisionObjectArray();
         for (int i = 0; i < collisionObjects.size(); i++) {
             final CollisionObject colObj = collisionObjects.get(i);
+
+            if (!(colObj instanceof RigidBody) || !(colObj.getUserPointer() instanceof EntityData)) {
+                continue;
+            }
+
             final MeshEntity debugMesh = this.debugEntities.get(((EntityData) colObj.getUserPointer()).getEntityID());
 
             //  We're unable to get the debug mesh from the cache. Skip it.
@@ -203,14 +213,6 @@ public final class PhysicsDebugger implements Clearable {
         return centerOfMassColor;
     }
 
-    private List<CollisionObject> getCollisionObjects() {
-        return this.dynamicsWorld.getCollisionObjectArray().
-                stream().
-                filter(RigidBody.class::isInstance).
-                filter(x -> x.getUserPointer() instanceof EntityData).
-                collect(Collectors.toList());
-    }
-
     //  TODO Refactor the whole rendering thing, because the code is duplicated (or even worse).
     private void drawMesh(final Matrix4f modelViewMatrix, final Matrix4f projectionMatrix, final MeshEntity meshEntity,
                           final Vector4f meshColor) {
@@ -219,8 +221,8 @@ public final class PhysicsDebugger implements Clearable {
         renderer.initializeRendering();
 
         //  Pass uniforms to the shader.
-        this.debugShaderProgram.setUniformMatrix4(Utils.MODELVIEW_UNIFORM, Utils.matrix4fToBuffer(modelViewMatrix));
-        this.debugShaderProgram.setUniformMatrix4(Utils.PROJECTION_UNIFORM, Utils.matrix4fToBuffer(projectionMatrix));
+        this.debugShaderProgram.setUniformMatrix4(Utils.MODELVIEW_UNIFORM, modelViewMatrix);
+        this.debugShaderProgram.setUniformMatrix4(Utils.PROJECTION_UNIFORM, projectionMatrix);
         this.debugShaderProgram.setUniform4(DEBUG_COLOR_UNIFORM, meshColor.x, meshColor.y, meshColor.z, meshColor.w);
 
         //  Draw the entity.

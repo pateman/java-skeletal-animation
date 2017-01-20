@@ -111,34 +111,41 @@ public final class Utils {
         return fb;
     }
 
-    public static FloatBuffer matrix4fToBuffer(final Matrix4f matrix) {
-        if (matrix == null) {
+    public static FloatBuffer matrix4fToBuffer(final Matrix4f matrix, final FloatBuffer out) {
+        if (matrix == null || out == null) {
             throw new IllegalArgumentException();
         }
-        final TempVars tempVars = TempVars.get();
 
-        final FloatBuffer buffer = matrix.get(tempVars.floatBuffer16);
+        final FloatBuffer buffer = matrix.get(out);
         buffer.rewind();
 
-        tempVars.release();
         return buffer;
     }
 
-    public static FloatBuffer matrices4fToBuffer(final List<Matrix4f> matrices) {
-        if (matrices == null) {
+    public static FloatBuffer matrix3fToBuffer(final Matrix3f matrix, final FloatBuffer out) {
+        if (matrix == null || out == null) {
             throw new IllegalArgumentException();
         }
 
-        final TempVars tempVars = TempVars.get();
+        final FloatBuffer buffer = matrix.get(out);
+        buffer.rewind();
 
-        for (Matrix4f matrix4f : matrices) {
-            matrix4f.get(tempVars.paletteSkinningBuffer);
-            tempVars.paletteSkinningBuffer.position(tempVars.paletteSkinningBuffer.position() + 16);
+        return buffer;
+    }
+
+    public static FloatBuffer matrices4fToBuffer(final List<Matrix4f> matrices, final FloatBuffer out) {
+        if (matrices == null || out == null) {
+            throw new IllegalArgumentException();
         }
-        tempVars.paletteSkinningBuffer.rewind();
 
-        tempVars.release();
-        return tempVars.paletteSkinningBuffer;
+        for (int i = 0; i < matrices.size(); i++) {
+            final Matrix4f matrix4f = matrices.get(i);
+            matrix4f.get(out);
+            out.position(out.position() + 16);
+        }
+        out.rewind();
+
+        return out;
     }
 
     public static FloatBuffer floatsToBuffer(final List<Float> floats) {

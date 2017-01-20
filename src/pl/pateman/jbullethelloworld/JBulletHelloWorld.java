@@ -224,9 +224,8 @@ public class JBulletHelloWorld {
             renderer.initializeRendering();
 
             //  Pass uniforms to the shader.
-            this.program.setUniformMatrix4(Utils.MODELVIEW_UNIFORM, Utils.matrix4fToBuffer(modelViewMatrix));
-            this.program.setUniformMatrix4(Utils.PROJECTION_UNIFORM, Utils.matrix4fToBuffer(this.camera.
-                    getProjectionMatrix()));
+            this.program.setUniformMatrix4(Utils.MODELVIEW_UNIFORM, modelViewMatrix);
+            this.program.setUniformMatrix4(Utils.PROJECTION_UNIFORM, this.camera.getProjectionMatrix());
             this.program.setUniform1(Utils.TEXTURE_UNIFORM, 0);
             this.program.setUniform1(Utils.USETEXTURING_UNIFORM, 0);
             this.program.setUniform1(Utils.USESKINNING_UNIFORM, 0);

@@ -341,7 +341,6 @@ public class Main {
 
             if (this.meshEntity.getMesh().hasSkeleton()) {
                 this.lowerBodyChannel.addBone("Bip01");
-//                this.lowerBodyChannel.addBone("Bip01 Footsteps");
                 this.lowerBodyChannel.addBone("Bip01 Pelvis");
                 this.lowerBodyChannel.addBone("Bip01 Spine");
                 this.lowerBodyChannel.addBonesTree("Bip01 L Thigh");
@@ -479,8 +478,8 @@ public class Main {
         }
 
         //  Pass uniforms to the shader.
-        program.setUniformMatrix4(Utils.MODELVIEW_UNIFORM, Utils.matrix4fToBuffer(modelViewMatrix));
-        program.setUniformMatrix4(Utils.PROJECTION_UNIFORM, Utils.matrix4fToBuffer(camera.getProjectionMatrix()));
+        program.setUniformMatrix4(Utils.MODELVIEW_UNIFORM, modelViewMatrix);
+        program.setUniformMatrix4(Utils.PROJECTION_UNIFORM, camera.getProjectionMatrix());
         program.setUniform1(Utils.TEXTURE_UNIFORM, 0);
         program.setUniform1(Utils.USETEXTURING_UNIFORM, useTexturing);
         program.setUniform1(Utils.USELIGHTING_UNIFORM, this.lightingEnabled ? 1 : 0);
@@ -493,13 +492,13 @@ public class Main {
             final List<Matrix4f> boneMatrices = renderer.getBoneMatrices();
             for (int i = 0; i < meshEntity.getMesh().getSkeleton().getBones().size(); i++) {
                 final Bone bone = meshEntity.getMesh().getSkeleton().getBone(i);
-                final Matrix4f boneMatrix = tempVars.boneMatricesList.get(i).set(boneMatrices.get(i));
+                final Matrix4f boneMatrix = renderer.getRendererBoneMatrices().get(i).set(boneMatrices.get(i));
 
                 boneMatrix.mul(bone.getInverseBindMatrix(), boneMatrix);
             }
 
-            program.setUniformMatrix4Array(Utils.BONES_UNIFORM, tempVars.boneMatricesList.size(),
-                    Utils.matrices4fToBuffer(tempVars.boneMatricesList));
+            program.setUniformMatrix4Array(Utils.BONES_UNIFORM, renderer.getRendererBoneMatrices().size(),
+                    renderer.getRendererBoneMatrices());
         } else {
             program.setUniform1(Utils.USESKINNING_UNIFORM, 0);
         }

@@ -9,9 +9,10 @@ import pl.pateman.core.shader.Program;
 
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
-import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL30.*;
 
 /**
@@ -21,14 +22,14 @@ public final class MeshFilter implements Clearable {
     private final int vao;
     private final Map<String, VertexBufferObject> vbos;
 
-    private final List<MeshFace> faces;
+    private final ElementBufferObject ebo;
     private Mesh meshData;
     private Program shaderProgram;
 
     public MeshFilter() {
-        this.faces = new ArrayList<>();
         this.vbos = new HashMap<>();
         this.vao = glGenVertexArrays();
+        this.ebo = new ElementBufferObject();
     }
 
     void bind() {
@@ -93,12 +94,6 @@ public final class MeshFilter implements Clearable {
         vbo.update(data);
     }
 
-    void updateFacesData() {
-        for (int i = 0; i < this.faces.size(); i++) {
-            this.faces.get(i).rebuild();
-        }
-    }
-
     public Mesh getMeshData() {
         return meshData;
     }
@@ -123,16 +118,16 @@ public final class MeshFilter implements Clearable {
         //  Remove existing data.
         this.removeBuffers();
         this.clear();
-        this.faces.clear();
 
         this.bind();
 
-        //  Create mesh faces.
-        for (int i = 0; i < this.meshData.getTriangles().size(); i += 3) {
-            final MeshFace meshFace = new MeshFace(this.meshData.getTriangles().get(i),
-                    this.meshData.getTriangles().get(i + 1), this.meshData.getTriangles().get(i + 2));
-            this.faces.add(meshFace);
+        //  Create the EBO and pass data to it.
+        final IntBuffer eboBuffer = BufferUtils.createIntBuffer(this.meshData.getTriangles().size());
+        for (int i = 0; i < this.meshData.getTriangles().size(); i++) {
+            eboBuffer.put(this.meshData.getTriangles().get(i));
         }
+        eboBuffer.flip();
+        this.ebo.update(eboBuffer);
 
         //  Create VBOs.
         this.addBuffer(Utils.POSITION_ATTRIBUTE, this.shaderProgram.getAttributeLocation(Utils.POSITION_ATTRIBUTE));
@@ -160,14 +155,11 @@ public final class MeshFilter implements Clearable {
             this.updateBufferData(Utils.WEIGHTS_ATTRIBUTE, Utils.vertices3fToBuffer(skinningInfo.getBoneWeights()));
         }
 
-        //  Update mesh faces.
-        this.updateFacesData();
-
         this.unbind();
     }
 
-    List<MeshFace> getFaces() {
-        return faces;
+    public ElementBufferObject getEbo() {
+        return this.ebo;
     }
 
     @Override
@@ -178,9 +170,7 @@ public final class MeshFilter implements Clearable {
             vbo.clearAndDestroy();
         }
 
-        for (MeshFace face : this.faces) {
-            face.clearAndDestroy();
-        }
+        this.ebo.clear();
 
         this.unbind();
     }
@@ -190,70 +180,5 @@ public final class MeshFilter implements Clearable {
         this.clear();
 
         glDeleteVertexArrays(this.vao);
-    }
-
-    class MeshFace implements Clearable {
-        private final int handle;
-        private final List<Integer> indices;
-        private IntBuffer faceBuffer;
-
-        public MeshFace() {
-            this.indices = new ArrayList<>();
-
-            //  Generate the handle.
-            this.handle = glGenBuffers();
-        }
-
-        public MeshFace(int... indicesList) {
-            this();
-
-            for (int i = 0; i < indicesList.length; i++) {
-                this.indices.add(indicesList[i]);
-            }
-        }
-
-        public void rebuild() {
-            if (!this.indices.isEmpty()) {
-                glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this.handle);
-
-                glBufferData(GL_ELEMENT_ARRAY_BUFFER, this.getFaceBuffer(), GL_STATIC_DRAW);
-                glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-            }
-        }
-
-        @Override
-        public void clear() {
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this.handle);
-            glBufferData(GL_ELEMENT_ARRAY_BUFFER, 0, null, GL_STATIC_DRAW);
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-        }
-
-        @Override
-        public void clearAndDestroy() {
-            this.clear();
-            glDeleteBuffers(this.handle);
-        }
-
-        public List<Integer> getIndices() {
-            return indices;
-        }
-
-        public IntBuffer getFaceBuffer() {
-            //  Rebuild the buffer.
-            if (this.faceBuffer != null) {
-                this.faceBuffer.clear();
-            }
-            this.faceBuffer = BufferUtils.createIntBuffer(this.indices.size());
-            for (int i = 0; i < this.indices.size(); i++) {
-                this.faceBuffer.put(this.indices.get(i));
-            }
-            this.faceBuffer.flip();
-
-            return this.faceBuffer;
-        }
-
-        public int getHandle() {
-            return handle;
-        }
     }
 }

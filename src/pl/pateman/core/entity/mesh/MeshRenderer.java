@@ -1,7 +1,6 @@
 package pl.pateman.core.entity.mesh;
 
 import org.joml.Matrix4f;
-import org.lwjgl.opengl.GL15;
 import pl.pateman.core.entity.mesh.animation.AnimationController;
 import pl.pateman.core.shader.Program;
 
@@ -9,7 +8,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL15.glBindBuffer;
 
 /**
  * Created by pateman.
@@ -43,13 +41,9 @@ public final class MeshRenderer {
     }
 
     public void renderMesh() {
-        for (int i = 0; i < this.meshFilter.getFaces().size(); i++) {
-            final MeshFilter.MeshFace face = this.meshFilter.getFaces().get(i);
-
-            glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, face.getHandle());
-            glDrawElements(GL_TRIANGLES, face.getIndices().size(), GL_UNSIGNED_INT, 0);
-            glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
-        }
+        this.meshFilter.getEbo().bind();
+        glDrawElements(GL_TRIANGLES, this.meshFilter.getMeshData().getTriangles().size(), GL_UNSIGNED_INT, 0);
+        this.meshFilter.getEbo().unbind();
     }
 
     public void finalizeRendering() {

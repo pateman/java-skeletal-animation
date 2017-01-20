@@ -85,6 +85,8 @@ public final class JSONImporter implements MeshImporter {
         meshEntity.setTransformation(rotation, translation, scale);
         meshEntity.forceTransformationUpdate();
 
+        System.gc();
+
         return meshEntity;
     }
 

@@ -23,8 +23,10 @@ class RagdollBody {
     private final Quaternionf inverseInitialRotation;
     private final Map<Integer, TransformComponents> initialBoneTransforms;
     private final List<Bone> assignedBones;
+    private final String partName;
 
-    RagdollBody(RigidBody rigidBody, List<Bone> bones, Quaternionf initialRotation) {
+    RagdollBody(String partName, RigidBody rigidBody, List<Bone> bones, Quaternionf initialRotation) {
+        this.partName = partName;
         this.rigidBody = rigidBody;
         this.initialRotation = new Quaternionf().set(initialRotation);
         this.inverseInitialRotation = initialRotation.invert(new Quaternionf());
@@ -103,6 +105,10 @@ class RagdollBody {
 
     RigidBody getRigidBody() {
         return rigidBody;
+    }
+
+    String getPartName() {
+        return partName;
     }
 
     private class TransformComponents {

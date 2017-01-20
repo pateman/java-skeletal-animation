@@ -27,7 +27,7 @@ public final class Ragdoll {
     private DiscreteDynamicsWorld dynamicsWorld;
     private boolean enabled;
     private RagdollStructure ragdollStructure;
-    private final Map<String, RagdollBody> partRigidBodies;
+    private final List<RagdollBody> partRigidBodies;
     private final Map<Integer, Matrix4f> boneMatrices;
     private final AbstractEntity entity;
 
@@ -39,7 +39,7 @@ public final class Ragdoll {
         this.mesh = mesh;
         this.enabled = false;
         this.random = new Random();
-        this.partRigidBodies = new TreeMap<>();
+        this.partRigidBodies = new ArrayList<>();
         this.boneMatrices = new TreeMap<>();
     }
 
@@ -135,10 +135,20 @@ public final class Ragdoll {
         final List<Bone> allBones = new LinkedList<>(part.getColliderBones());
         allBones.addAll(part.getAttachedBones());
 
-        this.partRigidBodies.put(part.getName(), new RagdollBody(rigidBody, allBones, vars.quat1));
+        this.partRigidBodies.add(new RagdollBody(part.getName(), rigidBody, allBones, vars.quat1));
         this.dynamicsWorld.addRigidBody(rigidBody);
 
         vars.release();
+    }
+
+    private RagdollBody getBodyByPartName(final String partName) {
+        for (int i = 0; i < this.partRigidBodies.size(); i++) {
+            final RagdollBody ragdollBody = this.partRigidBodies.get(i);
+            if (ragdollBody.getPartName().equals(partName)) {
+                return ragdollBody;
+            }
+        }
+        return null;
     }
 
     /**
@@ -150,8 +160,8 @@ public final class Ragdoll {
         final TempVars vars = TempVars.get();
 
         //  Get the rigid bodies.
-        final RigidBody rbA = this.partRigidBodies.get(ragdollLink.getPartA()).getRigidBody();
-        final RigidBody rbB = this.partRigidBodies.get(ragdollLink.getPartB()).getRigidBody();
+        final RigidBody rbA = this.getBodyByPartName(ragdollLink.getPartA()).getRigidBody();
+        final RigidBody rbB = this.getBodyByPartName(ragdollLink.getPartB()).getRigidBody();
 
         //  Convert pivots to vectors.
         final Vector3f pivotA = Utils.floatsToVec3f(ragdollLink.getPivotA(), vars.vect3d1);
@@ -236,8 +246,10 @@ public final class Ragdoll {
         this.entity.getTransformation().invert(vars.tempMat4x42);
 
         //  Iterate through the rigid bodies...
-        for (final Map.Entry<String, RagdollBody> entry : this.partRigidBodies.entrySet()) {
-            final RagdollStructure.Part part = this.ragdollStructure.getPart(entry.getKey());
+        for (int i = 0; i < this.partRigidBodies.size(); i++) {
+            final RagdollBody ragdollBody = this.partRigidBodies.get(i);
+
+            final RagdollStructure.Part part = this.ragdollStructure.getPart(ragdollBody.getPartName());
 
             //  Compute the new transformation using the bones' offset matrix.
             this.computeTransform(part.getParentBone(), part.getBone(), part.getOffsetRotation(),
@@ -249,7 +261,7 @@ public final class Ragdoll {
 
             //  Set the rigid body's transform.
             Utils.matrixToTransform(vars.vecmathTransform, vars.tempMat4x41);
-            entry.getValue().getRigidBody().setCenterOfMassTransform(vars.vecmathTransform);
+            ragdollBody.getRigidBody().setCenterOfMassTransform(vars.vecmathTransform);
         }
 
         vars.release();
@@ -280,7 +292,9 @@ public final class Ragdoll {
                 bone.getOffsetMatrix()));
 
         //  Initialize the created ragdoll bodies.
-        this.partRigidBodies.values().forEach(RagdollBody::initializeBody);
+        for (int i = 0; i < this.partRigidBodies.size(); i++) {
+            this.partRigidBodies.get(i).initializeBody();
+        }
 
         this.setEnabled(false);
     }
@@ -291,9 +305,11 @@ public final class Ragdoll {
         final Matrix4f invEntityTM = this.entity.getTransformation().invert(vars.tempMat4x41);
 
         //  Transform each assigned bone.
-        for (final RagdollBody ragdollBody : this.partRigidBodies.values()) {
-            for (int i = 0; i < ragdollBody.getAssignedBones().size(); i++) {
-                final Bone bone = ragdollBody.getAssignedBones().get(i);
+        for (int i = 0; i < this.partRigidBodies.size(); i++) {
+            final RagdollBody ragdollBody = this.partRigidBodies.get(i);
+
+            for (int j = 0; j < ragdollBody.getAssignedBones().size(); j++) {
+                final Bone bone = ragdollBody.getAssignedBones().get(j);
 
                 ragdollBody.getTransformedBone(bone, vars.vect3d1, vars.quat1, vars.vect3d2);
 
@@ -320,14 +336,16 @@ public final class Ragdoll {
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
 
-        this.partRigidBodies.values().forEach(rb -> {
+        for (int i = 0; i < this.partRigidBodies.size(); i++) {
+            final RagdollBody rb = this.partRigidBodies.get(i);
+
             if (this.enabled && !rb.getRigidBody().isActive()) {
                 rb.getRigidBody().activate();
             }
             if (!this.enabled && rb.getRigidBody().isActive()) {
                 rb.getRigidBody().setActivationState(CollisionObject.WANTS_DEACTIVATION);
             }
-        });
+        }
     }
 
     public void setDynamicsWorld(DiscreteDynamicsWorld dynamicsWorld) {

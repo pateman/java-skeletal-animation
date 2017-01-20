@@ -27,7 +27,8 @@ public final class Animation {
             this.boneTracks = new HashMap<>();
         }
 
-        for (final AnimationTrack track : this.tracks) {
+        for (int i = 0; i < this.tracks.size(); i++) {
+            final AnimationTrack track = this.tracks.get(i);
             this.boneTracks.put(track.getBone(), track);
         }
     }

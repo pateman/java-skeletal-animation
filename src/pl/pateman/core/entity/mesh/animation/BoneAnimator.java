@@ -75,8 +75,8 @@ final class BoneAnimator {
 
             tempVars.release();
         }
-        for (Bone child : bone.getChildren()) {
-            this.animateBone(child, lerpFactor, blendFrom, boneMask);
+        for (int i = 0; i < bone.getChildren().size(); i++) {
+            this.animateBone(bone.getChildren().get(i), lerpFactor, blendFrom, boneMask);
         }
     }
 

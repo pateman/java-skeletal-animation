@@ -75,6 +75,7 @@ public final class RagdollStructure {
             entry.getValue().postProcess(split[0], split[1], mesh);
         }
 
+        System.gc();
         return ragdollStructure;
     }
 

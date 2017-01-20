@@ -162,8 +162,12 @@ public class Program implements Clearable {
     }
 
     private FloatBuffer getOrCreateBuffer(final String uniformName, final int bufferSize) {
-        return this.uniformBufferCache.computeIfAbsent(uniformName, k ->
-                BufferUtils.createFloatBuffer(bufferSize));
+        FloatBuffer floatBuffer = this.uniformBufferCache.get(uniformName);
+        if (floatBuffer == null) {
+            floatBuffer = BufferUtils.createFloatBuffer(bufferSize);
+            this.uniformBufferCache.put(uniformName, floatBuffer);
+        }
+        return floatBuffer;
     }
 
     public void setUniform1(final String uniformName, float arg1) {

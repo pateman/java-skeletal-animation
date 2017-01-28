@@ -18,6 +18,7 @@ stacktrace.log
 /target-eclipse/
 /My3dsMaxExporter/**/x64/
 /My3dsMaxExporter/**/ipch/
+/mocap/*.bat
 
 
 # Eclipse Project files

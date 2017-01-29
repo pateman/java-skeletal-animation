@@ -176,14 +176,7 @@ void serialEvent(Serial port) {
                 if (serialCount == 14) {
                     serialCount = 0; // restart packet byte position
                     interval = millis();
-                    
-                     //get quaternion from data packet
-                    q[0] = ((teapotPacket[2] << 8) | teapotPacket[3]) / 16384.0f;
-                    q[1] = ((teapotPacket[4] << 8) | teapotPacket[5]) / 16384.0f;
-                    q[2] = ((teapotPacket[6] << 8) | teapotPacket[7]) / 16384.0f;
-                    q[3] = ((teapotPacket[8] << 8) | teapotPacket[9]) / 16384.0f;
-                    for (int i = 0; i < 4; i++) if (q[i] >= 2) q[i] = -4 + q[i];
-                    
+                                        
                    //set our toxilibs quaternion to new data
                     byte deviceNumber = (byte) teapotPacket[10];
                     for (int i = 0; i < mpus.length; i++) {
@@ -195,9 +188,19 @@ void serialEvent(Serial port) {
                       float deltaTime = (interval - mpu.lastRead) / 1000.0f;
                       mpu.lastRead = interval;
                       
+                       //get quaternion from data packet
+                      q[0] = ((teapotPacket[2] << 8) | teapotPacket[3]) / 16384.0f;
+                      q[1] = ((teapotPacket[4] << 8) | teapotPacket[5]) / 16384.0f;
+                      q[2] = ((teapotPacket[6] << 8) | teapotPacket[7]) / 16384.0f;
+                      q[3] = ((teapotPacket[8] << 8) | teapotPacket[9]) / 16384.0f;
+                      for (int j = 0; j < 4; j++) if (q[j] >= 2) q[j] = -4 + q[j];
+                      
                       tmp.set(q[0], q[1], q[2], q[3]);
                       mpu.rotation.set(tmp);
-                      //mpu.rotation = mpu.rotation.interpolateTo(tmp, deltaTime).normalize();
+                      
+                      print(deviceNumber);
+                      print("->");
+                      println(mpu.rotation);
                     }
                      
 
